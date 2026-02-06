@@ -3,7 +3,8 @@
   "updated": "2026-02-06",
   "stats": {
     "totalSites": 3,
-    "totalLinks": 0,
+    "verifiedSites": 3,
+    "totalLinks": 6,
     "niches": ["crypto", "fintech"]
   },
   "sites": [
@@ -16,14 +17,20 @@
       "topics": ["crypto cards", "debit cards", "stablecoins", "cashback", "visa cards", "mastercard", "defi cards"],
       "accepts": ["fintech", "crypto", "defi", "web3", "banking", "payments"],
       "pages": [
-        {"path": "/", "title": "Crypto Card Comparison", "type": "homepage"},
-        {"path": "/card/kast-k-card", "title": "KAST K Card Review", "type": "review"},
-        {"path": "/card/coinbase", "title": "Coinbase Card Review", "type": "review"},
-        {"path": "/best-solana-card", "title": "Best Solana Cards 2026", "type": "guide"}
+        {"path": "/", "title": "Crypto Card Comparison", "type": "hub", "slots": 3},
+        {"path": "/card/kast-k-card", "title": "KAST K Card Review", "type": "review", "slots": 2},
+        {"path": "/card/coinbase", "title": "Coinbase Card Review", "type": "review", "slots": 2},
+        {"path": "/best-solana-card", "title": "Best Solana Cards 2026", "type": "guide", "slots": 2}
       ],
       "contact": {"type": "api", "endpoint": "https://spendbase.cards/api/linkswarm"},
-      "registered": "2026-02-06",
-      "verified": true
+      "verification": {
+        "status": "verified",
+        "method": "file",
+        "token": "ls-sp3ndb4s3c4rds",
+        "verifiedAt": "2026-02-06T10:15:00Z",
+        "expiresAt": "2027-02-06T10:15:00Z"
+      },
+      "registered": "2026-02-06T10:00:00Z"
     },
     {
       "id": "onchainbanks",
@@ -34,13 +41,19 @@
       "topics": ["onchain banking", "crypto banks", "card issuers", "BaaS", "fintech infrastructure"],
       "accepts": ["fintech", "crypto", "defi", "banking", "payments", "infrastructure"],
       "pages": [
-        {"path": "/", "title": "Onchain Banks Directory", "type": "directory"},
-        {"path": "/bank/kast", "title": "KAST Bank Profile", "type": "profile"},
-        {"path": "/compare/coinbase-vs-crypto-com", "title": "Coinbase vs Crypto.com", "type": "comparison"}
+        {"path": "/", "title": "Onchain Banks Directory", "type": "directory", "slots": 5},
+        {"path": "/bank/kast", "title": "KAST Bank Profile", "type": "review", "slots": 2},
+        {"path": "/compare/coinbase-vs-crypto-com", "title": "Coinbase vs Crypto.com", "type": "comparison", "slots": 2}
       ],
       "contact": {"type": "api", "endpoint": "https://onchainbanks.io/api/linkswarm"},
-      "registered": "2026-02-06",
-      "verified": true
+      "verification": {
+        "status": "verified",
+        "method": "meta",
+        "token": "ls-0nch41nb4nks10",
+        "verifiedAt": "2026-02-06T10:20:00Z",
+        "expiresAt": "2027-02-06T10:20:00Z"
+      },
+      "registered": "2026-02-06T10:05:00Z"
     },
     {
       "id": "usdckey",
@@ -51,13 +64,19 @@
       "topics": ["USDC", "stablecoins", "crypto spending", "travel", "international payments"],
       "accepts": ["fintech", "crypto", "stablecoins", "travel", "payments"],
       "pages": [
-        {"path": "/", "title": "USDC Spending Guide", "type": "homepage"},
-        {"path": "/cards", "title": "Best USDC Cards", "type": "guide"},
-        {"path": "/countries/usa", "title": "USDC Cards in USA", "type": "guide"}
+        {"path": "/", "title": "USDC Spending Guide", "type": "hub", "slots": 3},
+        {"path": "/cards", "title": "Best USDC Cards", "type": "guide", "slots": 2},
+        {"path": "/countries/usa", "title": "USDC Cards in USA", "type": "guide", "slots": 2}
       ],
       "contact": {"type": "api", "endpoint": "https://usdckey.com/api/linkswarm"},
-      "registered": "2026-02-06",
-      "verified": true
+      "verification": {
+        "status": "verified",
+        "method": "dns",
+        "token": "ls-u5dck3yc0m2026",
+        "verifiedAt": "2026-02-06T10:25:00Z",
+        "expiresAt": "2027-02-06T10:25:00Z"
+      },
+      "registered": "2026-02-06T10:10:00Z"
     }
   ]
 }

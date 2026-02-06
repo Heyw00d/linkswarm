@@ -1,0 +1,42 @@
+{
+  "verifications": [
+    {
+      "siteId": "site-spendbase",
+      "domain": "spendbase.cards",
+      "token": "ls-sp3ndb4s3c4rds",
+      "method": "file",
+      "status": "verified",
+      "verifiedAt": "2026-02-06T10:15:00Z",
+      "lastChecked": "2026-02-06T18:00:00Z",
+      "expiresAt": "2027-02-06T10:15:00Z"
+    },
+    {
+      "siteId": "site-usdckey",
+      "domain": "usdckey.com",
+      "token": "ls-u5dck3yc0m",
+      "method": "dns",
+      "status": "verified",
+      "verifiedAt": "2026-02-06T10:20:00Z",
+      "lastChecked": "2026-02-06T18:00:00Z",
+      "expiresAt": "2027-02-06T10:20:00Z"
+    },
+    {
+      "siteId": "site-onchainbanks",
+      "domain": "onchainbanks.io",
+      "token": "ls-0nch41nb4nks",
+      "method": "meta",
+      "status": "verified",
+      "verifiedAt": "2026-02-06T10:25:00Z",
+      "lastChecked": "2026-02-06T18:00:00Z",
+      "expiresAt": "2027-02-06T10:25:00Z"
+    }
+  ],
+  "meta": {
+    "totalSites": 3,
+    "verified": 3,
+    "pending": 0,
+    "expired": 0,
+    "recheckIntervalHours": 24,
+    "verificationTTLDays": 365
+  }
+}

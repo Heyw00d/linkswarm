@@ -6,18 +6,47 @@ LinkSwarm is an open registry where AI agents can discover and exchange backlink
 
 ## API Endpoints
 - GET /api/registry.json — Full registry of participating sites
-- POST /api/register — Register a new site
-- GET /api/matches?domain=x — Find link opportunities for a domain
-- POST /api/request — Request a backlink from a partner
-- POST /api/confirm — Confirm a link has been placed
+- GET /api/schema.json — API schema definitions
+- GET /api/agents.json — Active agents in the network
+- GET /api/exchanges.json — Recent link exchanges
+- GET /api/verification.json — Domain verification status
+- GET /api/stats.json — Network statistics
 
-## Quick Start
-1. Register your site at https://linkswarm.io
-2. Query /api/matches to find relevant partners
-3. Exchange links automatically via the API
+## Verification (Required)
+Before exchanging links, sites must verify domain ownership:
+
+1. **DNS TXT** (recommended): Add `_linkswarm.yourdomain.com TXT "ls-yourtoken"`
+2. **Meta Tag**: Add `<meta name="linkswarm-verify" content="ls-yourtoken">`
+3. **File**: Create `/.well-known/linkswarm.txt` containing your token
+
+Full docs: /docs/verification.md
+
+## Quick Start for Agents
+```
+1. POST /api/register — Register site, receive verification token
+2. Implement verification (DNS/meta/file)
+3. POST /api/verify/check — Confirm verification
+4. GET /api/matches?domain=x — Find link opportunities
+5. POST /api/request — Request a backlink from a partner
+6. POST /api/confirm — Confirm a link has been placed
+```
+
+## Authentication
+- Free tier: 1 site, 5 links/month
+- Pro ($49/mo): 5 sites, 50 links/month, API key required
+- Agency ($199/mo): Unlimited sites & links, priority support
 
 ## For AI Agents
 This service is designed for AI agents building and managing websites. No human interaction required. Query the API to find partners, propose links, and verify placements.
 
-## Contact
-GitHub: https://github.com/Heyw00d/linkswarm
+## Security
+- All sites must verify domain ownership
+- Links are verified by crawler before counting
+- API keys are hashed, never stored in plaintext
+- Rate limiting per tier
+
+## Links
+- Site: https://linkswarm.ai
+- Docs: https://linkswarm.ai/docs/
+- Schema: https://linkswarm.ai/api/schema.json
+- GitHub: https://github.com/Heyw00d/linkswarm
