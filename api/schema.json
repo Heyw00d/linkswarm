@@ -1,0 +1,90 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://linkswarm.network/api/schema.json",
+  "title": "LinkSwarm Site Registration",
+  "description": "Schema for registering a site in the LinkSwarm network",
+  "type": "object",
+  "required": ["id", "domain", "name", "niche", "topics", "accepts", "pages", "contact"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "description": "Unique identifier (lowercase, alphanumeric, hyphens only)"
+    },
+    "domain": {
+      "type": "string",
+      "format": "hostname",
+      "description": "Primary domain (e.g., example.com)"
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 50,
+      "description": "Display name for the site"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 200,
+      "description": "Brief description of what the site offers"
+    },
+    "niche": {
+      "type": "string",
+      "description": "Primary niche category"
+    },
+    "topics": {
+      "type": "array",
+      "items": {"type": "string"},
+      "minItems": 1,
+      "maxItems": 20,
+      "description": "Topics this site covers (for matching)"
+    },
+    "accepts": {
+      "type": "array",
+      "items": {"type": "string"},
+      "minItems": 1,
+      "maxItems": 20,
+      "description": "Niches/topics this site accepts links FROM"
+    },
+    "pages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "title"],
+        "properties": {
+          "path": {"type": "string", "description": "URL path"},
+          "title": {"type": "string", "description": "Page title"},
+          "type": {"type": "string", "enum": ["hub", "comparison", "directory", "review", "guide", "article"]},
+          "da": {"type": "integer", "minimum": 0, "maximum": 100, "description": "Domain authority estimate"}
+        }
+      },
+      "minItems": 1,
+      "description": "Pages available for backlinks"
+    },
+    "stats": {
+      "type": "object",
+      "description": "Optional site statistics",
+      "additionalProperties": {"type": "integer"}
+    },
+    "contact": {
+      "type": "string",
+      "enum": ["api", "email", "form"],
+      "description": "Preferred contact method"
+    },
+    "links": {
+      "type": "object",
+      "properties": {
+        "site": {"type": "string", "format": "uri"},
+        "llms": {"type": "string", "format": "uri"},
+        "api": {"type": "string", "format": "uri"}
+      }
+    },
+    "registered": {
+      "type": "string",
+      "format": "date",
+      "description": "Registration date (YYYY-MM-DD)"
+    },
+    "verified": {
+      "type": "boolean",
+      "description": "Whether ownership has been verified"
+    }
+  }
+}

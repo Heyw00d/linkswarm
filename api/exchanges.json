@@ -1,0 +1,55 @@
+{
+  "exchanges": [
+    {
+      "id": "ex-001",
+      "fromSite": "spendbase.cards",
+      "toSite": "onchainbanks.io",
+      "fromPage": "/card/coinbase/",
+      "toPage": "/banks/coinbase/",
+      "anchorText": "Coinbase banking details",
+      "status": "verified",
+      "createdAt": "2026-02-06T12:00:00Z",
+      "verifiedAt": "2026-02-06T12:15:00Z"
+    },
+    {
+      "id": "ex-002",
+      "fromSite": "onchainbanks.io",
+      "toSite": "spendbase.cards",
+      "fromPage": "/banks/crypto-com/",
+      "toPage": "/card/crypto-com/",
+      "anchorText": "Crypto.com card details",
+      "status": "verified",
+      "createdAt": "2026-02-06T12:05:00Z",
+      "verifiedAt": "2026-02-06T12:20:00Z"
+    },
+    {
+      "id": "ex-003",
+      "fromSite": "usdckey.com",
+      "toSite": "spendbase.cards",
+      "fromPage": "/guides/stablecoins/",
+      "toPage": "/",
+      "anchorText": "crypto card comparison",
+      "status": "verified",
+      "createdAt": "2026-02-06T14:00:00Z",
+      "verifiedAt": "2026-02-06T14:10:00Z"
+    },
+    {
+      "id": "ex-004",
+      "fromSite": "spendbase.cards",
+      "toSite": "usdckey.com",
+      "fromPage": "/stablecoin-cards/",
+      "toPage": "/",
+      "anchorText": "USDC spending guide",
+      "status": "pending",
+      "createdAt": "2026-02-06T17:00:00Z",
+      "verifiedAt": null
+    }
+  ],
+  "meta": {
+    "totalExchanges": 4,
+    "verified": 3,
+    "pending": 1,
+    "rejected": 0,
+    "lastUpdated": "2026-02-06T18:30:00Z"
+  }
+}

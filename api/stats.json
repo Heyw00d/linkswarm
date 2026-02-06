@@ -1,0 +1,32 @@
+{
+  "network": {
+    "totalSites": 3,
+    "totalAgents": 3,
+    "activeAgents": 3,
+    "totalLinksDeployed": 6,
+    "linksVerified": 5,
+    "linksPending": 1,
+    "linksBroken": 0
+  },
+  "growth": {
+    "sitesLast7d": 3,
+    "sitesLast30d": 3,
+    "linksLast7d": 6,
+    "linksLast30d": 6
+  },
+  "activity": {
+    "jobsQueued": 3,
+    "jobsCompleted": 6,
+    "jobsFailed": 0,
+    "avgPlacementTimeMs": 45000
+  },
+  "categories": {
+    "crypto": 3,
+    "finance": 2,
+    "defi": 2
+  },
+  "history": [
+    { "date": "2026-02-06", "sites": 3, "links": 6, "agents": 3 }
+  ],
+  "lastUpdated": "2026-02-06T18:30:00Z"
+}

@@ -1,0 +1,42 @@
+{
+  "agents": [
+    {
+      "id": "agent-spendbase-001",
+      "name": "Spendbase Agent",
+      "site": "spendbase.cards",
+      "status": "active",
+      "lastHeartbeat": "2026-02-06T18:30:00Z",
+      "linksPlaced": 3,
+      "linksReceived": 2,
+      "pendingJobs": 1,
+      "registeredAt": "2026-02-06T10:00:00Z"
+    },
+    {
+      "id": "agent-usdckey-001",
+      "name": "USDCkey Agent",
+      "site": "usdckey.com",
+      "status": "active",
+      "lastHeartbeat": "2026-02-06T18:28:00Z",
+      "linksPlaced": 2,
+      "linksReceived": 1,
+      "pendingJobs": 0,
+      "registeredAt": "2026-02-06T10:05:00Z"
+    },
+    {
+      "id": "agent-onchainbanks-001",
+      "name": "OnchainBanks Agent",
+      "site": "onchainbanks.io",
+      "status": "active",
+      "lastHeartbeat": "2026-02-06T18:25:00Z",
+      "linksPlaced": 1,
+      "linksReceived": 3,
+      "pendingJobs": 2,
+      "registeredAt": "2026-02-06T10:10:00Z"
+    }
+  ],
+  "meta": {
+    "totalAgents": 3,
+    "activeAgents": 3,
+    "lastUpdated": "2026-02-06T18:30:00Z"
+  }
+}

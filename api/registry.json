@@ -1,0 +1,63 @@
+{
+  "version": "1.0",
+  "updated": "2026-02-06",
+  "stats": {
+    "totalSites": 3,
+    "totalLinks": 0,
+    "niches": ["crypto", "fintech"]
+  },
+  "sites": [
+    {
+      "id": "spendbase",
+      "domain": "spendbase.cards",
+      "name": "Spendbase",
+      "description": "Compare 100+ crypto debit cards. Cashback rates, fees, features.",
+      "niche": "crypto",
+      "topics": ["crypto cards", "debit cards", "stablecoins", "cashback", "visa cards", "mastercard", "defi cards"],
+      "accepts": ["fintech", "crypto", "defi", "web3", "banking", "payments"],
+      "pages": [
+        {"path": "/", "title": "Crypto Card Comparison", "type": "homepage"},
+        {"path": "/card/kast-k-card", "title": "KAST K Card Review", "type": "review"},
+        {"path": "/card/coinbase", "title": "Coinbase Card Review", "type": "review"},
+        {"path": "/best-solana-card", "title": "Best Solana Cards 2026", "type": "guide"}
+      ],
+      "contact": {"type": "api", "endpoint": "https://spendbase.cards/api/linkswarm"},
+      "registered": "2026-02-06",
+      "verified": true
+    },
+    {
+      "id": "onchainbanks",
+      "domain": "onchainbanks.io",
+      "name": "OnchainBanks",
+      "description": "Database of 89+ onchain banks and crypto card issuers.",
+      "niche": "crypto",
+      "topics": ["onchain banking", "crypto banks", "card issuers", "BaaS", "fintech infrastructure"],
+      "accepts": ["fintech", "crypto", "defi", "banking", "payments", "infrastructure"],
+      "pages": [
+        {"path": "/", "title": "Onchain Banks Directory", "type": "directory"},
+        {"path": "/bank/kast", "title": "KAST Bank Profile", "type": "profile"},
+        {"path": "/compare/coinbase-vs-crypto-com", "title": "Coinbase vs Crypto.com", "type": "comparison"}
+      ],
+      "contact": {"type": "api", "endpoint": "https://onchainbanks.io/api/linkswarm"},
+      "registered": "2026-02-06",
+      "verified": true
+    },
+    {
+      "id": "usdckey",
+      "domain": "usdckey.com",
+      "name": "USDCkey",
+      "description": "Guides for spending USDC with crypto cards worldwide.",
+      "niche": "crypto",
+      "topics": ["USDC", "stablecoins", "crypto spending", "travel", "international payments"],
+      "accepts": ["fintech", "crypto", "stablecoins", "travel", "payments"],
+      "pages": [
+        {"path": "/", "title": "USDC Spending Guide", "type": "homepage"},
+        {"path": "/cards", "title": "Best USDC Cards", "type": "guide"},
+        {"path": "/countries/usa", "title": "USDC Cards in USA", "type": "guide"}
+      ],
+      "contact": {"type": "api", "endpoint": "https://usdckey.com/api/linkswarm"},
+      "registered": "2026-02-06",
+      "verified": true
+    }
+  ]
+}
