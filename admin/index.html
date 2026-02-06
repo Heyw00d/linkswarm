@@ -58,6 +58,69 @@
     </style>
 </head>
 <body class="bg-swarm-900 text-white min-h-screen">
+    <!-- Auth Gate -->
+    <div id="authGate" class="fixed inset-0 bg-swarm-900 z-[100] flex items-center justify-center">
+        <div class="glow-card rounded-2xl p-8 max-w-sm w-full mx-4">
+            <div class="text-center mb-6">
+                <span class="text-4xl">🐝</span>
+                <h2 class="text-xl font-bold text-honey-400 mt-2">Admin Access</h2>
+                <p class="text-gray-400 text-sm mt-1">Enter password to continue</p>
+            </div>
+            <form id="authForm" class="space-y-4">
+                <input 
+                    type="password" 
+                    id="authPassword" 
+                    placeholder="Password"
+                    class="w-full px-4 py-3 bg-swarm-700 border border-swarm-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-honey-500"
+                    autocomplete="current-password"
+                >
+                <button 
+                    type="submit"
+                    class="w-full py-3 bg-honey-500 hover:bg-honey-600 text-swarm-900 font-semibold rounded-lg transition"
+                >
+                    Enter Dashboard
+                </button>
+                <p id="authError" class="text-red-400 text-sm text-center hidden">Invalid password</p>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        // Password protection (SHA-256 hash comparison)
+        // To change password: run in console: crypto.subtle.digest('SHA-256', new TextEncoder().encode('YOUR_PASSWORD')).then(h => console.log(Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2, '0')).join('')))
+        const ADMIN_HASH = 'e3922da73e0d6a0283d821027fdb655d19b9d78de8b8d428d93fcc721ee9d920'; // Change via console hash generator
+        
+        async function hashPassword(pwd) {
+            const encoded = new TextEncoder().encode(pwd);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', encoded);
+            return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+        
+        async function checkAuth() {
+            const stored = sessionStorage.getItem('linkswarm_auth');
+            if (stored === ADMIN_HASH) {
+                document.getElementById('authGate').classList.add('hidden');
+                return true;
+            }
+            return false;
+        }
+        
+        document.getElementById('authForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const pwd = document.getElementById('authPassword').value;
+            const hash = await hashPassword(pwd);
+            
+            if (hash === ADMIN_HASH) {
+                sessionStorage.setItem('linkswarm_auth', hash);
+                document.getElementById('authGate').classList.add('hidden');
+            } else {
+                document.getElementById('authError').classList.remove('hidden');
+                document.getElementById('authPassword').value = '';
+            }
+        });
+        
+        checkAuth();
+    </script>
     <!-- Header -->
     <header class="border-b border-swarm-600 bg-swarm-800/50 backdrop-blur-sm sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
