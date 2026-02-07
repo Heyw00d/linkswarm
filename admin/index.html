@@ -46,7 +46,7 @@
         </header>
 
         <!-- Stats -->
-        <div class="grid grid-cols-3 gap-4 mb-8">
+        <div class="grid grid-cols-5 gap-4 mb-8">
             <div class="card">
                 <div class="text-sm text-gray-400 mb-1">Waitlist</div>
                 <div class="text-3xl font-bold honey" id="statWaitlist">-</div>
@@ -58,6 +58,14 @@
             <div class="card">
                 <div class="text-sm text-gray-400 mb-1">Exchanges</div>
                 <div class="text-3xl font-bold" id="statExchanges">-</div>
+            </div>
+            <div class="card">
+                <div class="text-sm text-gray-400 mb-1">Sales</div>
+                <div class="text-3xl font-bold text-green-400" id="statSales">-</div>
+            </div>
+            <div class="card">
+                <div class="text-sm text-gray-400 mb-1">Revenue</div>
+                <div class="text-3xl font-bold text-green-400" id="statRevenue">-</div>
             </div>
         </div>
 
@@ -75,6 +83,40 @@
                 <h2 class="text-lg font-semibold mb-4">🌐 Registry</h2>
                 <div id="registry" class="space-y-3">
                     <div class="text-gray-500">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sales Section -->
+        <div class="grid grid-cols-2 gap-6 mt-6">
+            <!-- Add Sale Form -->
+            <div class="card">
+                <h2 class="text-lg font-semibold mb-4">💰 Log Sale</h2>
+                <form id="saleForm" class="space-y-3">
+                    <input type="email" name="email" placeholder="Customer email" required
+                        class="w-full px-3 py-2 bg-[#1a1a25] border border-[#252533] rounded-lg outline-none focus:border-[#fbbf24]">
+                    <select name="plan" required
+                        class="w-full px-3 py-2 bg-[#1a1a25] border border-[#252533] rounded-lg outline-none focus:border-[#fbbf24]">
+                        <option value="">Select plan...</option>
+                        <option value="pro">Pro ($29/mo)</option>
+                        <option value="agency">Agency ($99/mo)</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                    <input type="number" name="amount" placeholder="Amount ($)" step="0.01" required
+                        class="w-full px-3 py-2 bg-[#1a1a25] border border-[#252533] rounded-lg outline-none focus:border-[#fbbf24]">
+                    <input type="text" name="notes" placeholder="Notes (optional)"
+                        class="w-full px-3 py-2 bg-[#1a1a25] border border-[#252533] rounded-lg outline-none focus:border-[#fbbf24]">
+                    <button type="submit" class="w-full py-2 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg">
+                        Log Sale
+                    </button>
+                </form>
+            </div>
+
+            <!-- Recent Sales -->
+            <div class="card">
+                <h2 class="text-lg font-semibold mb-4">📈 Recent Sales</h2>
+                <div id="recentSales" class="space-y-3">
+                    <div class="text-gray-500">No sales yet</div>
                 </div>
             </div>
         </div>
@@ -126,6 +168,23 @@
                 document.getElementById('statWaitlist').textContent = stats.waitlist;
                 document.getElementById('statSites').textContent = stats.sites;
                 document.getElementById('statExchanges').textContent = stats.exchanges;
+                document.getElementById('statSales').textContent = stats.sales || 0;
+                document.getElementById('statRevenue').textContent = '$' + ((stats.revenue || 0) / 100).toFixed(0);
+                
+                // Recent sales
+                if (stats.recentSales && stats.recentSales.length > 0) {
+                    document.getElementById('recentSales').innerHTML = stats.recentSales.map(s => `
+                        <div class="flex justify-between items-center py-2 border-b border-[#252533]">
+                            <div>
+                                <span class="font-mono text-sm">${s.email}</span>
+                                <span class="text-xs text-gray-500 ml-2">${s.plan}</span>
+                            </div>
+                            <span class="text-green-400 font-bold">$${(s.amount_cents / 100).toFixed(2)}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    document.getElementById('recentSales').innerHTML = '<div class="text-gray-500">No sales yet</div>';
+                }
                 
                 // Recent signups
                 if (stats.recentSignups && stats.recentSignups.length > 0) {
@@ -190,6 +249,38 @@
                     }
                 });
         }
+
+        // Sale form submission
+        document.getElementById('saleForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const data = {
+                email: form.email.value,
+                plan: form.plan.value,
+                amount: parseFloat(form.amount.value),
+                notes: form.notes.value
+            };
+            
+            try {
+                const res = await fetch(`${API}/sales`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` 
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (res.ok) {
+                    form.reset();
+                    loadData();
+                } else {
+                    alert('Failed to log sale');
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        };
 
         // Auto-refresh every 30s
         setInterval(() => {
