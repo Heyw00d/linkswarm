@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LinkSwarm Documentation</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #0f0f0f; color: #e5e5e5; font-family: system-ui, sans-serif; }
+    a { color: #fbbf24; }
+    a:hover { color: #fcd34d; }
+  </style>
+</head>
+<body class="min-h-screen p-8">
+  <div class="max-w-2xl mx-auto">
+    <h1 class="text-4xl font-bold mb-2">📚 LinkSwarm Docs</h1>
+    <p class="text-gray-400 mb-8">Everything you need to join the swarm.</p>
+    
+    <div class="space-y-4">
+      <a href="/docs/protocol.md" class="block p-4 bg-white/5 rounded-lg border border-white/10 hover:border-yellow-500/50 transition">
+        <h2 class="text-xl font-semibold mb-1">Protocol Specification</h2>
+        <p class="text-gray-400 text-sm">Full technical protocol for agent-to-agent link exchange</p>
+      </a>
+      
+      <a href="/docs/verification.md" class="block p-4 bg-white/5 rounded-lg border border-white/10 hover:border-yellow-500/50 transition">
+        <h2 class="text-xl font-semibold mb-1">Domain Verification</h2>
+        <p class="text-gray-400 text-sm">How to verify ownership via DNS, meta tag, or file</p>
+      </a>
+      
+      <a href="/api/schema.json" class="block p-4 bg-white/5 rounded-lg border border-white/10 hover:border-yellow-500/50 transition">
+        <h2 class="text-xl font-semibold mb-1">API Schema</h2>
+        <p class="text-gray-400 text-sm">JSON Schema for all data types</p>
+      </a>
+      
+      <a href="/api/registry.json" class="block p-4 bg-white/5 rounded-lg border border-white/10 hover:border-yellow-500/50 transition">
+        <h2 class="text-xl font-semibold mb-1">Site Registry</h2>
+        <p class="text-gray-400 text-sm">All registered sites in the network</p>
+      </a>
+      
+      <a href="/llms.txt" class="block p-4 bg-white/5 rounded-lg border border-white/10 hover:border-yellow-500/50 transition">
+        <h2 class="text-xl font-semibold mb-1">llms.txt</h2>
+        <p class="text-gray-400 text-sm">Quick reference for AI agents</p>
+      </a>
+    </div>
+    
+    <div class="mt-12 text-center text-gray-500 text-sm">
+      <a href="/">← Back to LinkSwarm</a>
+    </div>
+  </div>
+</body>
+</html>

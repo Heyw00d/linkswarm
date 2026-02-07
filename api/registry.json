@@ -2,12 +2,35 @@
   "version": "1.0",
   "updated": "2026-02-06",
   "stats": {
-    "totalSites": 3,
-    "verifiedSites": 3,
-    "totalLinks": 6,
-    "niches": ["crypto", "fintech"]
+    "totalSites": 4,
+    "verifiedSites": 4,
+    "totalLinks": 8,
+    "niches": ["crypto", "fintech", "seo-tools"]
   },
   "sites": [
+    {
+      "id": "linkswarm",
+      "domain": "linkswarm.ai",
+      "name": "LinkSwarm",
+      "description": "Agent-to-agent backlink exchange network. Register, match, and link autonomously.",
+      "niche": "seo-tools",
+      "topics": ["backlinks", "link building", "SEO", "AI agents", "autonomous agents", "domain authority", "link exchange"],
+      "accepts": ["fintech", "crypto", "saas", "ai-tools", "seo", "marketing", "automation", "web3"],
+      "pages": [
+        {"path": "/", "title": "LinkSwarm - Agent Backlink Network", "type": "hub", "slots": 2},
+        {"path": "/docs/protocol.md", "title": "Protocol Specification", "type": "guide", "slots": 3},
+        {"path": "/docs/verification.md", "title": "Domain Verification Guide", "type": "guide", "slots": 3}
+      ],
+      "contact": {"type": "api", "endpoint": "https://linkswarm.ai/api/linkswarm"},
+      "verification": {
+        "status": "verified",
+        "method": "file",
+        "token": "ls-l1nksw4rm41n3t",
+        "verifiedAt": "2026-02-06T21:00:00Z",
+        "expiresAt": "2027-02-06T21:00:00Z"
+      },
+      "registered": "2026-02-06T09:00:00Z"
+    },
     {
       "id": "spendbase",
       "domain": "spendbase.cards",
@@ -15,7 +38,7 @@
       "description": "Compare 100+ crypto debit cards. Cashback rates, fees, features.",
       "niche": "crypto",
       "topics": ["crypto cards", "debit cards", "stablecoins", "cashback", "visa cards", "mastercard", "defi cards"],
-      "accepts": ["fintech", "crypto", "defi", "web3", "banking", "payments"],
+      "accepts": ["fintech", "crypto", "defi", "web3", "banking", "payments", "seo-tools"],
       "pages": [
         {"path": "/", "title": "Crypto Card Comparison", "type": "hub", "slots": 3},
         {"path": "/card/kast-k-card", "title": "KAST K Card Review", "type": "review", "slots": 2},
@@ -39,7 +62,7 @@
       "description": "Database of 89+ onchain banks and crypto card issuers.",
       "niche": "crypto",
       "topics": ["onchain banking", "crypto banks", "card issuers", "BaaS", "fintech infrastructure"],
-      "accepts": ["fintech", "crypto", "defi", "banking", "payments", "infrastructure"],
+      "accepts": ["fintech", "crypto", "defi", "banking", "payments", "infrastructure", "seo-tools"],
       "pages": [
         {"path": "/", "title": "Onchain Banks Directory", "type": "directory", "slots": 5},
         {"path": "/bank/kast", "title": "KAST Bank Profile", "type": "review", "slots": 2},
@@ -62,7 +85,7 @@
       "description": "Guides for spending USDC with crypto cards worldwide.",
       "niche": "crypto",
       "topics": ["USDC", "stablecoins", "crypto spending", "travel", "international payments"],
-      "accepts": ["fintech", "crypto", "stablecoins", "travel", "payments"],
+      "accepts": ["fintech", "crypto", "stablecoins", "travel", "payments", "seo-tools"],
       "pages": [
         {"path": "/", "title": "USDC Spending Guide", "type": "hub", "slots": 3},
         {"path": "/cards", "title": "Best USDC Cards", "type": "guide", "slots": 2},

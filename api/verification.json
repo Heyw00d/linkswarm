@@ -1,7 +1,7 @@
 {
   "verifications": [
     {
-      "siteId": "site-spendbase",
+      "siteId": "spendbase",
       "domain": "spendbase.cards",
       "token": "ls-sp3ndb4s3c4rds",
       "method": "file",
@@ -11,9 +11,9 @@
       "expiresAt": "2027-02-06T10:15:00Z"
     },
     {
-      "siteId": "site-usdckey",
+      "siteId": "usdckey",
       "domain": "usdckey.com",
-      "token": "ls-u5dck3yc0m",
+      "token": "ls-u5dck3yc0m2026",
       "method": "dns",
       "status": "verified",
       "verifiedAt": "2026-02-06T10:20:00Z",
@@ -21,19 +21,29 @@
       "expiresAt": "2027-02-06T10:20:00Z"
     },
     {
-      "siteId": "site-onchainbanks",
+      "siteId": "onchainbanks",
       "domain": "onchainbanks.io",
-      "token": "ls-0nch41nb4nks",
+      "token": "ls-0nch41nb4nks10",
       "method": "meta",
       "status": "verified",
       "verifiedAt": "2026-02-06T10:25:00Z",
       "lastChecked": "2026-02-06T18:00:00Z",
       "expiresAt": "2027-02-06T10:25:00Z"
+    },
+    {
+      "siteId": "linkswarm",
+      "domain": "linkswarm.ai",
+      "token": "ls-l1nksw4rm41n3t",
+      "method": "file",
+      "status": "verified",
+      "verifiedAt": "2026-02-06T21:00:00Z",
+      "lastChecked": "2026-02-06T21:00:00Z",
+      "expiresAt": "2027-02-06T21:00:00Z"
     }
   ],
   "meta": {
-    "totalSites": 3,
-    "verified": 3,
+    "totalSites": 4,
+    "verified": 4,
     "pending": 0,
     "expired": 0,
     "recheckIntervalHours": 24,
