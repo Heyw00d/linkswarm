@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Reference | LinkSwarm</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #0a0a0f; color: #e5e5e5; }
+        pre { background: #12121a; border: 1px solid #252533; border-radius: 8px; padding: 16px; overflow-x: auto; }
+        code { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+    </style>
+</head>
+<body class="min-h-screen">
+    <header class="border-b border-gray-800 py-4 px-6">
+        <div class="max-w-5xl mx-auto flex items-center justify-between">
+            <a href="/" class="flex items-center gap-2">
+                <span class="text-2xl">🐝</span>
+                <span class="font-bold text-lg text-amber-400">LinkSwarm</span>
+            </a>
+            <nav class="flex gap-6 text-sm">
+                <a href="/docs/" class="text-gray-400 hover:text-white">Docs</a>
+                <a href="/docs/api/" class="text-amber-400">API Reference</a>
+                <a href="/faq/" class="text-gray-400 hover:text-white">FAQ</a>
+            </nav>
+        </div>
+    </header>
+    
+    <main class="max-w-5xl mx-auto px-6 py-12">
+        <h1 class="text-4xl font-bold text-white mb-4">API Reference</h1>
+        <p class="text-gray-400 mb-2">Base URL: <code class="text-amber-400">https://api.linkswarm.ai/v1</code></p>
+        <p class="text-gray-400 mb-12">All requests require <code class="text-amber-400">Authorization: Bearer YOUR_API_KEY</code></p>
+        
+        <!-- GET /registry -->
+        <section class="mb-12 p-6 bg-[#12121a] rounded-xl border border-[#252533]">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="px-3 py-1 bg-green-700 text-sm font-bold rounded">GET</span>
+                <code class="text-xl text-white">/registry</code>
+                <span class="text-gray-500 text-sm ml-auto">Public</span>
+            </div>
+            <p class="text-gray-300 mb-4">List all verified sites in the network.</p>
+            <h4 class="text-sm font-semibold text-gray-400 mb-2">Response</h4>
+            <pre><code class="text-green-400">{
+  "count": 127,
+  "sites": [
+    {
+      "domain": "example.com",
+      "name": "Example Site",
+      "description": "A great example site",
+      "categories": ["tech", "saas"],
+      "verified": true,
+      "reputation": 85
+    }
+  ]
+}</code></pre>
+        </section>
+        
+        <!-- POST /sites -->
+        <section class="mb-12 p-6 bg-[#12121a] rounded-xl border border-[#252533]">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="px-3 py-1 bg-blue-700 text-sm font-bold rounded">POST</span>
+                <code class="text-xl text-white">/sites</code>
+            </div>
+            <p class="text-gray-300 mb-4">Register a new site to the network.</p>
+            <h4 class="text-sm font-semibold text-gray-400 mb-2">Request Body</h4>
+            <pre><code class="text-blue-400">{
+  "domain": "yoursite.com",
+  "name": "Your Site Name",
+  "description": "What your site is about",
+  "categories": ["crypto", "fintech"],
+  "contact_email": "you@yoursite.com"
+}</code></pre>
+            <h4 class="text-sm font-semibold text-gray-400 mb-2 mt-4">Response</h4>
+            <pre><code class="text-green-400">{
+  "success": true,
+  "site_id": "site_abc123",
+  "verification_token": "verify_xyz789",
+  "verification_methods": {
+    "dns": "TXT record: linkswarm-verify=verify_xyz789",
+    "meta": "<meta name=\"linkswarm-verify\" content=\"verify_xyz789\">"
+  }
+}</code></pre>
+        </section>
+        
+        <!-- GET /discover -->
+        <section class="mb-12 p-6 bg-[#12121a] rounded-xl border border-[#252533]">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="px-3 py-1 bg-green-700 text-sm font-bold rounded">GET</span>
+                <code class="text-xl text-white">/discover</code>
+            </div>
+            <p class="text-gray-300 mb-4">Find relevant sites for backlink exchange.</p>
+            <h4 class="text-sm font-semibold text-gray-400 mb-2">Query Parameters</h4>
+            <table class="w-full text-sm mb-4">
+                <tr class="border-b border-gray-800">
+                    <td class="py-2 text-amber-400">domain</td>
+                    <td class="py-2 text-gray-400">Required. Your domain to find partners for.</td>
+                </tr>
+                <tr class="border-b border-gray-800">
+                    <td class="py-2 text-amber-400">categories</td>
+                    <td class="py-2 text-gray-400">Filter by categories (comma-separated)</td>
+                </tr>
+                <tr class="border-b border-gray-800">
+                    <td class="py-2 text-amber-400">min_reputation</td>
+                    <td class="py-2 text-gray-400">Minimum reputation score (0-100)</td>
+                </tr>
+                <tr>
+                    <td class="py-2 text-amber-400">limit</td>
+                    <td class="py-2 text-gray-400">Max results (default: 10, max: 50)</td>
+                </tr>
+            </table>
+            <h4 class="text-sm font-semibold text-gray-400 mb-2">Response</h4>
+            <pre><code class="text-green-400">{
+  "matches": [
+    {
+      "domain": "partner.com",
+      "name": "Partner Site",
+      "relevance_score": 0.89,
+      "reputation": 92,
+      "suggested_pages": [
+        "/blog/relevant-topic/"
+      ]
+    }
+  ]
+}</code></pre>
+        </section>
+        
+        <!-- POST /exchanges -->
+        <section class="mb-12 p-6 bg-[#12121a] rounded-xl border border-[#252533]">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="px-3 py-1 bg-blue-700 text-sm font-bold rounded">POST</span>
+                <code class="text-xl text-white">/exchanges</code>
+            </div>
+            <p class="text-gray-300 mb-4">Propose a link exchange with another site.</p>
+            <h4 class="text-sm font-semibold text-gray-400 mb-2">Request Body</h4>
+            <pre><code class="text-blue-400">{
+  "from_domain": "yoursite.com",
+  "to_domain": "partner.com",
+  "from_page": "/blog/your-post/",
+  "to_page": "/resources/",
+  "proposed_anchor": "helpful resource",
+  "context": "Adding to our recommended tools section"
+}</code></pre>
+            <h4 class="text-sm font-semibold text-gray-400 mb-2 mt-4">Response</h4>
+            <pre><code class="text-green-400">{
+  "exchange_id": "exch_abc123",
+  "status": "pending",
+  "created_at": "2026-02-07T00:00:00Z"
+}</code></pre>
+        </section>
+        
+        <!-- Error Codes -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-amber-400 mb-6">Error Codes</h2>
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b border-gray-700 text-left">
+                        <th class="py-3 text-gray-400">Code</th>
+                        <th class="py-3 text-gray-400">Meaning</th>
+                    </tr>
+                </thead>
+                <tbody class="text-gray-300">
+                    <tr class="border-b border-gray-800">
+                        <td class="py-3"><code>400</code></td>
+                        <td>Bad request - check your parameters</td>
+                    </tr>
+                    <tr class="border-b border-gray-800">
+                        <td class="py-3"><code>401</code></td>
+                        <td>Unauthorized - invalid or missing API key</td>
+                    </tr>
+                    <tr class="border-b border-gray-800">
+                        <td class="py-3"><code>403</code></td>
+                        <td>Forbidden - you don't own this resource</td>
+                    </tr>
+                    <tr class="border-b border-gray-800">
+                        <td class="py-3"><code>404</code></td>
+                        <td>Not found</td>
+                    </tr>
+                    <tr class="border-b border-gray-800">
+                        <td class="py-3"><code>429</code></td>
+                        <td>Rate limit exceeded</td>
+                    </tr>
+                    <tr>
+                        <td class="py-3"><code>500</code></td>
+                        <td>Server error - please retry</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+    
+    <footer class="border-t border-gray-800 py-6 px-6 text-center text-gray-500 text-sm">
+        <a href="/docs/" class="hover:text-amber-400">Docs</a>
+        <span class="mx-2">•</span>
+        <a href="/faq/" class="hover:text-amber-400">FAQ</a>
+        <span class="mx-2">•</span>
+        <a href="/" class="hover:text-amber-400">Home</a>
+    </footer>
+</body>
+</html>
