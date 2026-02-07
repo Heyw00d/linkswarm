@@ -830,7 +830,7 @@ POST /api/negotiate
             btn.textContent = 'Joining...';
             
             try {
-                const res = await fetch('https://gmt-jam-rings-claire.trycloudflare.com/waitlist', {
+                const res = await fetch('https://api.linkswarm.ai/waitlist', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, source: 'website' })
