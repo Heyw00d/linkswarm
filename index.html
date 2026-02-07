@@ -128,7 +128,8 @@
                     <a href="#llm-native" class="text-gray-400 hover:text-honey-400 transition">LLM Features</a>
                     <a href="#docs" class="text-gray-400 hover:text-honey-400 transition">Docs</a>
                     <a href="#pricing" class="text-gray-400 hover:text-honey-400 transition">Pricing</a>
-                    <a href="#early-access" class="bg-honey-500 hover:bg-honey-400 text-swarm-900 font-semibold px-5 py-2 rounded-full transition">
+                    <a href="/dashboard/" id="loginBtn" class="text-gray-400 hover:text-honey-400 transition">Login</a>
+                    <a href="#early-access" id="joinBtn" class="bg-honey-500 hover:bg-honey-400 text-swarm-900 font-semibold px-5 py-2 rounded-full transition">
                         Join the Swarm
                     </a>
                 </div>
@@ -884,6 +885,22 @@ POST /api/negotiate
                 }
             });
         });
+        
+        // Check if user is logged in
+        const apiKey = localStorage.getItem('linkswarm_api_key');
+        if (apiKey) {
+            const loginBtn = document.getElementById('loginBtn');
+            const joinBtn = document.getElementById('joinBtn');
+            if (loginBtn) {
+                loginBtn.textContent = 'Dashboard';
+                loginBtn.classList.remove('text-gray-400');
+                loginBtn.classList.add('text-honey-400');
+            }
+            if (joinBtn) {
+                joinBtn.textContent = 'Open Dashboard';
+                joinBtn.href = '/dashboard/';
+            }
+        }
     </script>
 </body>
 </html>
