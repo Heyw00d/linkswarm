@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — LinkSwarm</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #0f0f23 100%); min-height: 100vh; }
+        .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .glow { box-shadow: 0 0 30px rgba(251,191,36,0.1); }
+        .plan-free { border-color: #6b7280; }
+        .plan-pro { border-color: #8b5cf6; }
+        .plan-agency { border-color: #f59e0b; }
+    </style>
+</head>
+<body class="text-white">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="glass rounded-2xl p-8 max-w-md w-full glow">
+            <div class="text-center mb-8">
+                <div class="text-4xl mb-2">🐝</div>
+                <h1 class="text-2xl font-bold">LinkSwarm Dashboard</h1>
+                <p class="text-gray-400 mt-2">Enter your API key to access your dashboard</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">API Key</label>
+                    <input type="text" id="apiKeyInput" placeholder="sk_linkswarm_..." 
+                        class="w-full bg-black/30 border border-gray-700 rounded-lg px-4 py-3 focus:border-amber-500 focus:outline-none font-mono text-sm">
+                </div>
+                <button onclick="login()" class="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold py-3 rounded-lg transition">
+                    Access Dashboard
+                </button>
+                <p id="loginError" class="text-red-400 text-sm text-center hidden"></p>
+            </div>
+            
+            <div class="mt-6 pt-6 border-t border-gray-700 text-center">
+                <p class="text-gray-500 text-sm">Don't have an API key?</p>
+                <a href="/" class="text-amber-400 hover:text-amber-300 text-sm">Sign up for free →</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Dashboard Screen -->
+    <div id="dashboardScreen" class="hidden">
+        <!-- Header -->
+        <header class="glass border-b border-gray-800">
+            <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+                <a href="/" class="flex items-center gap-2">
+                    <span class="text-2xl">🐝</span>
+                    <span class="font-bold text-xl">LinkSwarm</span>
+                </a>
+                <div class="flex items-center gap-4">
+                    <span id="userEmail" class="text-gray-400 text-sm"></span>
+                    <button onclick="logout()" class="text-gray-400 hover:text-white text-sm">Logout</button>
+                </div>
+            </div>
+        </header>
+        
+        <main class="max-w-6xl mx-auto px-4 py-8">
+            <!-- Plan Banner -->
+            <div id="planBanner" class="glass rounded-xl p-4 mb-8 flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <span id="planBadge" class="px-3 py-1 rounded-full text-sm font-semibold"></span>
+                    <span id="planDesc" class="text-gray-400"></span>
+                </div>
+                <div id="upgradeSection" class="hidden">
+                    <a id="upgradeLink" href="#" class="bg-amber-500 hover:bg-amber-600 text-black px-4 py-2 rounded-lg text-sm font-semibold transition">
+                        Upgrade to Pro
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="glass rounded-xl p-4">
+                    <div class="text-gray-400 text-sm">Sites</div>
+                    <div class="text-2xl font-bold"><span id="statSites">0</span> / <span id="statSitesLimit">1</span></div>
+                </div>
+                <div class="glass rounded-xl p-4">
+                    <div class="text-gray-400 text-sm">API Requests Today</div>
+                    <div class="text-2xl font-bold"><span id="statRequests">0</span> / <span id="statRequestsLimit">100</span></div>
+                </div>
+                <div class="glass rounded-xl p-4">
+                    <div class="text-gray-400 text-sm">Exchanges This Month</div>
+                    <div class="text-2xl font-bold"><span id="statExchanges">0</span> / <span id="statExchangesLimit">5</span></div>
+                </div>
+                <div class="glass rounded-xl p-4">
+                    <div class="text-gray-400 text-sm">Total Requests</div>
+                    <div class="text-2xl font-bold" id="statTotalRequests">0</div>
+                </div>
+            </div>
+            
+            <!-- API Key Section -->
+            <div class="glass rounded-xl p-6 mb-8">
+                <h2 class="text-lg font-semibold mb-4">🔑 Your API Key</h2>
+                <div class="flex items-center gap-4">
+                    <code id="apiKeyDisplay" class="flex-1 bg-black/30 px-4 py-3 rounded-lg font-mono text-sm text-amber-400 select-all"></code>
+                    <button onclick="copyApiKey()" class="bg-gray-700 hover:bg-gray-600 px-4 py-3 rounded-lg transition">
+                        Copy
+                    </button>
+                </div>
+                <p class="text-gray-500 text-sm mt-2">Use this key in your API requests: <code class="text-gray-400">Authorization: Bearer YOUR_KEY</code></p>
+            </div>
+            
+            <!-- Sites Section -->
+            <div class="glass rounded-xl p-6 mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold">🌐 Your Sites</h2>
+                    <button onclick="showAddSite()" class="bg-amber-500 hover:bg-amber-600 text-black px-4 py-2 rounded-lg text-sm font-semibold transition">
+                        + Add Site
+                    </button>
+                </div>
+                <div id="sitesList" class="space-y-3">
+                    <p class="text-gray-500">No sites registered yet. Add your first site to start exchanging links!</p>
+                </div>
+            </div>
+            
+            <!-- Add Site Modal -->
+            <div id="addSiteModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                <div class="glass rounded-xl p-6 max-w-md w-full">
+                    <h3 class="text-lg font-semibold mb-4">Add New Site</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Domain</label>
+                            <input type="text" id="newSiteDomain" placeholder="example.com" 
+                                class="w-full bg-black/30 border border-gray-700 rounded-lg px-4 py-3 focus:border-amber-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Name</label>
+                            <input type="text" id="newSiteName" placeholder="My Awesome Site" 
+                                class="w-full bg-black/30 border border-gray-700 rounded-lg px-4 py-3 focus:border-amber-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Description</label>
+                            <textarea id="newSiteDesc" placeholder="A brief description of your site..." rows="2"
+                                class="w-full bg-black/30 border border-gray-700 rounded-lg px-4 py-3 focus:border-amber-500 focus:outline-none"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Categories (comma-separated)</label>
+                            <input type="text" id="newSiteCategories" placeholder="tech, ai, crypto" 
+                                class="w-full bg-black/30 border border-gray-700 rounded-lg px-4 py-3 focus:border-amber-500 focus:outline-none">
+                        </div>
+                    </div>
+                    <div class="flex gap-3 mt-6">
+                        <button onclick="hideAddSite()" class="flex-1 bg-gray-700 hover:bg-gray-600 py-3 rounded-lg transition">Cancel</button>
+                        <button onclick="addSite()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-black font-semibold py-3 rounded-lg transition">Add Site</button>
+                    </div>
+                    <p id="addSiteError" class="text-red-400 text-sm text-center mt-3 hidden"></p>
+                </div>
+            </div>
+            
+            <!-- Exchanges Section -->
+            <div class="glass rounded-xl p-6 mb-8">
+                <h2 class="text-lg font-semibold mb-4">🔗 Recent Exchanges</h2>
+                <div id="exchangesList" class="space-y-3">
+                    <p class="text-gray-500">No exchanges yet. Register a site and start discovering link partners!</p>
+                </div>
+            </div>
+            
+            <!-- Quick Start -->
+            <div class="glass rounded-xl p-6">
+                <h2 class="text-lg font-semibold mb-4">🚀 Quick Start</h2>
+                <div class="space-y-4 text-sm">
+                    <div class="flex items-start gap-3">
+                        <span class="bg-amber-500 text-black w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 font-bold">1</span>
+                        <div>
+                            <p class="font-semibold">Register your site</p>
+                            <p class="text-gray-400">Add your domain to the network</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <span class="bg-amber-500 text-black w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 font-bold">2</span>
+                        <div>
+                            <p class="font-semibold">Verify ownership</p>
+                            <p class="text-gray-400">Add a DNS TXT record or meta tag</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <span class="bg-amber-500 text-black w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 font-bold">3</span>
+                        <div>
+                            <p class="font-semibold">Discover partners</p>
+                            <p class="text-gray-400">Find relevant sites for link exchanges</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <span class="bg-amber-500 text-black w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 font-bold">4</span>
+                        <div>
+                            <p class="font-semibold">Exchange links</p>
+                            <p class="text-gray-400">Propose and accept mutual backlinks</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 pt-4 border-t border-gray-700">
+                    <a href="/docs/api/" class="text-amber-400 hover:text-amber-300 text-sm">Read the full API documentation →</a>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        const API = 'https://cuisine-drainage-versus-sunshine.trycloudflare.com';
+        let currentApiKey = localStorage.getItem('linkswarm_api_key') || '';
+        
+        // Check if already logged in
+        if (currentApiKey) {
+            loadDashboard();
+        }
+        
+        async function login() {
+            const key = document.getElementById('apiKeyInput').value.trim();
+            if (!key || !key.startsWith('sk_linkswarm_')) {
+                showError('loginError', 'Please enter a valid API key (starts with sk_linkswarm_)');
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API}/dashboard`, {
+                    headers: { 'Authorization': `Bearer ${key}` }
+                });
+                
+                if (!res.ok) {
+                    showError('loginError', 'Invalid API key');
+                    return;
+                }
+                
+                currentApiKey = key;
+                localStorage.setItem('linkswarm_api_key', key);
+                loadDashboard();
+            } catch (e) {
+                showError('loginError', 'Connection error. Please try again.');
+            }
+        }
+        
+        function logout() {
+            localStorage.removeItem('linkswarm_api_key');
+            currentApiKey = '';
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('dashboardScreen').classList.add('hidden');
+        }
+        
+        async function loadDashboard() {
+            try {
+                const res = await fetch(`${API}/dashboard`, {
+                    headers: { 'Authorization': `Bearer ${currentApiKey}` }
+                });
+                
+                if (!res.ok) {
+                    logout();
+                    return;
+                }
+                
+                const data = await res.json();
+                
+                // Show dashboard
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('dashboardScreen').classList.remove('hidden');
+                
+                // User info
+                document.getElementById('userEmail').textContent = data.user.email;
+                document.getElementById('apiKeyDisplay').textContent = data.user.api_key;
+                
+                // Plan
+                const plan = data.user.plan || 'free';
+                const badge = document.getElementById('planBadge');
+                badge.textContent = plan.toUpperCase();
+                badge.className = `px-3 py-1 rounded-full text-sm font-semibold ${
+                    plan === 'agency' ? 'bg-amber-500 text-black' :
+                    plan === 'pro' ? 'bg-purple-500 text-white' :
+                    'bg-gray-600 text-white'
+                }`;
+                
+                document.getElementById('planDesc').textContent = 
+                    plan === 'agency' ? 'Unlimited power for agencies' :
+                    plan === 'pro' ? 'Pro features unlocked' :
+                    'Free tier — upgrade for more';
+                
+                // Upgrade link
+                if (data.upgrade_urls && plan === 'free') {
+                    document.getElementById('upgradeSection').classList.remove('hidden');
+                    document.getElementById('upgradeLink').href = data.upgrade_urls.pro;
+                } else {
+                    document.getElementById('upgradeSection').classList.add('hidden');
+                }
+                
+                // Stats
+                document.getElementById('statSites').textContent = data.limits.sites_used;
+                document.getElementById('statSitesLimit').textContent = data.limits.sites;
+                document.getElementById('statRequests').textContent = data.user.requests_today;
+                document.getElementById('statRequestsLimit').textContent = data.limits.requests_per_day;
+                document.getElementById('statExchanges').textContent = data.limits.exchanges_used_this_month;
+                document.getElementById('statExchangesLimit').textContent = data.limits.exchanges_per_month;
+                document.getElementById('statTotalRequests').textContent = data.user.requests_total.toLocaleString();
+                
+                // Sites
+                const sitesList = document.getElementById('sitesList');
+                if (data.sites.length === 0) {
+                    sitesList.innerHTML = '<p class="text-gray-500">No sites registered yet. Add your first site to start exchanging links!</p>';
+                } else {
+                    sitesList.innerHTML = data.sites.map(site => `
+                        <div class="bg-black/20 rounded-lg p-4 flex items-center justify-between">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-semibold">${site.domain}</span>
+                                    ${site.verified ? 
+                                        '<span class="bg-green-500/20 text-green-400 text-xs px-2 py-0.5 rounded">Verified</span>' :
+                                        '<span class="bg-yellow-500/20 text-yellow-400 text-xs px-2 py-0.5 rounded">Pending</span>'
+                                    }
+                                </div>
+                                <div class="text-gray-400 text-sm">${site.name || site.domain}</div>
+                                ${site.categories?.length ? 
+                                    `<div class="text-gray-500 text-xs mt-1">${site.categories.join(', ')}</div>` : ''
+                                }
+                            </div>
+                            <div class="text-right">
+                                <div class="text-amber-400 font-semibold">${site.reputation}</div>
+                                <div class="text-gray-500 text-xs">reputation</div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+                
+                // Exchanges
+                const exchangesList = document.getElementById('exchangesList');
+                if (data.exchanges.length === 0) {
+                    exchangesList.innerHTML = '<p class="text-gray-500">No exchanges yet. Register a site and start discovering link partners!</p>';
+                } else {
+                    exchangesList.innerHTML = data.exchanges.map(ex => `
+                        <div class="bg-black/20 rounded-lg p-4 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <span class="text-gray-400">${ex.from_domain}</span>
+                                <span class="text-amber-400">→</span>
+                                <span class="text-gray-400">${ex.to_domain}</span>
+                            </div>
+                            <span class="text-xs px-2 py-1 rounded ${
+                                ex.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                                ex.status === 'accepted' ? 'bg-blue-500/20 text-blue-400' :
+                                ex.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
+                                'bg-yellow-500/20 text-yellow-400'
+                            }">${ex.status}</span>
+                        </div>
+                    `).join('');
+                }
+                
+            } catch (e) {
+                console.error(e);
+                logout();
+            }
+        }
+        
+        function showAddSite() {
+            document.getElementById('addSiteModal').classList.remove('hidden');
+        }
+        
+        function hideAddSite() {
+            document.getElementById('addSiteModal').classList.add('hidden');
+            document.getElementById('addSiteError').classList.add('hidden');
+        }
+        
+        async function addSite() {
+            const domain = document.getElementById('newSiteDomain').value.trim();
+            const name = document.getElementById('newSiteName').value.trim();
+            const description = document.getElementById('newSiteDesc').value.trim();
+            const categories = document.getElementById('newSiteCategories').value.split(',').map(c => c.trim()).filter(Boolean);
+            
+            if (!domain) {
+                showError('addSiteError', 'Domain is required');
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API}/v1/sites`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${currentApiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ domain, name, description, categories })
+                });
+                
+                const data = await res.json();
+                
+                if (!res.ok) {
+                    showError('addSiteError', data.error || 'Failed to add site');
+                    return;
+                }
+                
+                // Show verification instructions
+                alert(`Site registered! To verify, add this DNS TXT record:\n\nlinkswarm-verify=${data.verification_token}\n\nOr add this meta tag to your homepage:\n<meta name="linkswarm-verify" content="${data.verification_token}">`);
+                
+                hideAddSite();
+                loadDashboard();
+            } catch (e) {
+                showError('addSiteError', 'Connection error');
+            }
+        }
+        
+        function copyApiKey() {
+            navigator.clipboard.writeText(currentApiKey);
+            alert('API key copied to clipboard!');
+        }
+        
+        function showError(id, msg) {
+            const el = document.getElementById(id);
+            el.textContent = msg;
+            el.classList.remove('hidden');
+        }
+        
+        // Enter key to login
+        document.getElementById('apiKeyInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') login();
+        });
+    </script>
+</body>
+</html>
