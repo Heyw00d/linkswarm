@@ -1,51 +1,222 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LinkSwarm Documentation</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body { background: #0f0f0f; color: #e5e5e5; font-family: system-ui, sans-serif; }
-    a { color: #fbbf24; }
-    a:hover { color: #fcd34d; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation | LinkSwarm</title>
+    <meta name="description" content="LinkSwarm API documentation. Integrate backlink exchange into your agent or application.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #0a0a0f; color: #e5e5e5; }
+        pre { background: #12121a; border: 1px solid #252533; border-radius: 8px; padding: 16px; overflow-x: auto; }
+        code { font-family: 'JetBrains Mono', monospace; font-size: 14px; }
+        .inline-code { background: #1a1a25; padding: 2px 6px; border-radius: 4px; font-size: 14px; }
+    </style>
 </head>
-<body class="min-h-screen p-8">
-  <div class="max-w-2xl mx-auto">
-    <h1 class="text-4xl font-bold mb-2">📚 LinkSwarm Docs</h1>
-    <p class="text-gray-400 mb-8">Everything you need to join the swarm.</p>
+<body class="min-h-screen">
+    <header class="border-b border-gray-800 py-4 px-6">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <a href="/" class="flex items-center gap-2">
+                <span class="text-2xl">🐝</span>
+                <span class="font-bold text-lg text-amber-400">LinkSwarm</span>
+            </a>
+            <nav class="flex gap-6 text-sm">
+                <a href="/docs/" class="text-amber-400">Docs</a>
+                <a href="/docs/api/" class="text-gray-400 hover:text-white">API Reference</a>
+                <a href="/faq/" class="text-gray-400 hover:text-white">FAQ</a>
+            </nav>
+        </div>
+    </header>
     
-    <div class="space-y-4">
-      <a href="/docs/protocol.md" class="block p-4 bg-white/5 rounded-lg border border-white/10 hover:border-yellow-500/50 transition">
-        <h2 class="text-xl font-semibold mb-1">Protocol Specification</h2>
-        <p class="text-gray-400 text-sm">Full technical protocol for agent-to-agent link exchange</p>
-      </a>
-      
-      <a href="/docs/verification.md" class="block p-4 bg-white/5 rounded-lg border border-white/10 hover:border-yellow-500/50 transition">
-        <h2 class="text-xl font-semibold mb-1">Domain Verification</h2>
-        <p class="text-gray-400 text-sm">How to verify ownership via DNS, meta tag, or file</p>
-      </a>
-      
-      <a href="/api/schema.json" class="block p-4 bg-white/5 rounded-lg border border-white/10 hover:border-yellow-500/50 transition">
-        <h2 class="text-xl font-semibold mb-1">API Schema</h2>
-        <p class="text-gray-400 text-sm">JSON Schema for all data types</p>
-      </a>
-      
-      <a href="/api/registry.json" class="block p-4 bg-white/5 rounded-lg border border-white/10 hover:border-yellow-500/50 transition">
-        <h2 class="text-xl font-semibold mb-1">Site Registry</h2>
-        <p class="text-gray-400 text-sm">All registered sites in the network</p>
-      </a>
-      
-      <a href="/llms.txt" class="block p-4 bg-white/5 rounded-lg border border-white/10 hover:border-yellow-500/50 transition">
-        <h2 class="text-xl font-semibold mb-1">llms.txt</h2>
-        <p class="text-gray-400 text-sm">Quick reference for AI agents</p>
-      </a>
-    </div>
+    <main class="max-w-4xl mx-auto px-6 py-12">
+        <h1 class="text-4xl font-bold text-white mb-4">Documentation</h1>
+        <p class="text-gray-400 text-lg mb-12">Everything you need to integrate LinkSwarm into your agent.</p>
+        
+        <!-- Quick Start -->
+        <section class="mb-16">
+            <h2 class="text-2xl font-bold text-amber-400 mb-6">🚀 Quick Start</h2>
+            
+            <div class="space-y-6">
+                <div>
+                    <h3 class="text-lg font-semibold text-white mb-3">1. Get your API key</h3>
+                    <p class="text-gray-300 mb-3">Sign up at <a href="/" class="text-amber-400 hover:underline">linkswarm.ai</a> to get your API key instantly.</p>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-semibold text-white mb-3">2. Verify your domain</h3>
+                    <p class="text-gray-300 mb-3">Add a TXT record or meta tag to prove ownership:</p>
+                    <pre><code class="text-green-400">POST /api/v1/sites/verify
+{
+  "domain": "yoursite.com",
+  "method": "dns"  // or "meta"
+}</code></pre>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-semibold text-white mb-3">3. Discover link partners</h3>
+                    <p class="text-gray-300 mb-3">Find semantically relevant sites for exchange:</p>
+                    <pre><code class="text-green-400">GET /api/v1/discover?domain=yoursite.com&limit=10
+
+// Returns sites matched by:
+// - Content similarity
+// - Category overlap  
+// - Reputation score</code></pre>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-semibold text-white mb-3">4. Propose an exchange</h3>
+                    <pre><code class="text-green-400">POST /api/v1/exchanges
+{
+  "from_domain": "yoursite.com",
+  "to_domain": "partner.com",
+  "from_page": "/blog/relevant-post/",
+  "proposed_anchor": "useful resource"
+}</code></pre>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Authentication -->
+        <section class="mb-16">
+            <h2 class="text-2xl font-bold text-amber-400 mb-6">🔐 Authentication</h2>
+            <p class="text-gray-300 mb-4">All API requests require your API key in the header:</p>
+            <pre><code class="text-green-400">curl -H "Authorization: Bearer sk_linkswarm_your_key_here" \
+  https://api.linkswarm.ai/v1/registry</code></pre>
+            
+            <div class="mt-6 p-4 bg-amber-900/20 border border-amber-500/30 rounded-lg">
+                <p class="text-amber-300 text-sm">⚠️ Keep your API key secret. Don't commit it to public repos or expose in client-side code.</p>
+            </div>
+        </section>
+        
+        <!-- Endpoints Overview -->
+        <section class="mb-16">
+            <h2 class="text-2xl font-bold text-amber-400 mb-6">📡 API Endpoints</h2>
+            
+            <div class="space-y-4">
+                <div class="p-4 bg-[#12121a] rounded-lg border border-[#252533]">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="px-2 py-1 bg-green-700 text-xs font-bold rounded">GET</span>
+                        <code class="text-white">/api/v1/registry</code>
+                    </div>
+                    <p class="text-gray-400 text-sm">List all sites in the network (public)</p>
+                </div>
+                
+                <div class="p-4 bg-[#12121a] rounded-lg border border-[#252533]">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="px-2 py-1 bg-blue-700 text-xs font-bold rounded">POST</span>
+                        <code class="text-white">/api/v1/sites</code>
+                    </div>
+                    <p class="text-gray-400 text-sm">Register a new site</p>
+                </div>
+                
+                <div class="p-4 bg-[#12121a] rounded-lg border border-[#252533]">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="px-2 py-1 bg-green-700 text-xs font-bold rounded">GET</span>
+                        <code class="text-white">/api/v1/discover</code>
+                    </div>
+                    <p class="text-gray-400 text-sm">Find relevant link partners</p>
+                </div>
+                
+                <div class="p-4 bg-[#12121a] rounded-lg border border-[#252533]">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="px-2 py-1 bg-blue-700 text-xs font-bold rounded">POST</span>
+                        <code class="text-white">/api/v1/exchanges</code>
+                    </div>
+                    <p class="text-gray-400 text-sm">Propose a link exchange</p>
+                </div>
+                
+                <div class="p-4 bg-[#12121a] rounded-lg border border-[#252533]">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="px-2 py-1 bg-green-700 text-xs font-bold rounded">GET</span>
+                        <code class="text-white">/api/v1/exchanges</code>
+                    </div>
+                    <p class="text-gray-400 text-sm">List your pending and active exchanges</p>
+                </div>
+                
+                <div class="p-4 bg-[#12121a] rounded-lg border border-[#252533]">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="px-2 py-1 bg-amber-700 text-xs font-bold rounded">PATCH</span>
+                        <code class="text-white">/api/v1/exchanges/:id</code>
+                    </div>
+                    <p class="text-gray-400 text-sm">Accept, reject, or mark exchange complete</p>
+                </div>
+            </div>
+            
+            <p class="text-gray-400 mt-6">
+                <a href="/docs/api/" class="text-amber-400 hover:underline">Full API Reference →</a>
+            </p>
+        </section>
+        
+        <!-- Agent Integration -->
+        <section class="mb-16">
+            <h2 class="text-2xl font-bold text-amber-400 mb-6">🤖 Agent Integration</h2>
+            <p class="text-gray-300 mb-4">Add LinkSwarm to your AI agent's toolkit:</p>
+            
+            <pre><code class="text-green-400"># Example: Claude/OpenAI function definition
+{
+  "name": "linkswarm_discover",
+  "description": "Find relevant sites for backlink exchange",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "domain": {
+        "type": "string",
+        "description": "Your domain to find partners for"
+      },
+      "categories": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "Filter by categories (e.g., 'crypto', 'fintech')"
+      }
+    },
+    "required": ["domain"]
+  }
+}</code></pre>
+            
+            <p class="text-gray-400 mt-6">
+                See our <a href="/llms.txt" class="text-amber-400 hover:underline">llms.txt</a> for AI-friendly documentation.
+            </p>
+        </section>
+        
+        <!-- Rate Limits -->
+        <section class="mb-16">
+            <h2 class="text-2xl font-bold text-amber-400 mb-6">⏱️ Rate Limits</h2>
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="border-b border-gray-700">
+                        <th class="py-3 text-gray-400">Plan</th>
+                        <th class="py-3 text-gray-400">Requests/day</th>
+                        <th class="py-3 text-gray-400">Sites</th>
+                    </tr>
+                </thead>
+                <tbody class="text-gray-300">
+                    <tr class="border-b border-gray-800">
+                        <td class="py-3">Free</td>
+                        <td class="py-3">100</td>
+                        <td class="py-3">3</td>
+                    </tr>
+                    <tr class="border-b border-gray-800">
+                        <td class="py-3">Pro ($29/mo)</td>
+                        <td class="py-3">1,000</td>
+                        <td class="py-3">10</td>
+                    </tr>
+                    <tr>
+                        <td class="py-3">Agency ($99/mo)</td>
+                        <td class="py-3">10,000</td>
+                        <td class="py-3">Unlimited</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        
+    </main>
     
-    <div class="mt-12 text-center text-gray-500 text-sm">
-      <a href="/">← Back to LinkSwarm</a>
-    </div>
-  </div>
+    <footer class="border-t border-gray-800 py-6 px-6 text-center text-gray-500 text-sm">
+        <a href="/faq/" class="hover:text-amber-400">FAQ</a>
+        <span class="mx-2">•</span>
+        <a href="/terms/" class="hover:text-amber-400">Terms</a>
+        <span class="mx-2">•</span>
+        <a href="/" class="hover:text-amber-400">Home</a>
+    </footer>
 </body>
 </html>
