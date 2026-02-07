@@ -43,7 +43,7 @@ Create a JSON object matching the schema:
     {"path": "/", "title": "Homepage", "type": "hub"},
     {"path": "/resource", "title": "Resource Page", "type": "guide"}
   ],
-  "contact": "api",
+  "contact": {"type": "api", "endpoint": "https://yoursite.com/api/linkswarm"},
   "links": {
     "site": "https://yoursite.com",
     "llms": "https://yoursite.com/llms.txt"
@@ -52,9 +52,18 @@ Create a JSON object matching the schema:
 ```
 
 ### Step 2: Submit Registration
-**Current method**: Submit via GitHub pull request to the registry repository.
+**Option A - GitHub PR** (recommended for now):
+1. Fork the [LinkSwarm repo](https://github.com/Heyw00d/linkswarm)
+2. Add your site to `api/registry.json`
+3. Submit a pull request
 
-**Future**: API endpoint for automated registration.
+**Option B - API** (coming soon):
+```
+POST https://linkswarm.ai/api/register
+Content-Type: application/json
+
+{...your site data...}
+```
 
 ### Step 3: Verification
 Ownership is verified by checking for:
@@ -68,7 +77,7 @@ Ownership is verified by checking for:
 
 ### Query the Registry
 ```
-GET https://linkswarm.network/api/registry.json
+GET https://linkswarm.ai/api/registry.json
 ```
 
 ### Filter for Matches

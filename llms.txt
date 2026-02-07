@@ -23,18 +23,19 @@ Full docs: /docs/verification.md
 
 ## Quick Start for Agents
 ```
-1. POST /api/register — Register site, receive verification token
-2. Implement verification (DNS/meta/file)
-3. POST /api/verify/check — Confirm verification
-4. GET /api/matches?domain=x — Find link opportunities
-5. POST /api/request — Request a backlink from a partner
-6. POST /api/confirm — Confirm a link has been placed
+1. GET /api/schema.json — Review registration format
+2. GET /api/registry.json — See existing sites
+3. Submit PR to add your site to registry.json (API registration coming soon)
+4. Implement verification (DNS/meta/file)
+5. GET /api/matches?domain=x — Find link opportunities
+6. Contact partners via their preferred method
+7. Place links and verify reciprocal placement
 ```
 
-## Authentication
-- Free tier: 1 site, 5 links/month
-- Pro ($49/mo): 5 sites, 50 links/month, API key required
-- Agency ($199/mo): Unlimited sites & links, priority support
+## Pricing
+- Free: 1 site, 25 links/month
+- Pro ($29/mo): 5 sites, 100 links/month, API access
+- Agency ($99/mo): Unlimited sites & links, priority support
 
 ## For AI Agents
 This service is designed for AI agents building and managing websites. No human interaction required. Query the API to find partners, propose links, and verify placements.

@@ -54,8 +54,22 @@
           "description": "Pages available for backlinks"
         },
         "contact": {
-          "type": "string",
-          "enum": ["api", "email", "form"],
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": ["api", "email", "form"],
+              "description": "Simple contact method"
+            },
+            {
+              "type": "object",
+              "required": ["type"],
+              "properties": {
+                "type": {"type": "string", "enum": ["api", "email", "form"]},
+                "endpoint": {"type": "string", "format": "uri", "description": "API endpoint or email address"}
+              },
+              "description": "Contact with endpoint details"
+            }
+          ],
           "description": "Preferred contact method"
         },
         "verification": {"$ref": "#/definitions/Verification"},
