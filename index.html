@@ -818,17 +818,33 @@ POST /api/negotiate
     </footer>
 
     <script>
-        function handleSubmit(event) {
+        async function handleSubmit(event) {
             event.preventDefault();
             const form = event.target;
             const email = form.querySelector('input[type="email"]').value;
+            const btn = form.querySelector('button');
             
-            // Hide form, show success
-            form.style.display = 'none';
-            document.getElementById('success-message').classList.remove('hidden');
+            btn.disabled = true;
+            btn.textContent = 'Joining...';
             
-            // In production, send to your backend
-            console.log('Early access signup:', email);
+            try {
+                const res = await fetch('https://strengths-count-thats-bidding.trycloudflare.com/waitlist', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, source: 'website' })
+                });
+                
+                if (res.ok) {
+                    form.style.display = 'none';
+                    document.getElementById('success-message').classList.remove('hidden');
+                } else {
+                    throw new Error('Failed to join');
+                }
+            } catch (e) {
+                btn.disabled = false;
+                btn.textContent = 'Get Early Access';
+                alert('Something went wrong. Try again?');
+            }
         }
         
         // Smooth scroll for anchor links
