@@ -74,6 +74,45 @@
                 </div>
             </div>
             
+            <!-- Network Seeding Notice -->
+            <div id="seedingNotice" class="glass rounded-xl p-6 mb-8 border-l-4 border-amber-500">
+                <div class="flex items-start gap-4">
+                    <div class="text-3xl">🌱</div>
+                    <div class="flex-1">
+                        <h3 class="text-lg font-semibold text-amber-400 mb-2">Network is Growing!</h3>
+                        <p class="text-gray-300 mb-4">
+                            LinkSwarm is in early access. As the network grows, you'll get more link opportunities. 
+                            Enable notifications to get alerted when new sites join your niche or when you get matched!
+                        </p>
+                        <div class="flex flex-wrap gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="notifyMatches" class="w-4 h-4 accent-amber-500" checked>
+                                <span class="text-sm">Email me when I get matched</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="notifyNewSites" class="w-4 h-4 accent-amber-500" checked>
+                                <span class="text-sm">Email me when new sites join my niche</span>
+                            </label>
+                        </div>
+                        <div class="mt-4">
+                            <button onclick="toggleWebhook()" class="text-amber-400 hover:text-amber-300 text-sm flex items-center gap-1">
+                                <span id="webhookToggleText">+ Add webhook for real-time alerts</span>
+                            </button>
+                            <div id="webhookSection" class="hidden mt-3">
+                                <div class="flex gap-2">
+                                    <input type="text" id="webhookUrl" placeholder="https://yoursite.com/webhook" 
+                                        class="flex-1 bg-black/30 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:outline-none">
+                                    <button onclick="saveWebhook()" class="bg-amber-500 hover:bg-amber-600 text-black px-4 py-2 rounded-lg text-sm font-semibold">
+                                        Save
+                                    </button>
+                                </div>
+                                <p class="text-gray-500 text-xs mt-2">We'll POST events: match_received, match_assigned, new_site</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Stats Grid -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 <div class="glass rounded-xl p-4">
@@ -261,6 +300,9 @@
                 // Show dashboard
                 document.getElementById('loginScreen').classList.add('hidden');
                 document.getElementById('dashboardScreen').classList.remove('hidden');
+                
+                // Load notification settings
+                loadNotificationSettings();
                 
                 // User info
                 document.getElementById('userEmail').textContent = data.user.email;
@@ -496,6 +538,72 @@
                 btn.textContent = 'Analyze';
             }
         }
+        
+        // Notification settings
+        async function loadNotificationSettings() {
+            try {
+                const res = await fetch(`${API}/notifications`, {
+                    headers: { 'Authorization': `Bearer ${currentApiKey}` }
+                });
+                if (res.ok) {
+                    const settings = await res.json();
+                    document.getElementById('notifyMatches').checked = settings.notify_matches;
+                    document.getElementById('notifyNewSites').checked = settings.notify_new_sites;
+                    if (settings.webhook_url) {
+                        document.getElementById('webhookUrl').value = settings.webhook_url;
+                        document.getElementById('webhookSection').classList.remove('hidden');
+                        document.getElementById('webhookToggleText').textContent = '− Edit webhook';
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to load notification settings');
+            }
+        }
+        
+        async function saveNotificationSetting(field, value) {
+            try {
+                await fetch(`${API}/notifications`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${currentApiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ [field]: value })
+                });
+            } catch (e) {
+                console.error('Failed to save setting');
+            }
+        }
+        
+        function toggleWebhook() {
+            const section = document.getElementById('webhookSection');
+            const text = document.getElementById('webhookToggleText');
+            if (section.classList.contains('hidden')) {
+                section.classList.remove('hidden');
+                text.textContent = '− Hide webhook settings';
+            } else {
+                section.classList.add('hidden');
+                text.textContent = '+ Add webhook for real-time alerts';
+            }
+        }
+        
+        async function saveWebhook() {
+            const url = document.getElementById('webhookUrl').value.trim();
+            if (url && !url.startsWith('http')) {
+                alert('Please enter a valid URL starting with http:// or https://');
+                return;
+            }
+            await saveNotificationSetting('webhook_url', url || null);
+            alert(url ? '✅ Webhook saved!' : 'Webhook removed');
+        }
+        
+        // Add event listeners for notification checkboxes
+        document.getElementById('notifyMatches')?.addEventListener('change', (e) => {
+            saveNotificationSetting('notify_matches', e.target.checked);
+        });
+        document.getElementById('notifyNewSites')?.addEventListener('change', (e) => {
+            saveNotificationSetting('notify_new_sites', e.target.checked);
+        });
         
         // Enter key to login
         document.getElementById('apiKeyInput').addEventListener('keypress', (e) => {
