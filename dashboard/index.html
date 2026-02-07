@@ -102,6 +102,9 @@
                     <button onclick="copyApiKey()" class="bg-gray-700 hover:bg-gray-600 px-4 py-3 rounded-lg transition">
                         Copy
                     </button>
+                    <button onclick="rotateKey()" class="bg-red-600/80 hover:bg-red-600 px-4 py-3 rounded-lg transition text-sm">
+                        🔄 Rotate
+                    </button>
                 </div>
                 <p class="text-gray-500 text-sm mt-2">Use this key in your API requests: <code class="text-gray-400">Authorization: Bearer YOUR_KEY</code></p>
             </div>
@@ -401,6 +404,33 @@
         function copyApiKey() {
             navigator.clipboard.writeText(currentApiKey);
             alert('API key copied to clipboard!');
+        }
+        
+        async function rotateKey() {
+            if (!confirm('⚠️ This will invalidate your current API key immediately.\n\nAny integrations using the old key will stop working.\n\nContinue?')) {
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API}/rotate-key`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${currentApiKey}` }
+                });
+                
+                if (!res.ok) {
+                    alert('Failed to rotate key. Please try again.');
+                    return;
+                }
+                
+                const data = await res.json();
+                currentApiKey = data.apiKey;
+                localStorage.setItem('linkswarm_api_key', data.apiKey);
+                document.getElementById('apiKeyDisplay').textContent = data.apiKey;
+                
+                alert('✅ API key rotated successfully!\n\nYour new key is now active. The old key has been invalidated.');
+            } catch (e) {
+                alert('Error rotating key: ' + e.message);
+            }
         }
         
         function showError(id, msg) {
