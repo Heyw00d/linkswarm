@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register Your Site | LinkSwarm</title>
+    <meta name="description" content="Add your site to the LinkSwarm network and start exchanging backlinks.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #0a0a0f; color: #e5e5e5; }
+        .card { background: #12121a; border: 1px solid #252533; border-radius: 16px; }
+        input, select, textarea { background: #1a1a25; border: 1px solid #252533; }
+        input:focus, select:focus, textarea:focus { border-color: #fbbf24; outline: none; }
+    </style>
+</head>
+<body class="min-h-screen">
+    <header class="border-b border-gray-800 py-4 px-6">
+        <div class="max-w-2xl mx-auto flex items-center justify-between">
+            <a href="/" class="flex items-center gap-2">
+                <span class="text-2xl">🐝</span>
+                <span class="font-bold text-lg text-amber-400">LinkSwarm</span>
+            </a>
+            <a href="/docs/" class="text-gray-400 hover:text-white text-sm">API Docs</a>
+        </div>
+    </header>
+    
+    <main class="max-w-2xl mx-auto px-6 py-12">
+        <div class="text-center mb-10">
+            <h1 class="text-3xl font-bold text-white mb-3">Register Your Site</h1>
+            <p class="text-gray-400">Join the network and start exchanging backlinks with relevant sites.</p>
+        </div>
+        
+        <!-- Step 1: Email -->
+        <div id="step1" class="card p-8">
+            <div class="flex items-center gap-3 mb-6">
+                <span class="w-8 h-8 rounded-full bg-amber-500 text-black flex items-center justify-center font-bold">1</span>
+                <h2 class="text-xl font-semibold">Your Email</h2>
+            </div>
+            <form id="emailForm" class="space-y-4">
+                <input type="email" id="email" placeholder="you@yoursite.com" required
+                    class="w-full px-4 py-3 rounded-lg text-white placeholder-gray-500">
+                <button type="submit" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-lg transition">
+                    Continue
+                </button>
+            </form>
+        </div>
+        
+        <!-- Step 2: Site Details -->
+        <div id="step2" class="card p-8 hidden">
+            <div class="flex items-center gap-3 mb-6">
+                <span class="w-8 h-8 rounded-full bg-amber-500 text-black flex items-center justify-center font-bold">2</span>
+                <h2 class="text-xl font-semibold">Site Details</h2>
+            </div>
+            <form id="siteForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Domain *</label>
+                    <input type="text" id="domain" placeholder="yoursite.com" required
+                        class="w-full px-4 py-3 rounded-lg text-white placeholder-gray-500">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Site Name</label>
+                    <input type="text" id="siteName" placeholder="My Awesome Site"
+                        class="w-full px-4 py-3 rounded-lg text-white placeholder-gray-500">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Description</label>
+                    <textarea id="description" rows="3" placeholder="What's your site about?"
+                        class="w-full px-4 py-3 rounded-lg text-white placeholder-gray-500"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Categories</label>
+                    <div class="flex flex-wrap gap-2" id="categoryPicker">
+                        <button type="button" data-cat="crypto" class="cat-btn px-3 py-1 rounded-full border border-gray-600 text-sm hover:border-amber-500">crypto</button>
+                        <button type="button" data-cat="fintech" class="cat-btn px-3 py-1 rounded-full border border-gray-600 text-sm hover:border-amber-500">fintech</button>
+                        <button type="button" data-cat="saas" class="cat-btn px-3 py-1 rounded-full border border-gray-600 text-sm hover:border-amber-500">saas</button>
+                        <button type="button" data-cat="ai" class="cat-btn px-3 py-1 rounded-full border border-gray-600 text-sm hover:border-amber-500">ai</button>
+                        <button type="button" data-cat="defi" class="cat-btn px-3 py-1 rounded-full border border-gray-600 text-sm hover:border-amber-500">defi</button>
+                        <button type="button" data-cat="tech" class="cat-btn px-3 py-1 rounded-full border border-gray-600 text-sm hover:border-amber-500">tech</button>
+                        <button type="button" data-cat="marketing" class="cat-btn px-3 py-1 rounded-full border border-gray-600 text-sm hover:border-amber-500">marketing</button>
+                        <button type="button" data-cat="tools" class="cat-btn px-3 py-1 rounded-full border border-gray-600 text-sm hover:border-amber-500">tools</button>
+                    </div>
+                </div>
+                <button type="submit" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-lg transition">
+                    Register Site
+                </button>
+            </form>
+        </div>
+        
+        <!-- Step 3: Verification -->
+        <div id="step3" class="card p-8 hidden">
+            <div class="flex items-center gap-3 mb-6">
+                <span class="w-8 h-8 rounded-full bg-amber-500 text-black flex items-center justify-center font-bold">3</span>
+                <h2 class="text-xl font-semibold">Verify Ownership</h2>
+            </div>
+            <p class="text-gray-300 mb-4">Add this to your site to verify ownership:</p>
+            
+            <div class="mb-6">
+                <label class="block text-sm text-gray-400 mb-2">Option A: DNS TXT Record</label>
+                <code id="dnsCode" class="block bg-gray-900 p-3 rounded-lg text-amber-400 text-sm break-all"></code>
+            </div>
+            
+            <div class="mb-6">
+                <label class="block text-sm text-gray-400 mb-2">Option B: HTML Meta Tag</label>
+                <code id="metaCode" class="block bg-gray-900 p-3 rounded-lg text-amber-400 text-sm break-all"></code>
+            </div>
+            
+            <button id="verifyBtn" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-lg transition">
+                I've Added It — Verify Now
+            </button>
+        </div>
+        
+        <!-- Step 4: Success -->
+        <div id="step4" class="card p-8 hidden text-center">
+            <div class="text-5xl mb-4">🐝</div>
+            <h2 class="text-2xl font-bold text-white mb-3">You're in the Swarm!</h2>
+            <p class="text-gray-400 mb-6">Your site is now part of the LinkSwarm network.</p>
+            
+            <div class="bg-gray-900 p-4 rounded-lg mb-6 text-left">
+                <label class="block text-sm text-gray-400 mb-2">Your API Key (save this!):</label>
+                <code id="finalApiKey" class="block text-amber-400 text-sm break-all select-all"></code>
+            </div>
+            
+            <div class="space-y-3">
+                <a href="/docs/" class="block py-3 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-lg transition">
+                    View API Docs
+                </a>
+                <a href="/" class="block py-3 border border-gray-600 hover:border-amber-500 text-white rounded-lg transition">
+                    Back to Home
+                </a>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        const API = 'https://strengths-count-thats-bidding.trycloudflare.com';
+        let apiKey = '';
+        let selectedCategories = [];
+        let verificationToken = '';
+        let currentDomain = '';
+        
+        // Category picker
+        document.querySelectorAll('.cat-btn').forEach(btn => {
+            btn.onclick = () => {
+                const cat = btn.dataset.cat;
+                if (selectedCategories.includes(cat)) {
+                    selectedCategories = selectedCategories.filter(c => c !== cat);
+                    btn.classList.remove('bg-amber-500', 'text-black', 'border-amber-500');
+                } else {
+                    selectedCategories.push(cat);
+                    btn.classList.add('bg-amber-500', 'text-black', 'border-amber-500');
+                }
+            };
+        });
+        
+        // Step 1: Email
+        document.getElementById('emailForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            
+            try {
+                const res = await fetch(`${API}/waitlist`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, source: 'register-form' })
+                });
+                const data = await res.json();
+                
+                if (data.apiKey) {
+                    apiKey = data.apiKey;
+                    document.getElementById('step1').classList.add('hidden');
+                    document.getElementById('step2').classList.remove('hidden');
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        };
+        
+        // Step 2: Site Details
+        document.getElementById('siteForm').onsubmit = async (e) => {
+            e.preventDefault();
+            currentDomain = document.getElementById('domain').value.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+            const name = document.getElementById('siteName').value || currentDomain;
+            const description = document.getElementById('description').value;
+            
+            try {
+                const res = await fetch(`${API}/v1/sites`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({ 
+                        domain: currentDomain, 
+                        name, 
+                        description, 
+                        categories: selectedCategories 
+                    })
+                });
+                const data = await res.json();
+                
+                if (data.verification_token) {
+                    verificationToken = data.verification_token;
+                    document.getElementById('dnsCode').textContent = data.verification_methods.dns;
+                    document.getElementById('metaCode').textContent = data.verification_methods.meta;
+                    document.getElementById('step2').classList.add('hidden');
+                    document.getElementById('step3').classList.remove('hidden');
+                } else {
+                    alert(data.error || 'Error registering site');
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        };
+        
+        // Step 3: Verify
+        document.getElementById('verifyBtn').onclick = async () => {
+            try {
+                const res = await fetch(`${API}/v1/sites/verify`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({ domain: currentDomain })
+                });
+                const data = await res.json();
+                
+                if (data.verified) {
+                    document.getElementById('finalApiKey').textContent = apiKey;
+                    document.getElementById('step3').classList.add('hidden');
+                    document.getElementById('step4').classList.remove('hidden');
+                } else {
+                    alert(data.error || 'Verification failed');
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        };
+    </script>
+</body>
+</html>
