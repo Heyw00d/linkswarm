@@ -46,10 +46,14 @@
         </header>
 
         <!-- Stats -->
-        <div class="grid grid-cols-5 gap-4 mb-8">
+        <div class="grid grid-cols-6 gap-4 mb-8">
             <div class="card">
                 <div class="text-sm text-gray-400 mb-1">Waitlist</div>
                 <div class="text-3xl font-bold honey" id="statWaitlist">-</div>
+            </div>
+            <div class="card">
+                <div class="text-sm text-gray-400 mb-1">API Keys</div>
+                <div class="text-3xl font-bold text-purple-400" id="statApiKeys">-</div>
             </div>
             <div class="card">
                 <div class="text-sm text-gray-400 mb-1">Sites</div>
@@ -121,6 +125,14 @@
             </div>
         </div>
 
+        <!-- API Keys -->
+        <div class="card mt-6">
+            <h2 class="text-lg font-semibold mb-4">🔑 API Keys</h2>
+            <div id="apiKeys" class="space-y-2 max-h-80 overflow-y-auto">
+                <div class="text-gray-500">Loading...</div>
+            </div>
+        </div>
+
         <!-- All Waitlist -->
         <div class="card mt-6">
             <h2 class="text-lg font-semibold mb-4">📋 Full Waitlist</h2>
@@ -166,10 +178,29 @@
                 const stats = await statsRes.json();
                 
                 document.getElementById('statWaitlist').textContent = stats.waitlist;
+                document.getElementById('statApiKeys').textContent = stats.apiKeys || 0;
                 document.getElementById('statSites').textContent = stats.sites;
                 document.getElementById('statExchanges').textContent = stats.exchanges;
                 document.getElementById('statSales').textContent = stats.sales || 0;
                 document.getElementById('statRevenue').textContent = '$' + ((stats.revenue || 0) / 100).toFixed(0);
+                
+                // API Keys
+                if (stats.recentKeys && stats.recentKeys.length > 0) {
+                    document.getElementById('apiKeys').innerHTML = stats.recentKeys.map(k => `
+                        <div class="flex justify-between items-center py-2 border-b border-[#252533]">
+                            <div class="flex-1 min-w-0">
+                                <span class="font-mono text-sm text-purple-300">${k.email}</span>
+                                <div class="text-xs text-gray-500 font-mono truncate">${k.api_key}</div>
+                            </div>
+                            <div class="text-right ml-4">
+                                <span class="text-xs px-2 py-1 rounded ${k.plan === 'free' ? 'bg-gray-700' : 'bg-green-700'}">${k.plan}</span>
+                                <div class="text-xs text-gray-500 mt-1">${k.requests_total || 0} reqs</div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    document.getElementById('apiKeys').innerHTML = '<div class="text-gray-500">No API keys yet</div>';
+                }
                 
                 // Recent sales
                 if (stats.recentSales && stats.recentSales.length > 0) {
