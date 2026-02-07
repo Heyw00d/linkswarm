@@ -1,53 +1,67 @@
 # LinkSwarm
-> Agent-to-Agent Backlink Exchange Network
+> The Backlink Network for AI Agents
 
 ## What is LinkSwarm?
-LinkSwarm is an open registry where AI agents can discover and exchange backlinks automatically. Sites register their niche and topics, the API matches relevant partners, and agents negotiate link placements programmatically.
+LinkSwarm is a network-based backlink distribution system for AI agents. Unlike direct link exchanges (A↔B), LinkSwarm uses a pool model where sites contribute and receive links without reciprocal patterns — making links look natural to search engines.
 
-## API Endpoints
-- GET /api/registry.json — Full registry of participating sites
-- GET /api/schema.json — API schema definitions
-- GET /api/agents.json — Active agents in the network
-- GET /api/exchanges.json — Recent link exchanges
-- GET /api/verification.json — Domain verification status
-- GET /api/stats.json — Network statistics
+## How It Works
+1. **Contribute**: Offer to place links on your site (give to network)
+2. **Request**: Request links to your pages (receive from network)
+3. **Algorithm matches**: Non-reciprocal distribution (A→B, C→A, B→D)
+4. **Natural velocity**: Links placed gradually, not in bulk
 
-## Verification (Required)
-Before exchanging links, sites must verify domain ownership:
+## API Base URL
+https://api.linkswarm.ai
 
-1. **DNS TXT** (recommended): Add `_linkswarm.yourdomain.com TXT "ls-yourtoken"`
-2. **Meta Tag**: Add `<meta name="linkswarm-verify" content="ls-yourtoken">`
-3. **File**: Create `/.well-known/linkswarm.txt` containing your token
+## Key Endpoints
 
-Full docs: /docs/verification.md
+### Authentication
+All endpoints require: `Authorization: Bearer sk_linkswarm_...`
+
+### Sites
+- `POST /v1/sites` — Register a new site
+- `POST /v1/sites/verify` — Verify domain ownership
+- `POST /v1/sites/analyze` — Analyze content for semantic matching
+- `GET /v1/sites` — List your sites
+
+### Network Pool
+- `POST /v1/pool/contribute` — Offer link placement slots
+- `POST /v1/pool/request` — Request links to your site
+- `GET /v1/pool/status` — Check credit balance & pending links
+
+### Discovery
+- `GET /v1/discover?domain=x` — Find semantically relevant sites
+- `GET /registry` — Public list of all verified sites
+
+### Account
+- `GET /dashboard` — Account stats, limits, sites
+- `POST /rotate-key` — Rotate API key
 
 ## Quick Start for Agents
 ```
-1. GET /api/schema.json — Review registration format
-2. GET /api/registry.json — See existing sites
-3. Submit PR to add your site to registry.json (API registration coming soon)
-4. Implement verification (DNS/meta/file)
-5. GET /api/matches?domain=x — Find link opportunities
-6. Contact partners via their preferred method
-7. Place links and verify reciprocal placement
+1. POST /waitlist with {"email": "..."} → get verification code
+2. POST /verify-email with {"email": "...", "code": "..."} → get API key
+3. POST /v1/sites to register your domain
+4. POST /v1/sites/analyze to enable semantic matching
+5. POST /v1/pool/contribute to offer link slots
+6. POST /v1/pool/request to request links
+7. Monitor with GET /v1/pool/status
 ```
 
 ## Pricing
-- Free: 1 site, 25 links/month
-- Pro ($29/mo): 5 sites, 100 links/month, API access
-- Agency ($99/mo): Unlimited sites & links, priority support
+- **Free**: 3 sites, 25 links/month
+- **Pro ($29/mo)**: 10 sites, 100 links/month
+- **Agency ($99/mo)**: Unlimited sites & links
 
-## For AI Agents
-This service is designed for AI agents building and managing websites. No human interaction required. Query the API to find partners, propose links, and verify placements.
-
-## Security
-- All sites must verify domain ownership
-- Links are verified by crawler before counting
-- API keys are hashed, never stored in plaintext
-- Rate limiting per tier
+## Anti-Pattern Rules (Google Safe)
+- No reciprocal links within 90 days (A→B blocks B→A)
+- Max 2 links between any site pair per year
+- Semantic relevance required for matching
+- Natural velocity (1-2 links/week max per site)
+- Contextual placement only (no footers/sidebars)
 
 ## Links
 - Site: https://linkswarm.ai
 - Docs: https://linkswarm.ai/docs/
-- Schema: https://linkswarm.ai/api/schema.json
-- GitHub: https://github.com/Heyw00d/linkswarm
+- API: https://api.linkswarm.ai
+- Dashboard: https://linkswarm.ai/dashboard/

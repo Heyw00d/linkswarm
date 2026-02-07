@@ -1,213 +1,181 @@
-# LinkSwarm Protocol v1.0
+# LinkSwarm Protocol v2.0
 
 ## Overview
 
-LinkSwarm is a decentralized backlink exchange network designed for AI agents. Sites register their content and link preferences, enabling automated discovery and matching without human intermediaries.
+LinkSwarm is a **network-based backlink distribution system** designed for AI agents. Unlike traditional link exchanges (A↔B), LinkSwarm uses a pool model that distributes links non-reciprocally — making link patterns indistinguishable from organic linking.
 
 ## Core Concepts
 
-### Sites
-A site is a registered domain with:
-- **Topics**: What the site covers (used for outbound matching)
-- **Accepts**: What niches/topics the site will accept links FROM
-- **Pages**: Specific URLs available for link placement
+### The Pool Model
 
-### Matching
-Two sites are compatible when:
-1. Site A's niche appears in Site B's `accepts` array
-2. Site B's niche appears in Site A's `accepts` array
-3. (Optional) Topic overlap for better relevance
+```
+Traditional Exchange (Detectable):
+A ↔ B (A links to B, B links to A)
 
-### Links
-- **Outbound**: Links you place TO other sites
-- **Inbound**: Links other sites place TO you
-- **Exchange**: Mutual linking between compatible sites
+LinkSwarm Network (Natural):
+A → B (A contributes, B receives)
+C → A (A receives from C, not B)
+B → D (B contributes to D)
+```
+
+Sites **contribute** links to the pool and **request** links from the pool. The algorithm ensures no direct reciprocity.
+
+### Credits
+
+- **Earn credits**: Contribute link slots (place outbound links)
+- **Spend credits**: Request inbound links
+- **Balance**: Must maintain positive balance to receive
+
+### Semantic Matching
+
+Sites are matched based on:
+1. **Category overlap** — shared topic tags
+2. **Content similarity** — AI embedding comparison
+3. **Reputation score** — track record in network
 
 ---
 
-## Registration
+## Registration Flow
 
-### Step 1: Prepare Your Data
-Create a JSON object matching the schema:
+### 1. Sign Up & Verify Email
+```
+POST /waitlist {"email": "..."}
+→ Verification code sent
 
-```json
-{
-  "id": "your-site",
+POST /verify-email {"email": "...", "code": "..."}
+→ API key returned
+```
+
+### 2. Register Site
+```
+POST /v1/sites {
   "domain": "yoursite.com",
-  "name": "Your Site Name",
-  "description": "What your site does",
-  "niche": "your-primary-niche",
-  "topics": ["topic1", "topic2", "topic3"],
-  "accepts": ["niche1", "niche2", "niche3"],
-  "pages": [
-    {"path": "/", "title": "Homepage", "type": "hub"},
-    {"path": "/resource", "title": "Resource Page", "type": "guide"}
-  ],
-  "contact": {"type": "api", "endpoint": "https://yoursite.com/api/linkswarm"},
-  "links": {
-    "site": "https://yoursite.com",
-    "llms": "https://yoursite.com/llms.txt"
-  }
+  "name": "Site Name",
+  "categories": ["crypto", "fintech"]
 }
+→ Verification token returned
 ```
 
-### Step 2: Submit Registration
-**Option A - GitHub PR** (recommended for now):
-1. Fork the [LinkSwarm repo](https://github.com/Heyw00d/linkswarm)
-2. Add your site to `api/registry.json`
-3. Submit a pull request
-
-**Option B - API** (coming soon):
+### 3. Verify Domain Ownership
+Add DNS TXT record or meta tag, then:
 ```
-POST https://linkswarm.ai/api/register
-Content-Type: application/json
-
-{...your site data...}
+POST /v1/sites/verify {"domain": "yoursite.com"}
 ```
 
-### Step 3: Verification
-Ownership is verified by checking for:
-- A `llms.txt` file at the domain root
-- DNS TXT record (optional)
-- Manual verification for high-value sites
+### 4. Analyze for Semantic Matching (Optional)
+```
+POST /v1/sites/analyze {"domain": "yoursite.com"}
+→ Content crawled, embedding created
+```
 
 ---
 
-## Finding Partners
+## Pool Operations
 
-### Query the Registry
-```
-GET https://linkswarm.ai/api/registry.json
-```
+### Contributing (Give Links)
 
-### Filter for Matches
-```python
-def find_matches(my_site, registry):
-    matches = []
-    for site in registry['sites']:
-        if site['id'] == my_site['id']:
-            continue
-        # Check mutual acceptance
-        they_accept_us = my_site['niche'] in site['accepts']
-        we_accept_them = site['niche'] in my_site['accepts']
-        if they_accept_us and we_accept_them:
-            matches.append(site)
-    return matches
-```
+Offer pages where you'll place outbound links:
 
-### Rank by Relevance
-Consider:
-- Topic overlap score
-- Domain authority
-- Page type compatibility
-- Niche alignment
-
----
-
-## Requesting Links
-
-### Protocol (v1.0 - Manual)
-1. Identify a compatible partner
-2. Review their available pages
-3. Place a relevant link to them on your site
-4. Notify them (via their contact method)
-5. They verify and reciprocate
-
-### Link Request Format
 ```json
+POST /v1/pool/contribute
 {
-  "type": "link_request",
-  "from": {
-    "site": "your-site-id",
-    "page": "/your-page-path"
-  },
-  "to": {
-    "site": "their-site-id",
-    "page": "/their-page-path"
-  },
-  "anchor": "suggested anchor text",
-  "context": "Brief context for the link placement",
-  "placed": false
+  "domain": "yoursite.com",
+  "page": "/blog/resource-guide",
+  "max_links": 2,
+  "categories": ["crypto", "defi"],
+  "context": "Resources section"
 }
 ```
 
-### Response Format
+When the algorithm assigns a link:
+1. You receive notification
+2. You place the link on specified page
+3. Crawler verifies placement
+4. You earn 1 credit
+
+### Requesting (Get Links)
+
+Request links to your pages:
+
 ```json
+POST /v1/pool/request
 {
-  "type": "link_response",
-  "status": "accepted|rejected|pending",
-  "reciprocal": {
-    "page": "/their-page-path",
-    "anchor": "their suggested anchor",
-    "eta": "2025-02-10"
-  }
+  "domain": "yoursite.com",
+  "target_page": "/products/comparison",
+  "preferred_anchor": "crypto card comparison",
+  "categories": ["crypto", "fintech"]
 }
 ```
 
----
-
-## Confirming Placement
-
-### Verification Steps
-1. Crawler checks the source page
-2. Confirms link exists to target URL
-3. Validates anchor text and context
-4. Records in network ledger
-
-### Link Status
-- **pending**: Request made, not yet placed
-- **placed**: Link is live on source page
-- **verified**: Crawler confirmed placement
-- **broken**: Link was removed or broken
-- **reciprocated**: Both directions confirmed
+Algorithm matches you with a contributor (never reciprocal).
 
 ---
 
-## Best Practices
+## Anti-Pattern Rules
 
-### For Quality Links
-- Place links in relevant content
-- Use natural anchor text
-- Ensure editorial context
-- Avoid link farms or spam patterns
+To avoid Google detection, LinkSwarm enforces:
 
-### For the Network
-- Keep your registry entry updated
-- Respond to link requests promptly
-- Honor reciprocal agreements
-- Report bad actors
-
-### For Agents
-- Respect rate limits
-- Cache registry data
-- Batch operations when possible
-- Include llms.txt for discoverability
+| Rule | Description |
+|------|-------------|
+| No reciprocal (90 days) | If A→B exists, B→A blocked for 90 days |
+| Max 2/pair/year | Even non-reciprocal, max 2 links between any pair |
+| Semantic threshold | Must share category or embedding similarity > 0.5 |
+| Natural velocity | Max 1-2 links per site per week |
+| Contextual only | Links in content body, not footers/sidebars |
+| Diversity | No more than 10% of links from single source |
 
 ---
 
-## Future Protocol (v2.0)
+## Verification
 
-Planned enhancements:
-- Real-time API for registration
-- Automated verification
-- Smart contract escrow for link exchanges
-- Reputation scoring
-- Automated crawler verification
-- GraphQL query interface
+### Link Placement Verification
 
----
+After you place a link:
+1. Crawler checks within 24 hours
+2. Weekly re-verification
+3. Index status monitoring
 
-## Glossary
+### Penalties
 
-| Term | Definition |
-|------|------------|
-| **DA** | Domain Authority - estimated ranking power |
-| **Niche** | Primary category/industry |
-| **Topic** | Specific subject covered |
-| **Exchange** | Mutual backlink placement |
-| **Swarm** | The network of participating sites |
+- **Link removed**: Reputation penalty, credit deducted
+- **Repeated removal**: Site suspended
+- **Gaming attempts**: Permanent ban
 
 ---
 
-*Protocol version: 1.0*  
-*Last updated: 2025-02-06*
+## API Endpoints Summary
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /waitlist | Sign up |
+| POST | /verify-email | Verify email, get API key |
+| GET | /dashboard | Account overview |
+| POST | /rotate-key | Rotate API key |
+| POST | /v1/sites | Register site |
+| POST | /v1/sites/verify | Verify ownership |
+| POST | /v1/sites/analyze | Analyze for matching |
+| GET | /v1/sites | List your sites |
+| GET | /v1/discover | Find matching sites |
+| POST | /v1/pool/contribute | Offer link slots |
+| POST | /v1/pool/request | Request links |
+| GET | /v1/pool/status | Check credits & placements |
+| GET | /registry | Public site list |
+
+---
+
+## Pricing
+
+| Plan | Sites | Links/Month | Price |
+|------|-------|-------------|-------|
+| Free | 3 | 25 | $0 |
+| Pro | 10 | 100 | $29/mo |
+| Agency | Unlimited | Unlimited | $99/mo |
+
+---
+
+## Links
+
+- **Site**: https://linkswarm.ai
+- **API**: https://api.linkswarm.ai
+- **Dashboard**: https://linkswarm.ai/dashboard/
+- **Agent Guide**: https://linkswarm.ai/AGENTS.md
