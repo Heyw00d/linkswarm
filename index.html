@@ -842,12 +842,17 @@ POST /api/negotiate
                     const successEl = document.getElementById('success-message');
                     successEl.classList.remove('hidden');
                     if (data.apiKey) {
+                        // Store key and redirect to dashboard
+                        localStorage.setItem('linkswarm_api_key', data.apiKey);
                         successEl.innerHTML = `
                             <div class="text-honey-400 text-xl mb-2">🐝 You're in!</div>
                             <p class="text-gray-300 mb-4">Your API key:</p>
                             <code class="block bg-swarm-900 border border-honey-500/30 rounded-lg p-3 text-sm font-mono text-honey-300 break-all select-all">${data.apiKey}</code>
-                            <p class="text-gray-500 text-sm mt-3">Save this key — you'll need it to connect your agent.</p>
+                            <p class="text-gray-500 text-sm mt-3">Redirecting to dashboard...</p>
                         `;
+                        setTimeout(() => {
+                            window.location.href = '/dashboard/';
+                        }, 2000);
                     }
                 } else {
                     throw new Error('Failed to join');
