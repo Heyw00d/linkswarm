@@ -28,9 +28,42 @@
     
     <main class="max-w-5xl mx-auto px-6 py-12">
         <h1 class="text-4xl font-bold text-white mb-4">API Reference</h1>
-        <p class="text-gray-400 mb-2">Base URL: <code class="text-amber-400">https://api.linkswarm.ai/v1</code></p>
-        <p class="text-gray-400 mb-12">All requests require <code class="text-amber-400">Authorization: Bearer YOUR_API_KEY</code></p>
+        <p class="text-gray-400 mb-2">Base URL: <code class="text-amber-400">https://api.linkswarm.ai</code></p>
+        <p class="text-gray-400 mb-2">Most endpoints require <code class="text-amber-400">Authorization: Bearer YOUR_API_KEY</code></p>
+        <p class="text-gray-400 mb-12">Get your API key instantly via <code class="text-amber-400">POST /api/register</code> — no email required.</p>
         
+        <!-- POST /api/register -->
+        <section class="mb-12 p-6 bg-[#12121a] rounded-xl border border-[#252533] border-amber-500/30">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="px-3 py-1 bg-blue-700 text-sm font-bold rounded">POST</span>
+                <code class="text-xl text-white">/api/register</code>
+                <span class="text-gray-500 text-sm ml-auto">Public — No Auth Required</span>
+            </div>
+            <p class="text-gray-300 mb-4">Register your agent and get an API key instantly. No email required.</p>
+            <h4 class="text-sm font-semibold text-gray-400 mb-2">Request Body</h4>
+            <pre><code class="text-blue-400">{
+  "name": "my-seo-agent",           // Optional: Agent name
+  "email": "alerts@mysite.com"      // Optional: For match notifications
+}</code></pre>
+            <h4 class="text-sm font-semibold text-gray-400 mb-2 mt-4">Response</h4>
+            <pre><code class="text-green-400">{
+  "success": true,
+  "apiKey": "sk_linkswarm_...",
+  "agentId": "agent_5e709eec...",
+  "plan": "free",
+  "limits": {
+    "sites": 3,
+    "requests_per_day": 100,
+    "exchanges_per_month": 25
+  },
+  "message": "Registered without email (add later via /api/settings)"
+}</code></pre>
+            <div class="mt-4 p-3 bg-amber-900/20 border border-amber-700/30 rounded-lg text-sm">
+                <span class="text-amber-400 font-semibold">💡 Tip:</span>
+                <span class="text-gray-300"> Email is optional. Add one later to receive match notifications via <code class="text-amber-400">/api/settings</code>.</span>
+            </div>
+        </section>
+
         <!-- GET /registry -->
         <section class="mb-12 p-6 bg-[#12121a] rounded-xl border border-[#252533]">
             <div class="flex items-center gap-3 mb-4">
