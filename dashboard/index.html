@@ -304,23 +304,48 @@
                     sitesList.innerHTML = '<p class="text-gray-500">No sites registered yet. Add your first site to start exchanging links!</p>';
                 } else {
                     sitesList.innerHTML = data.sites.map(site => `
-                        <div class="bg-black/20 rounded-lg p-4 flex items-center justify-between">
-                            <div>
-                                <div class="flex items-center gap-2">
-                                    <span class="font-semibold">${site.domain}</span>
-                                    ${site.verified ? 
-                                        '<span class="bg-green-500/20 text-green-400 text-xs px-2 py-0.5 rounded">Verified</span>' :
-                                        '<span class="bg-yellow-500/20 text-yellow-400 text-xs px-2 py-0.5 rounded">Pending</span>'
+                        <div class="bg-black/20 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-semibold">${site.domain}</span>
+                                        ${site.verified ? 
+                                            '<span class="bg-green-500/20 text-green-400 text-xs px-2 py-0.5 rounded">Verified</span>' :
+                                            '<span class="bg-yellow-500/20 text-yellow-400 text-xs px-2 py-0.5 rounded">Pending</span>'
+                                        }
+                                        ${site.analyzed ?
+                                            '<span class="bg-blue-500/20 text-blue-400 text-xs px-2 py-0.5 rounded">Analyzed</span>' :
+                                            ''
+                                        }
+                                    </div>
+                                    <div class="text-gray-400 text-sm">${site.name || site.domain}</div>
+                                    ${site.categories?.length ? 
+                                        `<div class="text-gray-500 text-xs mt-1">${site.categories.join(', ')}</div>` : ''
                                     }
                                 </div>
-                                <div class="text-gray-400 text-sm">${site.name || site.domain}</div>
-                                ${site.categories?.length ? 
-                                    `<div class="text-gray-500 text-xs mt-1">${site.categories.join(', ')}</div>` : ''
-                                }
+                                ${!site.analyzed && site.verified ? `
+                                    <button onclick="analyzeSite('${site.domain}')" class="bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded text-sm transition">
+                                        Analyze
+                                    </button>
+                                ` : ''}
                             </div>
-                            <div class="text-right">
-                                <div class="text-amber-400 font-semibold">${site.reputation}</div>
-                                <div class="text-gray-500 text-xs">reputation</div>
+                            <div class="grid grid-cols-4 gap-2 text-center">
+                                <div class="bg-black/30 rounded px-2 py-1.5">
+                                    <div class="text-amber-400 font-bold">${site.quality_score || 0}</div>
+                                    <div class="text-gray-500 text-xs">Quality</div>
+                                </div>
+                                <div class="bg-black/30 rounded px-2 py-1.5">
+                                    <div class="text-green-400 font-bold">${site.etv > 0 ? '$' + site.etv.toLocaleString() : '-'}</div>
+                                    <div class="text-gray-500 text-xs">Est. Traffic</div>
+                                </div>
+                                <div class="bg-black/30 rounded px-2 py-1.5">
+                                    <div class="text-blue-400 font-bold">${site.keywords > 0 ? site.keywords.toLocaleString() : '-'}</div>
+                                    <div class="text-gray-500 text-xs">Keywords</div>
+                                </div>
+                                <div class="bg-black/30 rounded px-2 py-1.5">
+                                    <div class="text-purple-400 font-bold">${site.reputation || 50}</div>
+                                    <div class="text-gray-500 text-xs">Reputation</div>
+                                </div>
                             </div>
                         </div>
                     `).join('');
@@ -437,6 +462,39 @@
             const el = document.getElementById(id);
             el.textContent = msg;
             el.classList.remove('hidden');
+        }
+        
+        async function analyzeSite(domain) {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Analyzing...';
+            
+            try {
+                const res = await fetch(`${API}/v1/sites/analyze`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${currentApiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ domain })
+                });
+                
+                const data = await res.json();
+                
+                if (!res.ok) {
+                    alert('Analysis failed: ' + (data.error || 'Unknown error'));
+                    btn.disabled = false;
+                    btn.textContent = 'Analyze';
+                    return;
+                }
+                
+                alert(`✅ Site analyzed!\n\nQuality Score: ${data.quality.score}/100\nEst. Traffic Value: $${data.quality.etv.toLocaleString()}\nKeywords: ${data.quality.keywords.toLocaleString()}\nTop 10 Rankings: ${data.quality.top10}`);
+                loadDashboard();
+            } catch (e) {
+                alert('Error: ' + e.message);
+                btn.disabled = false;
+                btn.textContent = 'Analyze';
+            }
         }
         
         // Enter key to login
