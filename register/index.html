@@ -165,10 +165,15 @@
                 });
                 const data = await res.json();
                 
-                if (data.apiKey) {
+                if (data.verified && data.apiKey) {
+                    // Already verified
                     apiKey = data.apiKey;
                     document.getElementById('step1').classList.add('hidden');
                     document.getElementById('step2').classList.remove('hidden');
+                } else {
+                    // Need to verify email first
+                    localStorage.setItem('linkswarm_pending_email', email);
+                    window.location.href = '/verify/?email=' + encodeURIComponent(email) + '&return=register';
                 }
             } catch (err) {
                 alert('Error: ' + err.message);
