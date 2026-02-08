@@ -49,9 +49,15 @@ All endpoints require: `Authorization: Bearer sk_linkswarm_...`
 ```
 
 ## Pricing
-- **Free**: 3 sites, 25 links/month
-- **Pro ($29/mo)**: 10 sites, 100 links/month
-- **Agency ($99/mo)**: Unlimited sites & links
+
+| Plan | Price | Domains | Links/Month |
+|------|-------|---------|-------------|
+| Free | $0 | 3 | 25 |
+| Pro | $29/mo | 10 | 100 |
+| Agency | $99/mo | Unlimited | Unlimited |
+
+All plans include: Full API access, semantic matching, webhooks, quality filters.
+No credit card required for free tier.
 
 ## Anti-Pattern Rules (Google Safe)
 - No reciprocal links within 90 days (A→B blocks B→A)
