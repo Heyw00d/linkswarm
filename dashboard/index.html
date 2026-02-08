@@ -371,6 +371,26 @@
                                     </button>
                                 ` : ''}
                             </div>
+                            ${!site.verified && site.verification_token ? `
+                            <div class="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 mb-3">
+                                <div class="text-amber-400 text-sm font-medium mb-2">🔐 Verify ownership</div>
+                                <div class="text-gray-300 text-xs mb-2">Add one of these to verify:</div>
+                                <div class="bg-black/40 rounded p-2 mb-2">
+                                    <div class="text-gray-400 text-xs mb-1">DNS TXT Record:</div>
+                                    <code class="text-amber-300 text-xs break-all">linkswarm-verify=${site.verification_token}</code>
+                                </div>
+                                <div class="bg-black/40 rounded p-2 mb-3">
+                                    <div class="text-gray-400 text-xs mb-1">Or HTML meta tag:</div>
+                                    <code class="text-amber-300 text-xs break-all">&lt;meta name="linkswarm-verify" content="${site.verification_token}"&gt;</code>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="verifySite('${site.domain}')" id="verify-btn-${site.domain.replace(/\./g, '-')}" class="bg-amber-600 hover:bg-amber-500 px-3 py-1.5 rounded text-sm transition flex items-center gap-1">
+                                        <span>Verify Now</span>
+                                    </button>
+                                    <span id="verify-result-${site.domain.replace(/\./g, '-')}" class="text-sm"></span>
+                                </div>
+                            </div>
+                            ` : ''}
                             <div class="grid grid-cols-4 gap-2 text-center">
                                 <div class="bg-black/30 rounded px-2 py-1.5">
                                     <div class="text-amber-400 font-bold">${site.quality_score || 0}</div>
@@ -458,11 +478,12 @@
                     return;
                 }
                 
-                // Show verification instructions
-                alert(`Site registered! To verify, add this DNS TXT record:\n\nlinkswarm-verify=${data.verification_token}\n\nOr add this meta tag to your homepage:\n<meta name="linkswarm-verify" content="${data.verification_token}">`);
-                
+                // Site registered - show in dashboard with verification instructions
                 hideAddSite();
-                loadDashboard();
+                await loadDashboard();
+                
+                // Scroll to the sites section
+                document.getElementById('sitesList').scrollIntoView({ behavior: 'smooth' });
             } catch (e) {
                 showError('addSiteError', 'Connection error');
             }
@@ -504,6 +525,50 @@
             const el = document.getElementById(id);
             el.textContent = msg;
             el.classList.remove('hidden');
+        }
+        
+        async function verifySite(domain) {
+            const btnId = `verify-btn-${domain.replace(/\./g, '-')}`;
+            const resultId = `verify-result-${domain.replace(/\./g, '-')}`;
+            const btn = document.getElementById(btnId);
+            const result = document.getElementById(resultId);
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span>Checking...</span>';
+            result.textContent = '';
+            result.className = 'text-sm';
+            
+            try {
+                const res = await fetch(`${API}/v1/sites/verify`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${currentApiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ domain })
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok && data.verified) {
+                    result.textContent = '✅ Verified!';
+                    result.className = 'text-sm text-green-400';
+                    btn.innerHTML = '<span>Verified</span>';
+                    btn.className = 'bg-green-600 px-3 py-1.5 rounded text-sm cursor-default';
+                    // Reload dashboard after short delay to show updated status
+                    setTimeout(() => loadDashboard(), 1500);
+                } else {
+                    result.textContent = '❌ ' + (data.error || 'Verification failed - check DNS/meta tag');
+                    result.className = 'text-sm text-red-400';
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>Retry</span>';
+                }
+            } catch (e) {
+                result.textContent = '❌ Connection error';
+                result.className = 'text-sm text-red-400';
+                btn.disabled = false;
+                btn.innerHTML = '<span>Retry</span>';
+            }
         }
         
         async function analyzeSite(domain) {
