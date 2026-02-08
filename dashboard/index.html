@@ -436,21 +436,41 @@
                 if (data.exchanges.length === 0) {
                     exchangesList.innerHTML = '<p class="text-gray-500">No exchanges yet. Register a site and start discovering link partners!</p>';
                 } else {
-                    exchangesList.innerHTML = data.exchanges.map(ex => `
-                        <div class="bg-black/20 rounded-lg p-4 flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <span class="text-gray-400">${ex.from_domain}</span>
-                                <span class="text-amber-400">→</span>
-                                <span class="text-gray-400">${ex.to_domain}</span>
+                    const userDomains = data.sites.map(s => s.domain);
+                    exchangesList.innerHTML = data.exchanges.map(ex => {
+                        const isIncoming = userDomains.includes(ex.to_domain) && !userDomains.includes(ex.from_domain);
+                        const isOutgoing = userDomains.includes(ex.from_domain);
+                        const directionLabel = isIncoming ? '← incoming' : '→ outgoing';
+                        const showActions = isIncoming && ex.status === 'pending';
+                        
+                        return `
+                        <div class="bg-black/20 rounded-lg p-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <span class="${isOutgoing ? 'text-amber-400' : 'text-gray-400'}">${ex.from_domain}</span>
+                                    <span class="text-gray-500">↔</span>
+                                    <span class="${isIncoming ? 'text-amber-400' : 'text-gray-400'}">${ex.to_domain}</span>
+                                    <span class="text-gray-600 text-xs">(${directionLabel})</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    ${showActions ? `
+                                        <button onclick="respondExchange(${ex.id}, 'accepted')" class="bg-green-600 hover:bg-green-500 px-3 py-1 rounded text-xs transition">Accept</button>
+                                        <button onclick="respondExchange(${ex.id}, 'rejected')" class="bg-red-600 hover:bg-red-500 px-3 py-1 rounded text-xs transition">Reject</button>
+                                    ` : `
+                                        <span class="text-xs px-2 py-1 rounded ${
+                                            ex.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                                            ex.status === 'accepted' ? 'bg-blue-500/20 text-blue-400' :
+                                            ex.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
+                                            'bg-yellow-500/20 text-yellow-400'
+                                        }">${ex.status}</span>
+                                    `}
+                                </div>
                             </div>
-                            <span class="text-xs px-2 py-1 rounded ${
-                                ex.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                                ex.status === 'accepted' ? 'bg-blue-500/20 text-blue-400' :
-                                ex.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
-                                'bg-yellow-500/20 text-yellow-400'
-                            }">${ex.status}</span>
+                            ${ex.status === 'accepted' ? `
+                                <div class="mt-2 text-xs text-blue-400">✓ Accepted! Now add backlinks to each other's sites to complete the exchange.</div>
+                            ` : ''}
                         </div>
-                    `).join('');
+                    `}).join('');
                 }
                 
                 // Show discover section and populate dropdown if user has verified sites
@@ -614,6 +634,36 @@
                 
             } catch (e) {
                 resultsDiv.innerHTML = '<p class="text-red-400">Connection error. Please try again.</p>';
+            }
+        }
+        
+        async function respondExchange(exchangeId, status) {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = status === 'accepted' ? 'Accepting...' : 'Rejecting...';
+            
+            try {
+                const res = await fetch(`${API}/v1/exchanges/${exchangeId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${currentApiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status })
+                });
+                
+                if (res.ok) {
+                    loadDashboard();
+                } else {
+                    const data = await res.json();
+                    alert(data.error || 'Failed to update exchange');
+                    btn.disabled = false;
+                    btn.textContent = status === 'accepted' ? 'Accept' : 'Reject';
+                }
+            } catch (e) {
+                alert('Connection error');
+                btn.disabled = false;
+                btn.textContent = status === 'accepted' ? 'Accept' : 'Reject';
             }
         }
         
