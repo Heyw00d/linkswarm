@@ -59,6 +59,13 @@ All endpoints require: `Authorization: Bearer sk_linkswarm_...`
 All plans include: Full API access, semantic matching, webhooks, quality filters.
 No credit card required for free tier.
 
+## Quality Assurance
+- Third-party metrics via DataForSEO (same data as Semrush/Ahrefs)
+- Quality Score 0-100 for every site (ETV, keywords, rankings)
+- Auto-reject low-quality sites (score < 20)
+- Link verification crawler confirms placements
+- Weekly re-verification of live links
+
 ## Anti-Pattern Rules (Google Safe)
 - No reciprocal links within 90 days (A→B blocks B→A)
 - Max 2 links between any site pair per year
