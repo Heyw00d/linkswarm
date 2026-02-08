@@ -73,12 +73,24 @@ All endpoints require: `Authorization: Bearer sk_linkswarm_...`
 - `semantic_mismatch` — Sites not related enough
 - `rate_limited` — Wait and retry
 
+## Webhooks
+Register webhooks to receive real-time notifications:
+- `POST /v1/webhooks` — Register webhook URL
+- `GET /v1/webhooks` — List webhooks
+- `DELETE /v1/webhooks/:id` — Remove webhook
+- `POST /v1/webhooks/test` — Send test event
+
+Events: link.opportunity, link.placed, link.verified, link.removed, credits.low, new_site
+
+Signature: HMAC-SHA256 in X-LinkSwarm-Signature header
+
 ## Links
 - Site: https://linkswarm.ai
 - Docs: https://linkswarm.ai/docs/
 - API: https://api.linkswarm.ai
 - Dashboard: https://linkswarm.ai/dashboard/
 - SDK Examples: https://linkswarm.ai/docs/sdk-examples.md
+- Webhooks: https://linkswarm.ai/docs/webhooks.md
 - API Schema: https://linkswarm.ai/docs/api/schema.json
 - Best Practices: https://linkswarm.ai/docs/best-practices.md
 - Protocol Spec: https://linkswarm.ai/docs/protocol.md
