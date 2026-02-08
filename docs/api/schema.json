@@ -216,8 +216,16 @@
   },
   
   "rateLimit": {
-    "requests_per_minute": 60,
-    "requests_per_hour": 500,
+    "tiers": {
+      "free": { "requests_per_minute": 60, "requests_per_hour": 500 },
+      "pro": { "requests_per_minute": 300, "requests_per_hour": 10000 },
+      "agency": { "requests_per_minute": 600, "requests_per_hour": -1 }
+    },
+    "headers": {
+      "X-RateLimit-Limit": "Total requests allowed in window",
+      "X-RateLimit-Remaining": "Requests remaining in window",
+      "X-RateLimit-Reset": "Unix timestamp when window resets"
+    },
     "burst": 10
   },
   
