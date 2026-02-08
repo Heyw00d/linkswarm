@@ -162,6 +162,25 @@ Once connected, you get:
 
 Your Ahrefs key is encrypted and only used for your own sites.
 
+### Google Search Console Integration (Coming Soon)
+
+Connect your GSC to prove LinkSwarm is working:
+
+- **Backlink verification** — See when Google detects our placements
+- **Ranking impact** — Track position changes after links
+- **Traffic attribution** — Clicks gained from new backlinks
+- **ROI dashboard** — Prove the value to your team
+
+```bash
+# Connect GSC (OAuth)
+POST /v1/integrations/gsc/connect
+
+# Get backlink impact report
+GET /v1/analytics/backlink-impact
+```
+
+This is real Google data — the ultimate proof that your backlinks work.
+
 ### API Access to Scores
 
 All quality data is available via API:
