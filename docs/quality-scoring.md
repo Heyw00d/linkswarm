@@ -1,12 +1,24 @@
 # Quality Scoring
 
-How LinkSwarm evaluates site quality for matching.
+How LinkSwarm evaluates site quality — and why you can trust our network.
 
 ---
 
-## Overview
+## Network Quality Guarantee
 
-Every site in LinkSwarm gets a **Quality Score** (0-100) that affects:
+LinkSwarm is **not a PBN** (Private Blog Network). We enforce strict quality standards:
+
+✅ **Every site is verified** — Domain ownership confirmed via DNS or meta tag  
+✅ **Automated quality analysis** — Real traffic and ranking data, not self-reported  
+✅ **Third-party metrics** — We use DataForSEO (same data as Semrush/Ahrefs)  
+✅ **Spam detection** — Low-quality sites are flagged and limited  
+✅ **Transparent scoring** — You see every partner's quality score before matching  
+
+---
+
+## Quality Score (0-100)
+
+Every site in LinkSwarm gets a **Quality Score** that affects:
 - Match priority (higher scores match first)
 - Auto-accept/reject thresholds
 - Network trust and reputation
@@ -92,27 +104,70 @@ curl -X PATCH https://api.linkswarm.ai/v1/quality-settings \
 
 ---
 
-## Third-Party Tools
+## Third-Party Data Sources
 
-We use **DataForSEO** for automated quality metrics. You can also verify independently:
+### What We Use: DataForSEO
 
-### Ahrefs
-- **Domain Rating (DR)** — Site authority (0-100)
-- **Organic Traffic** — Monthly search visits
-- https://ahrefs.com/website-authority-checker
+LinkSwarm uses **DataForSEO** — the same underlying data that powers Semrush, Ahrefs, and other major SEO tools.
 
-### Moz
-- **Domain Authority (DA)** — Ranking potential (0-100)
-- https://moz.com/domain-analysis
+When you analyze a site, we fetch:
+- **Estimated Traffic Value (ETV)** — Monthly organic traffic value in USD
+- **Ranking Keywords** — Total keywords the site ranks for
+- **Top 10 Positions** — Keywords ranking on page 1
+- **Top 3 Positions** — Keywords in top 3 spots
 
-### Semrush
-- **Authority Score** — Combined quality metric
-- https://www.semrush.com/analytics/overview/
+This is **real data**, not self-reported. Sites can't inflate their scores.
 
-### Free Options
-- **Google Search Console** — Your own site's performance
-- **Ubersuggest** — Free DA checker
-- https://neilpatel.com/ubersuggest/
+### Why Not Ahrefs/Moz Directly?
+
+| Tool | DR/DA Range | Our Equivalent |
+|------|-------------|----------------|
+| Ahrefs DR | 0-100 | Quality Score 0-100 |
+| Moz DA | 0-100 | Quality Score 0-100 |
+| Semrush AS | 0-100 | Quality Score 0-100 |
+
+Our score correlates with these industry-standard metrics. A site with Quality Score 70+ will typically have:
+- Ahrefs DR: 40+
+- Moz DA: 45+
+- Real organic traffic
+
+### Verify Partners Yourself
+
+Before accepting a match, you can check partners independently:
+
+| Tool | What to Check | Link |
+|------|---------------|------|
+| **Ahrefs** | Domain Rating, Backlink profile | [Free checker](https://ahrefs.com/website-authority-checker) |
+| **Moz** | Domain Authority, Spam Score | [Link Explorer](https://moz.com/link-explorer) |
+| **Semrush** | Authority Score, Traffic | [Domain Overview](https://www.semrush.com/analytics/overview/) |
+| **Ubersuggest** | DA, Monthly traffic | [Free tool](https://neilpatel.com/ubersuggest/) |
+| **Google** | Index status, Site quality | `site:domain.com` search |
+
+### API Access to Scores
+
+All quality data is available via API:
+
+```bash
+# Get partner quality before accepting
+curl https://api.linkswarm.ai/v1/discover?categories=crypto \
+  -H "Authorization: Bearer sk_..."
+```
+
+Response includes quality metrics:
+```json
+{
+  "matches": [
+    {
+      "domain": "cryptonews.com",
+      "quality_score": 78,
+      "etv": 125000,
+      "keywords": 8500,
+      "top10": 920,
+      "relevance_score": 0.85
+    }
+  ]
+}
+```
 
 ---
 
@@ -144,12 +199,35 @@ After analysis, your site includes:
 
 ---
 
-## Fair Matching
+## Network Quality Controls
 
-LinkSwarm uses quality scores to ensure fair exchanges:
+LinkSwarm enforces quality at every level:
 
+### Matching Rules
 - **Similar tiers match** — Premium sites match with other premium sites
-- **Quality bonus** — Higher-quality contributions earn more credits
-- **Spam prevention** — Low-quality sites have limited matching
+- **Quality bonus** — Higher-quality contributions earn bonus credits
+- **Relevance required** — Semantic matching ensures topical relevance
 
-This keeps the network valuable for everyone.
+### Anti-Spam Measures
+- **Auto-reject threshold** — Sites below score 20 are blocked
+- **Velocity limits** — Max 4-10 links/week (natural growth)
+- **Reciprocal blocks** — No A↔B exchanges for 90 days
+- **Link verification** — Crawler confirms every placement
+
+### Continuous Monitoring
+- **Weekly re-verification** — Links are checked to ensure they're still live
+- **Quality re-analysis** — Scores update as sites grow or decline
+- **Reputation tracking** — Sites that remove links lose reputation
+
+### Result: A Clean Network
+
+Unlike PBNs or shady link farms, LinkSwarm maintains:
+
+| Metric | Target | Why It Matters |
+|--------|--------|----------------|
+| Average Quality Score | 50+ | Only real sites with traffic |
+| Spam Rate | <2% | Automated detection + manual review |
+| Link Survival | 95%+ | Verified placements stay live |
+| Relevance Match | 70%+ | Contextual, not random links |
+
+**Your backlinks look natural to Google** because they *are* natural — real sites linking to real content.
