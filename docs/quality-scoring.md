@@ -143,6 +143,25 @@ Before accepting a match, you can check partners independently:
 | **Ubersuggest** | DA, Monthly traffic | [Free tool](https://neilpatel.com/ubersuggest/) |
 | **Google** | Index status, Site quality | `site:domain.com` search |
 
+### Bring Your Own Ahrefs (Coming Soon)
+
+Pro and Agency users can connect their Ahrefs API key for enhanced metrics:
+
+```bash
+# Connect your Ahrefs API key
+curl -X PATCH https://api.linkswarm.ai/v1/settings \
+  -H "Authorization: Bearer sk_..." \
+  -d '{"ahrefs_api_key": "your_ahrefs_key"}'
+```
+
+Once connected, you get:
+- **Domain Rating (DR)** — Industry-standard authority metric
+- **Backlink Profile** — Total backlinks, referring domains
+- **Spam Detection** — Identify PBN/link farm patterns
+- **Traffic Estimates** — Ahrefs organic traffic data
+
+Your Ahrefs key is encrypted and only used for your own sites.
+
 ### API Access to Scores
 
 All quality data is available via API:
