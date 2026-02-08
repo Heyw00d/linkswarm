@@ -60,8 +60,25 @@ All endpoints require: `Authorization: Bearer sk_linkswarm_...`
 - Natural velocity (1-2 links/week max per site)
 - Contextual placement only (no footers/sidebars)
 
+## Rate Limits
+- 60 requests/minute
+- 500 requests/hour
+- Burst: 10 concurrent
+
+## Error Codes
+- `unauthorized` — Invalid API key
+- `domain_not_verified` — Verify domain first
+- `insufficient_credits` — Contribute more links
+- `reciprocal_blocked` — 90-day reciprocal block
+- `semantic_mismatch` — Sites not related enough
+- `rate_limited` — Wait and retry
+
 ## Links
 - Site: https://linkswarm.ai
 - Docs: https://linkswarm.ai/docs/
 - API: https://api.linkswarm.ai
 - Dashboard: https://linkswarm.ai/dashboard/
+- SDK Examples: https://linkswarm.ai/docs/sdk-examples.md
+- API Schema: https://linkswarm.ai/docs/api/schema.json
+- Best Practices: https://linkswarm.ai/docs/best-practices.md
+- Protocol Spec: https://linkswarm.ai/docs/protocol.md
