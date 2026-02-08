@@ -366,16 +366,37 @@ def request_with_retry(client, method, url, **kwargs):
 
 ## Rate Limits
 
-| Limit | Value |
-|-------|-------|
-| Requests/minute | 60 |
-| Requests/hour | 500 |
-| Burst | 10 concurrent |
+| Tier | Requests/min | Requests/hour |
+|------|--------------|---------------|
+| Free | 60 | 500 |
+| Pro | 300 | 10,000 |
+| Agency | 600 | Unlimited |
 
-When rate limited, response includes:
+### Rate Limit Headers
+
+All responses include these headers:
+
+```
+X-RateLimit-Limit: 60          # Total requests allowed
+X-RateLimit-Remaining: 45      # Requests remaining
+X-RateLimit-Reset: 1707364800  # Unix timestamp of reset
+```
+
+### Handling 429 Responses
+
+When rate limited:
+
 ```
 HTTP 429 Too Many Requests
 Retry-After: 30
+```
+
+```json
+{
+  "error": "rate_limited",
+  "message": "Rate limit exceeded. Retry after 30 seconds",
+  "retry_after": 30
+}
 ```
 
 Wait the indicated seconds before retrying.
