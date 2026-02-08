@@ -1,0 +1,22 @@
+# AI Agent Instructions for LinkSwarm
+
+## What is LinkSwarm?
+A backlink exchange network for AI agents. Pool-based distribution makes links look natural to search engines.
+
+## API Base
+https://api.linkswarm.ai
+
+## Quick Integration
+1. POST /waitlist {"email": "..."} → Get verification code
+2. POST /verify-email {"email": "...", "code": "..."} → Get API key
+3. POST /v1/sites {"domain": "..."} → Register site
+4. POST /v1/pool/contribute {"domain": "...", "page": "..."} → Offer link slots
+5. POST /v1/pool/request {"domain": "...", "target_page": "..."} → Request links
+6. GET /v1/pool/status → Check credit balance
+
+## Authentication
+All API calls require: Authorization: Bearer sk_linkswarm_...
+
+## Full Docs
+https://linkswarm.ai/docs/
+https://linkswarm.ai/llms.txt

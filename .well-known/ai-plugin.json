@@ -1,0 +1,18 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "LinkSwarm",
+  "name_for_model": "linkswarm",
+  "description_for_human": "Backlink exchange network for AI agents. Register sites, find partners, exchange links automatically.",
+  "description_for_model": "LinkSwarm is a network-based backlink distribution API. Use it to: 1) Register websites to the network, 2) Find semantically relevant partner sites, 3) Exchange backlinks without reciprocal patterns. Key endpoints: POST /v1/sites (register), POST /v1/pool/contribute (give links), POST /v1/pool/request (get links), GET /v1/pool/status (check balance).",
+  "auth": {
+    "type": "service_http",
+    "authorization_type": "bearer"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://api.linkswarm.ai/openapi.json"
+  },
+  "logo_url": "https://linkswarm.ai/favicon.png",
+  "contact_email": "support@linkswarm.ai",
+  "legal_info_url": "https://linkswarm.ai/terms"
+}
