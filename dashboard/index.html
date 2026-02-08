@@ -195,6 +195,24 @@
                 </div>
             </div>
             
+            <!-- Discover Partners Section -->
+            <div id="discoverSection" class="glass rounded-xl p-6 mb-8 hidden">
+                <h2 class="text-lg font-semibold mb-4">🔍 Discover Partners</h2>
+                <div class="flex flex-wrap gap-3 mb-4">
+                    <select id="discoverFromSite" class="bg-black/30 border border-gray-700 rounded-lg px-4 py-2 focus:border-amber-500 focus:outline-none">
+                        <option value="">Select your site...</option>
+                    </select>
+                    <input type="text" id="discoverCategories" placeholder="Filter by category..." 
+                        class="flex-1 min-w-48 bg-black/30 border border-gray-700 rounded-lg px-4 py-2 focus:border-amber-500 focus:outline-none">
+                    <button onclick="discoverPartners()" class="bg-amber-500 hover:bg-amber-600 text-black px-4 py-2 rounded-lg font-semibold transition">
+                        Search
+                    </button>
+                </div>
+                <div id="discoverResults" class="space-y-3">
+                    <p class="text-gray-500">Select a site and search to find matching link partners.</p>
+                </div>
+            </div>
+            
             <!-- Exchanges Section -->
             <div class="glass rounded-xl p-6 mb-8">
                 <h2 class="text-lg font-semibold mb-4">🔗 Recent Exchanges</h2>
@@ -435,6 +453,19 @@
                     `).join('');
                 }
                 
+                // Show discover section and populate dropdown if user has verified sites
+                const verifiedSites = data.sites.filter(s => s.verified);
+                const discoverSection = document.getElementById('discoverSection');
+                const discoverDropdown = document.getElementById('discoverFromSite');
+                
+                if (verifiedSites.length > 0) {
+                    discoverSection.classList.remove('hidden');
+                    discoverDropdown.innerHTML = '<option value="">Select your site...</option>' + 
+                        verifiedSites.map(s => `<option value="${s.domain}">${s.domain}</option>`).join('');
+                } else {
+                    discoverSection.classList.add('hidden');
+                }
+                
             } catch (e) {
                 console.error(e);
                 logout();
@@ -525,6 +556,105 @@
             const el = document.getElementById(id);
             el.textContent = msg;
             el.classList.remove('hidden');
+        }
+        
+        async function discoverPartners() {
+            const domain = document.getElementById('discoverFromSite').value;
+            const categories = document.getElementById('discoverCategories').value.trim();
+            const resultsDiv = document.getElementById('discoverResults');
+            
+            if (!domain) {
+                resultsDiv.innerHTML = '<p class="text-yellow-400">Please select one of your sites first.</p>';
+                return;
+            }
+            
+            resultsDiv.innerHTML = '<p class="text-gray-400">🔍 Searching for partners...</p>';
+            
+            try {
+                let url = `${API}/v1/discover?domain=${encodeURIComponent(domain)}&limit=10`;
+                if (categories) {
+                    url += `&categories=${encodeURIComponent(categories)}`;
+                }
+                
+                const res = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${currentApiKey}` }
+                });
+                
+                const data = await res.json();
+                
+                if (!res.ok) {
+                    resultsDiv.innerHTML = `<p class="text-red-400">${data.error || 'Failed to discover partners'}</p>`;
+                    return;
+                }
+                
+                if (!data.matches || data.matches.length === 0) {
+                    resultsDiv.innerHTML = '<p class="text-gray-500">No matching partners found. Try different categories or check back later as more sites join.</p>';
+                    return;
+                }
+                
+                resultsDiv.innerHTML = data.matches.map(match => `
+                    <div class="bg-black/20 rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <div>
+                                <span class="font-semibold">${match.domain}</span>
+                                <span class="text-gray-400 text-sm ml-2">${match.name || ''}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-0.5 rounded">${Math.round(match.relevance_score * 100)}% match</span>
+                                <button onclick="proposeExchange('${domain}', '${match.domain}')" class="bg-green-600 hover:bg-green-500 px-3 py-1 rounded text-sm transition">
+                                    Propose Link
+                                </button>
+                            </div>
+                        </div>
+                        ${match.description ? `<p class="text-gray-400 text-sm mb-2">${match.description}</p>` : ''}
+                        ${match.categories?.length ? `<div class="text-gray-500 text-xs">${match.categories.join(', ')}</div>` : ''}
+                        ${match.match_reason?.length ? `<div class="text-green-400/70 text-xs mt-1">✓ ${match.match_reason.join(' • ')}</div>` : ''}
+                    </div>
+                `).join('');
+                
+            } catch (e) {
+                resultsDiv.innerHTML = '<p class="text-red-400">Connection error. Please try again.</p>';
+            }
+        }
+        
+        async function proposeExchange(fromDomain, toDomain) {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Proposing...';
+            
+            try {
+                const res = await fetch(`${API}/v1/exchanges`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${currentApiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        from_domain: fromDomain, 
+                        to_domain: toDomain 
+                    })
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    btn.textContent = '✓ Proposed';
+                    btn.className = 'bg-green-800 px-3 py-1 rounded text-sm cursor-default';
+                    // Reload to show in exchanges
+                    setTimeout(() => loadDashboard(), 1000);
+                } else {
+                    btn.textContent = data.error || 'Failed';
+                    btn.className = 'bg-red-600 px-3 py-1 rounded text-sm';
+                    setTimeout(() => {
+                        btn.disabled = false;
+                        btn.textContent = 'Propose Link';
+                        btn.className = 'bg-green-600 hover:bg-green-500 px-3 py-1 rounded text-sm transition';
+                    }, 2000);
+                }
+            } catch (e) {
+                btn.disabled = false;
+                btn.textContent = 'Retry';
+            }
         }
         
         async function verifySite(domain) {
