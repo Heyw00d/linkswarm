@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Changelog | LinkSwarm</title>
+    <meta name="description" content="LinkSwarm release history and updates.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #0a0a0f; color: #e5e5e5; }
+    </style>
+</head>
+<body class="min-h-screen">
+    <header class="border-b border-gray-800 py-4 px-6">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <a href="/" class="flex items-center gap-2">
+                <span class="text-2xl">🐝</span>
+                <span class="font-bold text-lg text-amber-400">LinkSwarm</span>
+            </a>
+            <nav class="flex gap-6 text-sm">
+                <a href="/docs/" class="text-gray-400 hover:text-white">Docs</a>
+                <a href="/docs/roadmap.html" class="text-gray-400 hover:text-white">Roadmap</a>
+                <a href="/docs/changelog.html" class="text-amber-400">Changelog</a>
+            </nav>
+        </div>
+    </header>
+    
+    <main class="max-w-4xl mx-auto px-6 py-12">
+        <h1 class="text-4xl font-bold text-white mb-4">📋 Changelog</h1>
+        <p class="text-gray-400 text-lg mb-12">Release history and updates.</p>
+        
+        <!-- v0.2.0 -->
+        <section class="mb-12">
+            <div class="flex items-center gap-4 mb-4">
+                <span class="px-3 py-1 bg-amber-500/20 text-amber-400 rounded-full text-sm font-medium">v0.2.0</span>
+                <span class="text-gray-500">February 7, 2026</span>
+                <span class="px-2 py-0.5 bg-green-500/20 text-green-400 rounded text-xs">Latest</span>
+            </div>
+            
+            <div class="pl-4 border-l-2 border-amber-500/30">
+                <h3 class="text-lg font-semibold text-green-400 mb-3">✨ Added</h3>
+                <ul class="text-gray-300 space-y-2 mb-6">
+                    <li>• <strong>Webhooks</strong> — 8 event types with HMAC signature verification</li>
+                    <li>• <strong>Troubleshooting guide</strong> — Common issues and solutions</li>
+                    <li>• <strong>Best practices doc</strong> — Security, velocity, anchor text guidance</li>
+                    <li>• <strong>Quality scoring</strong> — How we measure site quality</li>
+                    <li>• <strong>SDK examples</strong> — Python and Node.js code samples</li>
+                    <li>• <strong>AI Content docs</strong> — Article and image generation (preview)</li>
+                    <li>• <strong>Premium Placements docs</strong> — DA70+ marketplace (coming soon)</li>
+                    <li>• <strong>Listing Swarm docs</strong> — Directory submission service (coming soon)</li>
+                    <li>• <strong>Public roadmap</strong></li>
+                    <li>• <strong>This changelog</strong></li>
+                </ul>
+                
+                <h3 class="text-lg font-semibold text-blue-400 mb-3">🔧 Improved</h3>
+                <ul class="text-gray-300 space-y-2 mb-6">
+                    <li>• Documentation now includes rate limits per tier</li>
+                    <li>• Error codes fully documented (400-500 range)</li>
+                    <li>• API schema with JSON spec</li>
+                    <li>• Homepage stats updated for transparency</li>
+                </ul>
+                
+                <h3 class="text-lg font-semibold text-amber-400 mb-3">🐛 Fixed</h3>
+                <ul class="text-gray-300 space-y-2">
+                    <li>• Cloudflare Bot Fight Mode blocking LLM crawlers</li>
+                    <li>• llms.txt now accessible without authentication</li>
+                </ul>
+            </div>
+        </section>
+        
+        <!-- v0.1.0 -->
+        <section class="mb-12">
+            <div class="flex items-center gap-4 mb-4">
+                <span class="px-3 py-1 bg-gray-700 text-gray-400 rounded-full text-sm font-medium">v0.1.0</span>
+                <span class="text-gray-500">February 6, 2026</span>
+            </div>
+            
+            <div class="pl-4 border-l-2 border-gray-700">
+                <h3 class="text-lg font-semibold text-green-400 mb-3">🚀 Initial Launch</h3>
+                <ul class="text-gray-300 space-y-2">
+                    <li>• Production API deployed</li>
+                    <li>• Semantic matching with AI embeddings</li>
+                    <li>• Credit-based pool system</li>
+                    <li>• DNS, meta tag, and file verification</li>
+                    <li>• Anti-pattern rules (no reciprocal, velocity limits)</li>
+                    <li>• Free / Pro / Agency pricing tiers</li>
+                    <li>• llms.txt, ai.txt, ai-plugin.json for LLM discovery</li>
+                    <li>• Public registry endpoint</li>
+                    <li>• Dashboard for account management</li>
+                    <li>• FAQ addressing Google safety concerns</li>
+                    <li>• GitHub repo made public</li>
+                </ul>
+            </div>
+        </section>
+        
+        <!-- Subscribe -->
+        <section class="p-6 bg-[#12121a] border border-gray-700 rounded-xl text-center">
+            <h2 class="text-xl font-bold text-white mb-3">Stay Updated</h2>
+            <p class="text-gray-400 mb-4">Follow us for release announcements:</p>
+            <div class="flex justify-center gap-4">
+                <a href="https://x.com/Link_Swarm" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition">
+                    𝕏 @Link_Swarm
+                </a>
+                <a href="https://github.com/Heyw00d/linkswarm/releases" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition">
+                    GitHub Releases
+                </a>
+            </div>
+        </section>
+    </main>
+    
+    <footer class="border-t border-gray-800 py-6 px-6 text-center text-gray-500 text-sm">
+        <a href="/" class="hover:text-amber-400">Home</a>
+        <span class="mx-2">•</span>
+        <a href="/docs/" class="hover:text-amber-400">Docs</a>
+        <span class="mx-2">•</span>
+        <a href="/docs/roadmap.html" class="hover:text-amber-400">Roadmap</a>
+        <span class="mx-2">•</span>
+        <a href="https://x.com/Link_Swarm" class="hover:text-amber-400">@Link_Swarm</a>
+    </footer>
+</body>
+</html>
