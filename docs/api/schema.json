@@ -1,0 +1,234 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "LinkSwarm API Schema",
+  "version": "1.1.0",
+  "description": "Schema definitions for LinkSwarm backlink exchange API",
+  
+  "definitions": {
+    "Site": {
+      "type": "object",
+      "required": ["domain"],
+      "properties": {
+        "domain": {
+          "type": "string",
+          "description": "Root domain (e.g., example.com)",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9-]*\\.[a-zA-Z]{2,}$"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Human-readable site name"
+        },
+        "categories": {
+          "type": "array",
+          "items": { "type": "string" },
+          "maxItems": 10,
+          "description": "Topic categories for matching"
+        },
+        "verified": {
+          "type": "boolean",
+          "description": "Domain ownership verified"
+        },
+        "authority_score": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Estimated domain authority"
+        },
+        "reputation": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Network reputation score"
+        }
+      }
+    },
+    
+    "Exchange": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "from_site": {
+          "type": "string",
+          "description": "Domain placing the link"
+        },
+        "from_page": {
+          "type": "string",
+          "description": "Page path where link is placed"
+        },
+        "to_site": {
+          "type": "string",
+          "description": "Domain receiving the link"
+        },
+        "to_page": {
+          "type": "string",
+          "description": "Target page path"
+        },
+        "anchor_text": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Anchor text for the link"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "placed", "verified", "broken", "expired"],
+          "description": "Current exchange status"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "verified_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    
+    "PoolContribution": {
+      "type": "object",
+      "required": ["domain", "page"],
+      "properties": {
+        "domain": { "type": "string" },
+        "page": {
+          "type": "string",
+          "description": "Page path where links can be placed"
+        },
+        "max_links": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5,
+          "default": 2
+        },
+        "categories": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Acceptable link categories"
+        },
+        "context": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Where on page link will appear"
+        }
+      }
+    },
+    
+    "PoolRequest": {
+      "type": "object",
+      "required": ["domain", "target_page"],
+      "properties": {
+        "domain": { "type": "string" },
+        "target_page": {
+          "type": "string",
+          "description": "Page you want links pointing to"
+        },
+        "preferred_anchor": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "categories": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    
+    "Error": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string",
+          "description": "Error code"
+        },
+        "message": {
+          "type": "string",
+          "description": "Human-readable error message"
+        },
+        "details": {
+          "type": "object",
+          "description": "Additional error context"
+        }
+      }
+    }
+  },
+  
+  "endpoints": {
+    "/waitlist": {
+      "POST": {
+        "description": "Sign up for early access",
+        "body": {
+          "email": { "type": "string", "format": "email", "required": true }
+        },
+        "response": {
+          "success": { "message": "Verification code sent" },
+          "error": { "error": "invalid_email" }
+        }
+      }
+    },
+    "/verify-email": {
+      "POST": {
+        "description": "Verify email and receive API key",
+        "body": {
+          "email": { "type": "string", "required": true },
+          "code": { "type": "string", "required": true }
+        },
+        "response": {
+          "success": { "apiKey": "sk_linkswarm_..." },
+          "error": { "error": "invalid_code" }
+        }
+      }
+    },
+    "/v1/sites": {
+      "POST": {
+        "description": "Register a new site",
+        "auth": "required",
+        "body": { "$ref": "#/definitions/Site" },
+        "response": {
+          "success": { "site": {}, "verification_token": "ls-..." }
+        }
+      },
+      "GET": {
+        "description": "List your registered sites",
+        "auth": "required",
+        "response": {
+          "success": { "sites": [] }
+        }
+      }
+    },
+    "/v1/pool/status": {
+      "GET": {
+        "description": "Check credits and link status",
+        "auth": "required",
+        "response": {
+          "success": {
+            "credits_available": 10,
+            "credits_contributed": 15,
+            "links_received": 5,
+            "links_pending": 2,
+            "links_verified": 3
+          }
+        }
+      }
+    }
+  },
+  
+  "rateLimit": {
+    "requests_per_minute": 60,
+    "requests_per_hour": 500,
+    "burst": 10
+  },
+  
+  "errorCodes": {
+    "invalid_email": "Email format invalid or disposable domain",
+    "invalid_code": "Verification code incorrect or expired",
+    "unauthorized": "Missing or invalid API key",
+    "domain_not_verified": "Domain ownership not yet verified",
+    "insufficient_credits": "Not enough credits for request",
+    "rate_limited": "Too many requests, slow down",
+    "reciprocal_blocked": "Exchange would create reciprocal link (90-day block)",
+    "semantic_mismatch": "Sites not sufficiently related"
+  }
+}
