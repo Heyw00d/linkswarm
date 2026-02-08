@@ -100,6 +100,48 @@ Premium Placements is coming soon. Get early access:
 
 ---
 
+## Google Compliance & Safety
+
+LinkSwarm Premium Placements are designed to stay within Google's quality guidelines:
+
+### How We Stay Safe
+
+| Risk | Our Mitigation |
+|------|----------------|
+| **Paid link detection** | Contextual placement in real editorial content — not sidebars, footers, or "sponsored" sections |
+| **Unnatural patterns** | Maximum 2 links per site pair per year; natural velocity (1-2/week max) |
+| **Low-quality sites** | All premium sites verified: DA 50+, real traffic, quality content |
+| **Link schemes** | No reciprocal links, no PBN patterns, no doorway pages |
+| **Anchor spam** | Natural anchor text guidance; no exact-match keyword stuffing |
+
+### What Makes This Different from "Buying Links"
+
+Traditional link buying involves:
+- Cold outreach to random sites
+- Links placed anywhere (footers, sidebars)
+- No quality verification
+- No protection if links disappear
+- Often from PBNs or hacked sites
+
+LinkSwarm Premium Placements:
+- Curated marketplace of verified publishers
+- Editorial integration (in-content only)
+- Quality scoring with transparency
+- 90-day protection with refunds
+- Publishers who actively want to participate
+
+### Disclosure Policy
+
+Sites in the premium network agree to:
+- Place links naturally within relevant content
+- Not use `rel="sponsored"` or `rel="nofollow"` (defeats purpose)
+- Maintain quality editorial standards
+- Keep links live for minimum 90 days
+
+> **Note:** Like all link building, Premium Placements carry some risk. We minimize it through quality controls, but no method is 100% guaranteed. Use alongside organic SEO for best results.
+
+---
+
 ## FAQ
 
 **How is this different from buying links?**  
