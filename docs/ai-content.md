@@ -1,6 +1,6 @@
 # AI Content Generation
 
-> **Coming Soon** — Join the waitlist to get early access.
+> **Live!** Available for Pro and Agency plans.
 
 AI-generated articles and images for your link placements.
 
@@ -66,7 +66,7 @@ Output:
 
 ---
 
-## API Preview
+## API
 
 ```bash
 # Generate content for a placement
@@ -179,18 +179,18 @@ Scale content production:
 
 ---
 
-## Join the Waitlist
+## Get Started
 
-AI Content is coming soon. Get early access:
+AI Content is available now for Pro and Agency plans.
 
-**[Join Waitlist →](/waitlist?interest=ai-content)**
+**[Upgrade to Pro →](https://linkswarm.ai/dashboard)**
 
 ---
 
 ## FAQ
 
 **What AI models do you use?**  
-Claude and GPT-4 for text, DALL-E 3 and Flux for images.
+Claude (Sonnet) for text, DALL-E 3 for images.
 
 **Can I edit the content?**  
 Yes — full editing before approval. Or request regeneration.
