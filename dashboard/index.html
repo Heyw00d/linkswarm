@@ -195,6 +195,19 @@
                 </div>
             </div>
             
+            <!-- Analyze Partner Modal -->
+            <div id="analyzeModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                <div class="glass rounded-xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold">📊 Site Analysis</h3>
+                        <button onclick="hideAnalyzeModal()" class="text-gray-400 hover:text-white text-xl">&times;</button>
+                    </div>
+                    <div id="analyzeContent">
+                        <p class="text-gray-400">Loading...</p>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Discover Partners Section -->
             <div id="discoverSection" class="glass rounded-xl p-6 mb-8 hidden">
                 <h2 class="text-lg font-semibold mb-4">🔍 Discover Partners</h2>
@@ -578,6 +591,94 @@
             el.classList.remove('hidden');
         }
         
+        async function analyzePartner(domain) {
+            document.getElementById('analyzeModal').classList.remove('hidden');
+            const content = document.getElementById('analyzeContent');
+            content.innerHTML = '<p class="text-gray-400">🔍 Analyzing ' + domain + '...</p>';
+            
+            try {
+                // First get basic site info from registry
+                const registryRes = await fetch(`${API}/registry?domain=${encodeURIComponent(domain)}`);
+                const registryData = await registryRes.json();
+                const site = registryData.sites?.find(s => s.domain === domain) || {};
+                
+                // Try to get detailed analysis if available
+                let analysis = null;
+                try {
+                    const analysisRes = await fetch(`${API}/v1/sites/analyze`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${currentApiKey}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ domain, external: true })
+                    });
+                    if (analysisRes.ok) {
+                        analysis = await analysisRes.json();
+                    }
+                } catch (e) {}
+                
+                content.innerHTML = `
+                    <div class="space-y-4">
+                        <div class="text-center pb-4 border-b border-gray-700">
+                            <h4 class="text-xl font-bold text-amber-400">${domain}</h4>
+                            ${site.name ? `<p class="text-gray-400">${site.name}</p>` : ''}
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-black/30 rounded-lg p-3 text-center">
+                                <div class="text-2xl font-bold text-amber-400">${site.quality_score || analysis?.quality_score || '?'}</div>
+                                <div class="text-gray-500 text-xs">Quality Score</div>
+                            </div>
+                            <div class="bg-black/30 rounded-lg p-3 text-center">
+                                <div class="text-2xl font-bold text-purple-400">${site.reputation || 50}</div>
+                                <div class="text-gray-500 text-xs">Reputation</div>
+                            </div>
+                            <div class="bg-black/30 rounded-lg p-3 text-center">
+                                <div class="text-2xl font-bold text-green-400">${site.etv ? '$' + site.etv.toLocaleString() : '-'}</div>
+                                <div class="text-gray-500 text-xs">Est. Traffic Value</div>
+                            </div>
+                            <div class="bg-black/30 rounded-lg p-3 text-center">
+                                <div class="text-2xl font-bold text-blue-400">${site.keywords?.toLocaleString() || '-'}</div>
+                                <div class="text-gray-500 text-xs">Keywords</div>
+                            </div>
+                        </div>
+                        
+                        ${site.description ? `
+                        <div class="bg-black/20 rounded-lg p-3">
+                            <div class="text-gray-400 text-xs mb-1">Description</div>
+                            <p class="text-gray-300 text-sm">${site.description}</p>
+                        </div>
+                        ` : ''}
+                        
+                        ${site.categories?.length ? `
+                        <div class="bg-black/20 rounded-lg p-3">
+                            <div class="text-gray-400 text-xs mb-1">Categories</div>
+                            <div class="flex flex-wrap gap-1">
+                                ${site.categories.map(c => `<span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-0.5 rounded">${c}</span>`).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <div class="flex gap-2 pt-2">
+                            <a href="https://${domain}" target="_blank" class="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded-lg text-center transition text-sm">
+                                Visit Site ↗
+                            </a>
+                            <button onclick="hideAnalyzeModal()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-black py-2 rounded-lg transition text-sm font-semibold">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } catch (e) {
+                content.innerHTML = '<p class="text-red-400">Failed to analyze site. Please try again.</p>';
+            }
+        }
+        
+        function hideAnalyzeModal() {
+            document.getElementById('analyzeModal').classList.add('hidden');
+        }
+        
         async function discoverPartners() {
             const domain = document.getElementById('discoverFromSite').value;
             const categories = document.getElementById('discoverCategories').value.trim();
@@ -612,7 +713,24 @@
                     return;
                 }
                 
-                resultsDiv.innerHTML = data.matches.map(match => `
+                // Get existing exchanges to check for already proposed
+                const exchangesRes = await fetch(`${API}/dashboard`, {
+                    headers: { 'Authorization': `Bearer ${currentApiKey}` }
+                });
+                const dashData = await exchangesRes.json();
+                const existingExchanges = dashData.exchanges || [];
+                
+                resultsDiv.innerHTML = data.matches.map(match => {
+                    const alreadyProposed = existingExchanges.some(ex => 
+                        (ex.from_domain === domain && ex.to_domain === match.domain) ||
+                        (ex.to_domain === domain && ex.from_domain === match.domain)
+                    );
+                    const existingEx = existingExchanges.find(ex => 
+                        (ex.from_domain === domain && ex.to_domain === match.domain) ||
+                        (ex.to_domain === domain && ex.from_domain === match.domain)
+                    );
+                    
+                    return `
                     <div class="bg-black/20 rounded-lg p-4">
                         <div class="flex items-center justify-between mb-2">
                             <div>
@@ -621,16 +739,23 @@
                             </div>
                             <div class="flex items-center gap-2">
                                 <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-0.5 rounded">${Math.round(match.relevance_score * 100)}% match</span>
-                                <button onclick="proposeExchange('${domain}', '${match.domain}')" class="bg-green-600 hover:bg-green-500 px-3 py-1 rounded text-sm transition">
-                                    Propose Link
+                                <button onclick="analyzePartner('${match.domain}')" class="bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded text-sm transition">
+                                    Analyze
                                 </button>
+                                ${alreadyProposed ? `
+                                    <span class="bg-gray-600 px-3 py-1 rounded text-sm">${existingEx?.status || 'proposed'}</span>
+                                ` : `
+                                    <button onclick="proposeExchange('${domain}', '${match.domain}')" class="bg-green-600 hover:bg-green-500 px-3 py-1 rounded text-sm transition">
+                                        Propose Link
+                                    </button>
+                                `}
                             </div>
                         </div>
                         ${match.description ? `<p class="text-gray-400 text-sm mb-2">${match.description}</p>` : ''}
                         ${match.categories?.length ? `<div class="text-gray-500 text-xs">${match.categories.join(', ')}</div>` : ''}
                         ${match.match_reason?.length ? `<div class="text-green-400/70 text-xs mt-1">✓ ${match.match_reason.join(' • ')}</div>` : ''}
                     </div>
-                `).join('');
+                `}).join('');
                 
             } catch (e) {
                 resultsDiv.innerHTML = '<p class="text-red-400">Connection error. Please try again.</p>';
