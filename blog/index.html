@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog | LinkSwarm 🐝</title>
+    <meta name="description" content="Insights on backlinks, SEO, AI visibility, and building authority in the age of LLMs.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        honey: { 50: '#fffbeb', 100: '#fef3c7', 200: '#fde68a', 300: '#fcd34d', 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706', 700: '#b45309', 800: '#92400e', 900: '#78350f', },
+                        swarm: { 900: '#0a0a0f', 800: '#12121a', 700: '#1a1a25', 600: '#252533', }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .swarm-bg {
+            background: radial-gradient(ellipse at 50% 0%, rgba(251, 191, 36, 0.15) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 50%, rgba(139, 92, 246, 0.1) 0%, transparent 40%);
+        }
+    </style>
+</head>
+<body class="bg-swarm-900 text-gray-100 swarm-bg min-h-screen">
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-swarm-900/90 backdrop-blur-md border-b border-honey-400/10">
+        <div class="max-w-4xl mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="/" class="flex items-center gap-2 text-xl font-bold">
+                <span class="text-2xl">🐝</span>
+                <span class="text-honey-400">Link</span><span class="text-white">Swarm</span>
+            </a>
+            <div class="flex items-center gap-6">
+                <a href="/blog/" class="text-honey-400 font-medium">Blog</a>
+                <a href="/docs/" class="text-gray-300 hover:text-honey-400 transition-colors">Docs</a>
+                <a href="/register/" class="bg-honey-500 hover:bg-honey-400 text-swarm-900 font-semibold px-4 py-2 rounded-lg transition-colors">
+                    Join Network
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <header class="pt-32 pb-16 px-6">
+        <div class="max-w-4xl mx-auto">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4">
+                <span class="text-honey-400">LinkSwarm</span> Blog
+            </h1>
+            <p class="text-xl text-gray-400">Insights on backlinks, SEO, and AI visibility</p>
+        </div>
+    </header>
+
+    <!-- Posts -->
+    <main class="px-6 pb-20">
+        <div class="max-w-4xl mx-auto space-y-8">
+            
+            <!-- Featured Post -->
+            <article class="group p-8 rounded-2xl bg-swarm-800/50 border border-honey-400/20 hover:border-honey-400/40 transition-all">
+                <div class="flex items-center gap-3 text-sm text-gray-400 mb-4">
+                    <span class="bg-honey-500/20 text-honey-400 px-2 py-1 rounded text-xs font-medium">NEW</span>
+                    <span>February 9, 2026</span>
+                    <span>•</span>
+                    <span>8 min read</span>
+                </div>
+                <a href="/blog/backlinks-ai-visibility/">
+                    <h2 class="text-2xl md:text-3xl font-bold mb-4 group-hover:text-honey-400 transition-colors">
+                        Backlinks Are Dead. Long Live Backlinks.
+                    </h2>
+                </a>
+                <p class="text-gray-400 mb-6 leading-relaxed">
+                    Why the smartest SEOs are building for both Google AND ChatGPT in 2026. Research shows backlinks still matter for SEO, but LLM visibility requires a new strategy.
+                </p>
+                <a href="/blog/backlinks-ai-visibility/" class="text-honey-400 font-medium hover:text-honey-300 transition-colors">
+                    Read more →
+                </a>
+            </article>
+
+            <!-- More posts coming soon -->
+            <div class="p-8 rounded-2xl border border-dashed border-gray-700 text-center">
+                <p class="text-gray-500">More posts coming soon...</p>
+                <p class="text-sm text-gray-600 mt-2">Follow <a href="https://x.com/Link_Swarm" class="text-honey-400 hover:underline">@Link_Swarm</a> for updates</p>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-honey-400/10 py-12 px-6">
+        <div class="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-2">
+                <span class="text-2xl">🐝</span>
+                <span class="font-bold"><span class="text-honey-400">Link</span>Swarm</span>
+            </div>
+            <div class="flex gap-6 text-sm text-gray-400">
+                <a href="/blog/" class="hover:text-honey-400">Blog</a>
+                <a href="/docs/" class="hover:text-honey-400">Docs</a>
+                <a href="/terms/" class="hover:text-honey-400">Terms</a>
+                <a href="/privacy/" class="hover:text-honey-400">Privacy</a>
+                <a href="https://x.com/Link_Swarm" target="_blank" class="hover:text-honey-400">𝕏 Twitter</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
