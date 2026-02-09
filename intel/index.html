@@ -15,7 +15,7 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://linkswarm.ai/intel/">
     
-    <!-- JSON-LD Schema -->
+    <!-- JSON-LD Article Schema -->
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
@@ -31,8 +31,58 @@
             "name": "LinkSwarm",
             "url": "https://linkswarm.ai"
         },
-        "datePublished": "2025-02-09",
+        "datePublished": "2026-02-09",
         "mainEntityOfPage": "https://linkswarm.ai/intel/"
+    }
+    </script>
+    
+    <!-- JSON-LD FAQ Schema -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": "Do backlinks help with LLM visibility?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Yes — but the mechanism has changed. Backlinks now drive authority signals, co-occurrence patterns, and RAG retrieval that determine whether AI systems cite your brand. Sites with strong backlink profiles are more likely to be included in training datasets and retrieved during AI-generated responses."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Which directories actually get cited by ChatGPT and other LLMs?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "88% of AI Overview review citations come from just 6 platforms: G2, Capterra, GetApp, Software Advice, TrustRadius, and Gartner Peer Insights. Reddit accounts for 40% of all LLM citations. Crunchbase is ChatGPT's primary source for company information."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Are AI directory submission services worth it?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Most services submit to 200+ directories, but research shows AlternativeTo, SaaSHub, FinancesOnline, Futurepedia, and There's An AI For That have zero measurable LLM citation impact. Focus on the 8-10 S-tier platforms that actually drive AI visibility."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "How do I get my brand mentioned by ChatGPT?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Focus on platforms LLMs actually cite: Get listed on G2/Capterra (47% of ChatGPT review citations), build Reddit presence (40% of all LLM citations), create a Crunchbase profile (ChatGPT's company data source), and optimize GitHub READMEs (heavily represented in training data)."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "What is the 88% rule for AI citations?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "The 88% rule refers to SE Ranking's research showing that Gartner Peer Insights, G2, Capterra, Software Advice, and TrustRadius account for 88% of all review platform citations in AI Overviews. Most directory submission services ignore this data."
+                }
+            }
+        ]
     }
     </script>
     
@@ -151,6 +201,13 @@
                     <div class="text-gray-500 text-sm">from 200+ others</div>
                 </div>
             </div>
+            
+            <!-- Citation Tracker Teaser -->
+            <div class="mt-12 inline-flex items-center gap-3 bg-honey-500/10 border border-honey-500/30 rounded-full px-6 py-3">
+                <span class="text-xl">🔬</span>
+                <span class="text-honey-400 font-medium">Coming Soon: AI Citation Tracker</span>
+                <span class="text-gray-400 text-sm">— See which of YOUR listings actually drive AI citations</span>
+            </div>
         </div>
     </section>
 
@@ -171,7 +228,7 @@
                             Meanwhile, Product Hunt, SiteJabber, and PeerSpot are nearly invisible in AI Overviews. 
                             And AlternativeTo, SaaSHub, and FinancesOnline? <strong class="text-white">Not cited at all.</strong>
                         </p>
-                        <p class="text-gray-500 text-sm mt-4">Source: SeaRanks LLM Citation Study</p>
+                        <p class="text-gray-500 text-sm mt-4">Source: SE Ranking analysis of 30,000 commercial keywords and 23 review platforms</p>
                     </div>
                 </div>
             </div>
@@ -316,28 +373,49 @@
             <div class="flex items-center gap-4 mb-8">
                 <span class="text-5xl">🥈</span>
                 <div>
-                    <h2 class="text-3xl font-bold text-purple-400">A-Tier: Training Data Present</h2>
-                    <p class="text-gray-400">In Common Crawl and LLM training data. Parametric knowledge signal, but not actively cited in responses.</p>
+                    <h2 class="text-3xl font-bold text-purple-400">A-Tier: Niche Citation Sources</h2>
+                    <p class="text-gray-400">Cited by specific LLMs or for specific query types. Worth pursuing for targeted visibility.</p>
                 </div>
             </div>
             
-            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="tier-a border rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="font-bold">Clutch</h3>
+                        <span class="bg-purple-500/20 text-purple-400 text-xs px-2 py-1 rounded">84.5% services</span>
+                    </div>
+                    <p class="text-gray-400 text-sm mb-3">84.5% of digital services citations in ChatGPT. Essential for agencies and B2B services.</p>
+                    <span class="text-gray-500 text-xs">DA 75</span>
+                </div>
+                
+                <div class="tier-a border rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="font-bold">SourceForge</h3>
+                        <span class="bg-purple-500/20 text-purple-400 text-xs px-2 py-1 rounded">21% Copilot</span>
+                    </div>
+                    <p class="text-gray-400 text-sm mb-3">21.33% of GitHub Copilot citations. Full crawler access = high training data presence.</p>
+                    <span class="text-gray-500 text-xs">DA 90</span>
+                </div>
+                
+                <div class="tier-a border rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="font-bold">AlternativeTo</h3>
+                        <span class="bg-yellow-500/20 text-yellow-400 text-xs px-2 py-1 rounded">Conditional</span>
+                    </div>
+                    <p class="text-gray-400 text-sm mb-3">Cited for "alternatives to X" queries in ChatGPT. Zero in AI Overviews. Mixed results.</p>
+                    <span class="text-gray-500 text-xs">DA 75</span>
+                </div>
+                
                 <div class="tier-a border rounded-xl p-5">
                     <h3 class="font-bold mb-2">Hacker News</h3>
-                    <p class="text-gray-400 text-sm mb-3">In training data but not actively cited. Show HN posts build parametric presence.</p>
+                    <p class="text-gray-400 text-sm mb-3">Heavy training data presence. Show HN posts build parametric knowledge signal.</p>
                     <span class="text-gray-500 text-xs">DA 92</span>
                 </div>
                 
                 <div class="tier-a border rounded-xl p-5">
                     <h3 class="font-bold mb-2">Stack Overflow</h3>
-                    <p class="text-gray-400 text-sm mb-3">Heavy training data presence. Answer relevant questions with product context.</p>
+                    <p class="text-gray-400 text-sm mb-3">Massive training data presence. Answer relevant questions with product context.</p>
                     <span class="text-gray-500 text-xs">DA 95</span>
-                </div>
-                
-                <div class="tier-a border rounded-xl p-5">
-                    <h3 class="font-bold mb-2">DEV.to</h3>
-                    <p class="text-gray-400 text-sm mb-3">Developer blog platform in Common Crawl. Good for technical content.</p>
-                    <span class="text-gray-500 text-xs">DA 80</span>
                 </div>
                 
                 <div class="tier-a border rounded-xl p-5">
@@ -367,10 +445,14 @@
                 </p>
             </div>
             
-            <div class="grid md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div class="grid md:grid-cols-3 lg:grid-cols-6 gap-4">
                 <div class="tier-b border rounded-lg p-4 text-center">
-                    <div class="font-bold text-gray-300">AlternativeTo</div>
-                    <div class="text-gray-500 text-xs">DA 75 • 0% cited</div>
+                    <div class="font-bold text-gray-300">Futurepedia</div>
+                    <div class="text-gray-500 text-xs">DA 55 • 0% cited</div>
+                </div>
+                <div class="tier-b border rounded-lg p-4 text-center">
+                    <div class="font-bold text-gray-300">There's An AI For That</div>
+                    <div class="text-gray-500 text-xs">DA 70 • 0% cited</div>
                 </div>
                 <div class="tier-b border rounded-lg p-4 text-center">
                     <div class="font-bold text-gray-300">SaaSHub</div>
@@ -407,6 +489,10 @@
                 <div class="tier-b border rounded-lg p-4 text-center">
                     <div class="font-bold text-gray-300">StackShare</div>
                     <div class="text-gray-500 text-xs">DA 70 • 0% cited</div>
+                </div>
+                <div class="tier-b border rounded-lg p-4 text-center">
+                    <div class="font-bold text-gray-300">TopAI.tools</div>
+                    <div class="text-gray-500 text-xs">DA 45 • 0% cited</div>
                 </div>
             </div>
         </div>
@@ -488,7 +574,7 @@
                 </div>
                 
                 <div class="text-gray-500 text-sm">
-                    © 2025 LinkSwarm. All rights reserved.
+                    © 2026 LinkSwarm. All rights reserved.
                 </div>
             </div>
         </div>
