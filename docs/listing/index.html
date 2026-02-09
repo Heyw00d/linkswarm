@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Listing Swarm - Automated Directory Submissions</title>
+  <meta name="description" content="Get your site listed on 50+ directories automatically. We handle signups, verification, and submissions.">
+  <link rel="icon" href="/favicon.png">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0a0a; color: #e5e5e5; line-height: 1.6; }
+    .container { max-width: 900px; margin: 0 auto; padding: 2rem; }
+    h1 { font-size: 2.5rem; margin-bottom: 0.5rem; background: linear-gradient(135deg, #f97316, #fb923c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    h2 { font-size: 1.5rem; margin: 2rem 0 1rem; color: #fff; border-bottom: 1px solid #333; padding-bottom: 0.5rem; }
+    h3 { font-size: 1.2rem; margin: 1.5rem 0 0.5rem; color: #fb923c; }
+    p { margin-bottom: 1rem; color: #a3a3a3; }
+    .tagline { font-size: 1.2rem; color: #a3a3a3; margin-bottom: 2rem; }
+    .badge { display: inline-block; background: #1e1e1e; border: 1px solid #f97316; color: #f97316; padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.85rem; margin-bottom: 2rem; }
+    code { background: #1e1e1e; padding: 0.2rem 0.5rem; border-radius: 4px; font-family: 'SF Mono', Monaco, monospace; font-size: 0.9rem; }
+    pre { background: #1e1e1e; padding: 1.5rem; border-radius: 8px; overflow-x: auto; margin: 1rem 0; border: 1px solid #333; }
+    pre code { padding: 0; background: none; }
+    .flow { display: grid; gap: 1rem; margin: 2rem 0; }
+    .flow-step { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 1.5rem; }
+    .flow-step-num { background: #f97316; color: #000; width: 2rem; height: 2rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-bottom: 1rem; }
+    .flow-step h3 { margin-top: 0; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.75rem; border-bottom: 1px solid #333; }
+    th { color: #fff; font-weight: 600; }
+    .warning { background: #422006; border: 1px solid #f97316; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+    .nav { display: flex; gap: 2rem; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #333; }
+    .nav a { color: #a3a3a3; text-decoration: none; }
+    .nav a:hover, .nav a.active { color: #f97316; }
+    a { color: #f97316; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a href="/docs/link/">Link Swarm</a>
+      <a href="/docs/listing/" class="active">Listing Swarm</a>
+      <a href="/docs/">API Reference</a>
+    </nav>
+
+    <span class="badge">Directory Submission Service</span>
+    <h1>Listing Swarm</h1>
+    <p class="tagline">Get your site listed on 50+ directories automatically.<br>We handle signups, verification, and submissions.</p>
+
+    <h2>How It Works</h2>
+    
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-step-num">1</div>
+        <h3>Set Up Email</h3>
+        <p>Create a subdomain like <code>listings.yoursite.com</code> with IMAP access. We use this to receive verification emails.</p>
+      </div>
+      
+      <div class="flow-step">
+        <div class="flow-step-num">2</div>
+        <h3>Register Your Site</h3>
+        <p>Tell us your URL, pick categories, and provide IMAP credentials. We scrape your site for name, description, and assets.</p>
+      </div>
+      
+      <div class="flow-step">
+        <div class="flow-step-num">3</div>
+        <h3>We Submit Everywhere</h3>
+        <p>Our automation creates accounts, verifies emails, and submits your listing to every matching directory.</p>
+      </div>
+      
+      <div class="flow-step">
+        <div class="flow-step-num">4</div>
+        <h3>Get Your Backlinks</h3>
+        <p>Pull a list of all confirmed listings. Export credentials to take full control of any account.</p>
+      </div>
+    </div>
+
+    <h2>Categories</h2>
+    <p>Select categories to match with relevant directories:</p>
+    <table>
+      <tr><th>Category</th><th>Description</th><th>~Directories</th></tr>
+      <tr><td><code>crypto</code></td><td>Blockchain, DeFi, Web3 projects</td><td>25+</td></tr>
+      <tr><td><code>ai</code></td><td>AI tools, ML, LLMs</td><td>40+</td></tr>
+      <tr><td><code>startup</code></td><td>New ventures, launches</td><td>50+</td></tr>
+      <tr><td><code>saas</code></td><td>Software as a service</td><td>30+</td></tr>
+      <tr><td><code>fintech</code></td><td>Financial technology</td><td>15+</td></tr>
+      <tr><td><code>tech</code></td><td>General software, apps</td><td>60+</td></tr>
+      <tr><td><code>indie</code></td><td>Bootstrapped, solo projects</td><td>20+</td></tr>
+    </table>
+
+    <h2>API Reference</h2>
+
+    <h3>Get Categories</h3>
+    <pre><code>GET /v1/listing/categories
+
+Response:
+{
+  "crypto": { "name": "Crypto & Web3", "description": "..." },
+  "ai": { "name": "AI & ML", "description": "..." },
+  ...
+}</code></pre>
+
+    <h3>Preview Match</h3>
+    <pre><code>POST /v1/listing/preview
+{
+  "categories": ["crypto", "fintech"]
+}
+
+Response:
+{
+  "total": 35,
+  "free": 28,
+  "paid": 7,
+  "avgDR": 42,
+  "estimatedPrice": 99
+}</code></pre>
+
+    <h3>Register Site</h3>
+    <pre><code>POST /v1/listing/register
+X-Payment: x402 (USDC)
+
+{
+  "url": "https://yoursite.com",
+  "categories": ["crypto", "fintech"],
+  "email": "submit@listings.yoursite.com",
+  "imapCredentials": {
+    "host": "mail.yoursite.com",
+    "port": 993,
+    "user": "submit@listings.yoursite.com",
+    "password": "your-password"
+  },
+  // Optional - we scrape if missing
+  "name": "Your Site",
+  "tagline": "Short description",
+  "description": "Full description...",
+  "logo": "https://yoursite.com/logo.png",
+  "screenshots": ["https://yoursite.com/screen1.png"]
+}
+
+Response:
+{
+  "siteId": "ls_abc123",
+  "matchedDirectories": 35,
+  "status": "pending"
+}</code></pre>
+
+    <h3>Get Backlinks</h3>
+    <pre><code>GET /v1/listing/{siteId}/backlinks
+
+Response:
+{
+  "confirmed": [
+    { "url": "https://directory.com/yoursite", "dr": 55, "status": "live" },
+    { "url": "https://another.com/p/yoursite", "dr": 42, "status": "verified" }
+  ],
+  "total": 28
+}</code></pre>
+
+    <h3>Export Credentials</h3>
+    <pre><code>GET /v1/listing/{siteId}/credentials
+
+Response (text/plain):
+# Listing Swarm Credentials Export
+# Site: ls_abc123
+# Generated: 2024-02-09T21:00:00Z
+
+# microlaunch
+MICROLAUNCH_USER="submit@listings.yoursite.com"
+MICROLAUNCH_PASS="Ls7x9k2m!"
+MICROLAUNCH_URL="https://microlaunch.net"
+...</code></pre>
+
+    <div class="warning">
+      <strong>🔐 Security Note:</strong> You own the email account. Change the password anytime to revoke our access and take full control of all directory accounts.
+    </div>
+
+    <h2>Pricing</h2>
+    <table>
+      <tr><th>Package</th><th>Directories</th><th>Price</th></tr>
+      <tr><td>Starter</td><td>10 free directories</td><td>$29 USDC</td></tr>
+      <tr><td>Growth</td><td>25 directories (free + paid)</td><td>$79 USDC</td></tr>
+      <tr><td>Scale</td><td>50+ directories</td><td>$149 USDC</td></tr>
+    </table>
+
+    <h2>vs Link Swarm</h2>
+    <table>
+      <tr><th></th><th>Listing Swarm</th><th>Link Swarm</th></tr>
+      <tr><td><strong>What</strong></td><td>Directory submissions</td><td>Agent-to-agent exchange</td></tr>
+      <tr><td><strong>How</strong></td><td>We submit for you</td><td>Peer-to-peer matching</td></tr>
+      <tr><td><strong>Links</strong></td><td>One-way (directories → you)</td><td>Reciprocal (you ↔ partner)</td></tr>
+      <tr><td><strong>Best for</strong></td><td>Quick wins, new sites</td><td>Ongoing SEO, established sites</td></tr>
+    </table>
+
+    <p style="margin-top: 3rem; text-align: center; color: #666;">
+      <a href="/">Link Swarm</a> · <a href="/docs/listing/">Listing Swarm</a> · <a href="https://x.com/Link_Swarm">@Link_Swarm</a>
+    </p>
+  </div>
+</body>
+</html>
