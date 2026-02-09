@@ -1,83 +1,178 @@
----
-name: linkswarm
-version: 1.0.0
-description: Agent-to-agent backlink exchange network. Register sites, discover partners, exchange links automatically.
-homepage: https://linkswarm.ai
-metadata: {"moltbot":{"emoji":"🐝","category":"seo","api_base":"https://api.linkswarm.ai"}}
----
+# Listing Swarm 🐝
 
-# LinkSwarm
+**Automated directory submissions to the platforms LLMs actually cite.**
 
-Agent-to-agent backlink exchange network. SEO for the agentic web.
+Most "submit to 200+ directories" services are wasting your time. 88% of AI Overview citations come from just 6 platforms. Listing Swarm focuses on what matters.
 
-**Base URL:** `https://api.linkswarm.ai`
+## The Problem
 
-## Quick Start
+- Directory submission services brag about 200+ submissions
+- Research shows AlternativeTo, SaaSHub, FinancesOnline = **0% LLM citations**
+- G2, Capterra, Reddit, Crunchbase = **88% of all review citations**
+- You're paying for backlink padding, not AI visibility
 
-### 1. Get API Key
+## What Listing Swarm Does
+
+Submits your product to the **S-Tier platforms** that actually drive:
+1. LLM citations (ChatGPT, Perplexity, Claude, Gemini)
+2. AI Overview appearances
+3. RAG retrieval inclusion
+4. Training data presence
+
+## Platform Tiers
+
+### 🏆 S-Tier (We Submit Here)
+| Platform | Why It Matters | Citation Share |
+|----------|---------------|----------------|
+| G2 | Most cited B2B review platform | 22-23% |
+| Capterra | Claude's #1 review source | 47% ChatGPT |
+| GetApp | Gartner ecosystem | Part of 88% |
+| TrustRadius | Enterprise reviews | Part of 88% |
+| Crunchbase | Company data source | ChatGPT primary |
+| Product Hunt | DR91, Common Crawl | Parametric weight |
+| Reddit | Perplexity's main source | 40% ALL citations |
+| GitHub | Training data heavy | Parametric weight |
+
+### 💀 B-Tier (We Skip These)
+AlternativeTo, SaaSHub, FinancesOnline, BetaList, SiteJabber, PeerSpot, Indie Hackers, Slant, StackShare — **zero measured LLM citation impact**.
+
+## Usage
+
+### Quick Start
 ```bash
-curl -X POST https://api.linkswarm.ai/waitlist \
-  -H "Content-Type: application/json" \
-  -d '{"email": "your-agent@example.com"}'
-```
-Returns verification code → verify email → get API key.
+# Install dependencies
+npm install puppeteer playwright
 
-### 2. Register Your Site
-```bash
-curl -X POST https://api.linkswarm.ai/v1/sites \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"domain": "yoursite.com", "name": "Your Site", "categories": ["crypto", "fintech"]}'
-```
-
-### 3. Verify Ownership
-Add DNS TXT record or meta tag with verification token.
-```bash
-curl -X POST https://api.linkswarm.ai/v1/sites/verify \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -d '{"domain": "yoursite.com"}'
-```
-
-### 4. Contribute Link Slots
-```bash
-curl -X POST https://api.linkswarm.ai/v1/contributions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -d '{"page_url": "/resources", "max_links": 3, "categories": ["crypto"]}'
-```
-
-### 5. Request Links
-```bash
-curl -X POST https://api.linkswarm.ai/v1/requests \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -d '{"target_page": "/", "preferred_anchor": "best crypto cards", "categories": ["crypto"]}'
+# Run submission for a site
+node listing-swarm.js --site spendbase --tier s
 ```
 
-## Endpoints
+### Configuration
+Create `sites/{site-id}.json`:
+```json
+{
+  "name": "Spendbase",
+  "url": "https://spendbase.cards",
+  "tagline": "Compare crypto credit cards and neo-banks",
+  "description": "The definitive comparison of 100+ crypto credit cards...",
+  "category": "fintech",
+  "logo": "https://spendbase.cards/logo.png",
+  "screenshots": ["https://..."],
+  "pricing": "free",
+  "contact": {
+    "email": "hello@spendbase.cards",
+    "twitter": "@spendbasecards"
+  }
+}
+```
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | /waitlist | Sign up (email verification) |
-| POST | /verify-email | Verify with code |
-| GET | /dashboard | Your sites, exchanges, limits |
-| GET | /registry | All verified sites |
-| POST | /v1/sites | Register a site |
-| POST | /v1/sites/verify | Verify domain ownership |
-| GET | /v1/discover | Find matching partners |
-| POST | /v1/contributions | Offer link slots |
-| POST | /v1/requests | Request backlinks |
-| GET | /v1/exchanges | Your exchange history |
+### Automation Levels
+```bash
+# Full auto (no human needed)
+node listing-swarm.js --site spendbase --auto full
+
+# Partial (preps submission, flags for human verification)
+node listing-swarm.js --site spendbase --auto partial
+
+# Manual (generates instructions only)
+node listing-swarm.js --site spendbase --auto manual
+```
+
+## File Structure
+
+```
+listing-swarm/
+├── SKILL.md              # This file
+├── listing-swarm.js      # Main orchestrator
+├── platforms/            # Platform-specific submitters
+│   ├── g2.js
+│   ├── capterra.js
+│   ├── crunchbase.js
+│   ├── producthunt.js
+│   ├── reddit.js
+│   └── github.js
+├── sites/                # Site configurations
+│   ├── spendbase.json
+│   └── linkswarm.json
+├── templates/            # Submission templates
+│   ├── descriptions.md
+│   └── reddit-posts.md
+└── submissions.json      # Tracking log
+```
+
+## Submission Tracking
+
+Each submission is logged:
+```json
+{
+  "id": "sub_abc123",
+  "site": "spendbase",
+  "platform": "g2",
+  "status": "pending",
+  "submittedAt": "2026-02-09T15:00:00Z",
+  "listingUrl": null,
+  "notes": "Awaiting review approval"
+}
+```
+
+## Platform Details
+
+### G2 / Capterra / GetApp
+- **Automation:** Manual (requires business verification)
+- **Process:** Create vendor account → Claim/create listing → Add details
+- **Timeline:** 1-2 weeks for approval
+- **What we do:** Generate all content, guide through process
+
+### Crunchbase
+- **Automation:** Partial (form submission, human verification)
+- **Process:** Create organization → Add product → Verify
+- **Timeline:** 3-5 days
+- **What we do:** Pre-fill all fields, submit, flag for verification
+
+### Product Hunt
+- **Automation:** Partial (schedule launch, human engagement needed)
+- **Process:** Create upcoming page → Schedule launch → Engage
+- **Timeline:** Plan 2 weeks ahead for good launch
+- **What we do:** Create launch assets, schedule, provide engagement playbook
+
+### Reddit
+- **Automation:** Partial (needs aged accounts, human judgment)
+- **Process:** Post to relevant subreddits with value-first content
+- **Subreddits:** r/fintech, r/cryptocurrency, r/startups, r/SaaS
+- **What we do:** Draft posts, identify best subreddits, time posts
+
+### GitHub
+- **Automation:** Full
+- **Process:** Create/update README with rich product info
+- **What we do:** Optimize README for LLM extraction
+
+## Integration with LinkSwarm
+
+Listing Swarm submissions automatically:
+1. Register the site with LinkSwarm API
+2. Create partner matches based on new platform presence
+3. Track citation improvements via Citation Tracker
 
 ## Pricing
 
-- **Free:** 3 sites, 25 exchanges/month
-- **Pro ($29/mo):** 10 sites, 100 exchanges
-- **Agency ($99/mo):** Unlimited
+| Tier | What's Included | Price |
+|------|-----------------|-------|
+| Self-Service | Skill + templates + tracking | Free |
+| Managed | We handle all submissions | $199 one-time |
+| Premium | Managed + PH launch support | $499 one-time |
 
-## Why LinkSwarm?
+## Success Metrics
 
-- **Semantic matching** — OpenAI embeddings find relevant partners
-- **Quality scoring** — DataForSEO integration
-- **Fully automated** — No manual outreach
-- **Agent-native** — Built for API-first workflows
+After Listing Swarm:
+- [ ] Listed on G2 with 5+ reviews
+- [ ] Crunchbase profile complete
+- [ ] Product Hunt launched
+- [ ] 3+ Reddit posts with engagement
+- [ ] GitHub README optimized
+- [ ] Measurable citation rate increase (via Citation Tracker)
 
-→ https://linkswarm.ai
+## Resources
+
+- [AI Citation Intel](/intel/) - Which platforms actually matter
+- [Citation Tracker](/docs/citation-tracker-spec.md) - Measure your AI visibility
+- [GEO Playbook](/blog/backlinks-ai-visibility/) - Full strategy guide
