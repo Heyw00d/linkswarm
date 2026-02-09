@@ -31,6 +31,21 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://linkswarm.ai/blog/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://linkswarm.ai/blog/backlinks-ai-visibility/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://linkswarm.ai/blog/how-to-get-mentioned-by-chatgpt/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://linkswarm.ai/docs/roadmap.html</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
