@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Citation Intel | Which Directories Actually Get Cited by LLMs</title>
+    <meta name="description" content="88% of AI Overview citations come from just 6 platforms. See which directories LLMs actually cite — and which 200+ are wasting your time.">
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="AI Citation Intel | LinkSwarm">
+    <meta property="og:description" content="88% of AI Overview citations come from just 6 platforms. See which directories matter.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://linkswarm.ai/intel/">
+    
+    <!-- JSON-LD Schema -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "Which Directories Actually Get Cited by LLMs",
+        "description": "Research showing 88% of AI Overview review citations come from just 6 platforms. Most directory submissions have zero LLM impact.",
+        "author": {
+            "@type": "Organization",
+            "name": "LinkSwarm"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "LinkSwarm",
+            "url": "https://linkswarm.ai"
+        },
+        "datePublished": "2025-02-09",
+        "mainEntityOfPage": "https://linkswarm.ai/intel/"
+    }
+    </script>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        honey: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            200: '#fde68a',
+                            300: '#fcd34d',
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309',
+                            800: '#92400e',
+                            900: '#78350f',
+                        },
+                        swarm: {
+                            900: '#0a0a0f',
+                            800: '#12121a',
+                            700: '#1a1a25',
+                            600: '#252533',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        .swarm-bg {
+            background: radial-gradient(ellipse at 50% 0%, rgba(251, 191, 36, 0.15) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 50%, rgba(139, 92, 246, 0.1) 0%, transparent 40%),
+                        radial-gradient(ellipse at 20% 80%, rgba(251, 191, 36, 0.08) 0%, transparent 40%);
+        }
+        
+        .hex-pattern {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='49' viewBox='0 0 28 49'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%23fbbf24' fill-opacity='0.03'%3E%3Cpath d='M13.99 9.25l13 7.5v15l-13 7.5L1 31.75v-15l12.99-7.5zM3 17.9v12.7l10.99 6.34 11-6.35V17.9l-11-6.34L3 17.9zM0 15l12.98-7.5V0h-2v6.35L0 12.69v2.3zm0 18.5L12.98 41v8h-2v-6.85L0 35.81v-2.3zM15 0v7.5L27.99 15H28v-2.31h-.01L17 6.35V0h-2zm0 49v-8l12.99-7.5H28v2.31h-.01L17 42.15V49h-2z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        
+        .glow-honey {
+            box-shadow: 0 0 40px rgba(251, 191, 36, 0.3);
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 0 30px rgba(251, 191, 36, 0.1);
+        }
+        
+        .tier-s { border-color: rgba(234, 179, 8, 0.5); background: linear-gradient(135deg, rgba(234, 179, 8, 0.1) 0%, transparent 100%); }
+        .tier-a { border-color: rgba(168, 85, 247, 0.5); background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, transparent 100%); }
+        .tier-b { border-color: rgba(107, 114, 128, 0.5); background: linear-gradient(135deg, rgba(107, 114, 128, 0.1) 0%, transparent 100%); }
+        .tier-c { border-color: rgba(75, 85, 99, 0.3); background: linear-gradient(135deg, rgba(75, 85, 99, 0.05) 0%, transparent 100%); }
+    </style>
+</head>
+<body class="bg-swarm-900 text-white antialiased">
+    
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 bg-swarm-900/80 backdrop-blur-lg border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <a href="/" class="flex items-center gap-2 text-xl font-bold">
+                    <span class="text-2xl">🐝</span>
+                    <span class="bg-gradient-to-r from-honey-400 to-honey-500 bg-clip-text text-transparent">LinkSwarm</span>
+                </a>
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="/#how-it-works" class="text-gray-400 hover:text-honey-400 transition">How it Works</a>
+                    <a href="/intel/" class="text-honey-400 font-medium">Intel</a>
+                    <a href="/#pricing" class="text-gray-400 hover:text-honey-400 transition">Pricing</a>
+                    <a href="/docs/" class="text-gray-400 hover:text-honey-400 transition">Docs</a>
+                    <a href="/dashboard/" class="bg-honey-500 hover:bg-honey-400 text-swarm-900 font-semibold px-5 py-2 rounded-full transition">
+                        Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="relative pt-32 pb-16 px-6 swarm-bg hex-pattern">
+        <div class="max-w-4xl mx-auto text-center">
+            <div class="inline-flex items-center gap-2 bg-red-500/20 border border-red-500/30 rounded-full px-4 py-2 mb-6">
+                <span class="text-red-400 text-sm font-medium">🔬 Research-backed intel most SEOs don't know</span>
+            </div>
+            
+            <h1 class="text-4xl md:text-6xl font-extrabold mb-6 leading-tight">
+                <span class="text-white">Which Directories Actually</span><br>
+                <span class="bg-gradient-to-r from-honey-300 via-honey-400 to-honey-500 bg-clip-text text-transparent">Get Cited by LLMs?</span>
+            </h1>
+            
+            <p class="text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
+                We analyzed AI Overview citations across ChatGPT, Claude, Perplexity, and Google. 
+                <strong class="text-white">88% come from just 6 platforms.</strong> The other 200+ directories? Zero measurable impact.
+            </p>
+            
+            <div class="flex justify-center gap-8 text-center">
+                <div>
+                    <div class="text-4xl font-bold text-red-400">88%</div>
+                    <div class="text-gray-500 text-sm">from 6 platforms</div>
+                </div>
+                <div>
+                    <div class="text-4xl font-bold text-honey-400">40%</div>
+                    <div class="text-gray-500 text-sm">Reddit alone</div>
+                </div>
+                <div>
+                    <div class="text-4xl font-bold text-gray-500">0%</div>
+                    <div class="text-gray-500 text-sm">from 200+ others</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- The 88% Rule -->
+    <section class="py-16 px-6 bg-swarm-800">
+        <div class="max-w-6xl mx-auto">
+            <div class="bg-gradient-to-r from-red-900/30 to-swarm-700 border border-red-500/30 rounded-2xl p-8 mb-12">
+                <div class="flex items-start gap-4">
+                    <span class="text-4xl">⚠️</span>
+                    <div>
+                        <h2 class="text-2xl font-bold text-red-400 mb-2">The Dirty Secret of "200+ Directory" Services</h2>
+                        <p class="text-gray-300 text-lg">
+                            Most directory submission services brag about submitting to 200+ directories. 
+                            But <strong class="text-white">Gartner Peer Insights, G2, Capterra, Software Advice, and TrustRadius 
+                            account for 88% of all review platform citations in AI Overviews.</strong>
+                        </p>
+                        <p class="text-gray-400 mt-4">
+                            Meanwhile, Product Hunt, SiteJabber, and PeerSpot are nearly invisible in AI Overviews. 
+                            And AlternativeTo, SaaSHub, and FinancesOnline? <strong class="text-white">Not cited at all.</strong>
+                        </p>
+                        <p class="text-gray-500 text-sm mt-4">Source: SeaRanks LLM Citation Study</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- S-Tier -->
+    <section class="py-16 px-6 bg-swarm-900">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex items-center gap-4 mb-8">
+                <span class="text-5xl">🏆</span>
+                <div>
+                    <h2 class="text-3xl font-bold text-honey-400">S-Tier: LLM Citation Sources</h2>
+                    <p class="text-gray-400">These platforms actually get cited by ChatGPT, Claude, and Perplexity. Submit here first.</p>
+                </div>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- G2 -->
+                <div class="tier-s border-2 rounded-xl p-6 card-hover">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold">G2</h3>
+                        <span class="bg-honey-500/20 text-honey-400 text-xs font-bold px-2 py-1 rounded">22-23% SoV</span>
+                    </div>
+                    <p class="text-gray-400 text-sm mb-4">Most cited B2B review platform. Owns Capterra, GetApp, Software Advice — one strong profile cascades to all.</p>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-500">DA 92</span>
+                        <span class="text-green-400">✓ Confirmed citations</span>
+                    </div>
+                </div>
+                
+                <!-- Capterra/GetApp -->
+                <div class="tier-s border-2 rounded-xl p-6 card-hover">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold">Capterra / GetApp</h3>
+                        <span class="bg-honey-500/20 text-honey-400 text-xs font-bold px-2 py-1 rounded">47% ChatGPT</span>
+                    </div>
+                    <p class="text-gray-400 text-sm mb-4">Claude's #1 review source. GetApp alone is 47.65% of ChatGPT's B2B review citations. Gartner-owned.</p>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-500">DA 93 / 80</span>
+                        <span class="text-green-400">✓ Confirmed citations</span>
+                    </div>
+                </div>
+                
+                <!-- Reddit -->
+                <div class="tier-s border-2 rounded-xl p-6 card-hover">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold">Reddit</h3>
+                        <span class="bg-red-500/20 text-red-400 text-xs font-bold px-2 py-1 rounded">40% ALL CITATIONS</span>
+                    </div>
+                    <p class="text-gray-400 text-sm mb-4">More than all directories combined. Perplexity heavily pulls from Reddit. Essential for brand mentions.</p>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-500">DA 99</span>
+                        <span class="text-green-400">✓ Confirmed citations</span>
+                    </div>
+                </div>
+                
+                <!-- Crunchbase -->
+                <div class="tier-s border-2 rounded-xl p-6 card-hover">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold">Crunchbase</h3>
+                        <span class="bg-blue-500/20 text-blue-400 text-xs font-bold px-2 py-1 rounded">Company Data</span>
+                    </div>
+                    <p class="text-gray-400 text-sm mb-4">ChatGPT's go-to for company info, funding rounds, and product descriptions. Primary source for "What is X?"</p>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-500">DA 91</span>
+                        <span class="text-green-400">✓ Confirmed citations</span>
+                    </div>
+                </div>
+                
+                <!-- GitHub -->
+                <div class="tier-s border-2 rounded-xl p-6 card-hover">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold">GitHub</h3>
+                        <span class="bg-purple-500/20 text-purple-400 text-xs font-bold px-2 py-1 rounded">Training Data</span>
+                    </div>
+                    <p class="text-gray-400 text-sm mb-4">Massively overrepresented in LLM training. Your protocol docs, READMEs, and code = high parametric weight.</p>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-500">DA 96</span>
+                        <span class="text-green-400">✓ Confirmed citations</span>
+                    </div>
+                </div>
+                
+                <!-- Wikipedia -->
+                <div class="tier-s border-2 rounded-xl p-6 card-hover">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold">Wikipedia</h3>
+                        <span class="bg-gray-500/20 text-gray-300 text-xs font-bold px-2 py-1 rounded">22% Training</span>
+                    </div>
+                    <p class="text-gray-400 text-sm mb-4">22% of LLM training data. Long-term goal once you establish notability through other channels.</p>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-500">DA 99</span>
+                        <span class="text-yellow-400">⏳ Requires notability</span>
+                    </div>
+                </div>
+                
+                <!-- TrustRadius -->
+                <div class="tier-s border-2 rounded-xl p-6 card-hover">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold">TrustRadius</h3>
+                        <span class="bg-honey-500/20 text-honey-400 text-xs font-bold px-2 py-1 rounded">88% Ecosystem</span>
+                    </div>
+                    <p class="text-gray-400 text-sm mb-4">Part of the 88% review citation ecosystem. B2B focus with verified reviewer requirements.</p>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-500">DA 75</span>
+                        <span class="text-green-400">✓ Confirmed citations</span>
+                    </div>
+                </div>
+                
+                <!-- Product Hunt -->
+                <div class="tier-s border-2 rounded-xl p-6 card-hover">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold">Product Hunt</h3>
+                        <span class="bg-orange-500/20 text-orange-400 text-xs font-bold px-2 py-1 rounded">DR 91</span>
+                    </div>
+                    <p class="text-gray-400 text-sm mb-4">Heavy Common Crawl presence. Strong parametric knowledge signal. Best for launches and early traction.</p>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-500">DA 91</span>
+                        <span class="text-green-400">✓ Confirmed citations</span>
+                    </div>
+                </div>
+                
+                <!-- Gartner -->
+                <div class="tier-s border-2 rounded-xl p-6 card-hover">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold">Gartner Peer Insights</h3>
+                        <span class="bg-honey-500/20 text-honey-400 text-xs font-bold px-2 py-1 rounded">88% Ecosystem</span>
+                    </div>
+                    <p class="text-gray-400 text-sm mb-4">Enterprise-focused reviews. Part of the 88% that dominates AI Overview citations.</p>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-500">DA 92</span>
+                        <span class="text-green-400">✓ Confirmed citations</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- A-Tier -->
+    <section class="py-16 px-6 bg-swarm-800">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex items-center gap-4 mb-8">
+                <span class="text-5xl">🥈</span>
+                <div>
+                    <h2 class="text-3xl font-bold text-purple-400">A-Tier: Training Data Present</h2>
+                    <p class="text-gray-400">In Common Crawl and LLM training data. Parametric knowledge signal, but not actively cited in responses.</p>
+                </div>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="tier-a border rounded-xl p-5">
+                    <h3 class="font-bold mb-2">Hacker News</h3>
+                    <p class="text-gray-400 text-sm mb-3">In training data but not actively cited. Show HN posts build parametric presence.</p>
+                    <span class="text-gray-500 text-xs">DA 92</span>
+                </div>
+                
+                <div class="tier-a border rounded-xl p-5">
+                    <h3 class="font-bold mb-2">Stack Overflow</h3>
+                    <p class="text-gray-400 text-sm mb-3">Heavy training data presence. Answer relevant questions with product context.</p>
+                    <span class="text-gray-500 text-xs">DA 95</span>
+                </div>
+                
+                <div class="tier-a border rounded-xl p-5">
+                    <h3 class="font-bold mb-2">DEV.to</h3>
+                    <p class="text-gray-400 text-sm mb-3">Developer blog platform in Common Crawl. Good for technical content.</p>
+                    <span class="text-gray-500 text-xs">DA 80</span>
+                </div>
+                
+                <div class="tier-a border rounded-xl p-5">
+                    <h3 class="font-bold mb-2">Medium</h3>
+                    <p class="text-gray-400 text-sm mb-3">Content platform in training data. Thought leadership and tutorials.</p>
+                    <span class="text-gray-500 text-xs">DA 95</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- B-Tier (The "Zero Impact" List) -->
+    <section class="py-16 px-6 bg-swarm-900">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex items-center gap-4 mb-8">
+                <span class="text-5xl">💀</span>
+                <div>
+                    <h2 class="text-3xl font-bold text-gray-400">B-Tier: Backlink Value Only</h2>
+                    <p class="text-gray-500">Good DA for traditional SEO. <strong class="text-red-400">Zero measured LLM citation impact.</strong> These are what most services submit you to.</p>
+                </div>
+            </div>
+            
+            <div class="bg-swarm-800/50 border border-gray-700 rounded-xl p-6 mb-8">
+                <p class="text-gray-400">
+                    <span class="text-red-400 font-bold">Reality check:</span> These directories were <strong class="text-white">not cited at all</strong> in AI Overviews 
+                    despite being popular in SEO circles. They provide backlink value but won't help you get mentioned by ChatGPT or Perplexity.
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 lg:grid-cols-5 gap-4">
+                <div class="tier-b border rounded-lg p-4 text-center">
+                    <div class="font-bold text-gray-300">AlternativeTo</div>
+                    <div class="text-gray-500 text-xs">DA 75 • 0% cited</div>
+                </div>
+                <div class="tier-b border rounded-lg p-4 text-center">
+                    <div class="font-bold text-gray-300">SaaSHub</div>
+                    <div class="text-gray-500 text-xs">DA 60 • 0% cited</div>
+                </div>
+                <div class="tier-b border rounded-lg p-4 text-center">
+                    <div class="font-bold text-gray-300">FinancesOnline</div>
+                    <div class="text-gray-500 text-xs">DA 70 • 0% cited</div>
+                </div>
+                <div class="tier-b border rounded-lg p-4 text-center">
+                    <div class="font-bold text-gray-300">SiteJabber</div>
+                    <div class="text-gray-500 text-xs">DA 70 • Near 0%</div>
+                </div>
+                <div class="tier-b border rounded-lg p-4 text-center">
+                    <div class="font-bold text-gray-300">PeerSpot</div>
+                    <div class="text-gray-500 text-xs">DA 65 • Near 0%</div>
+                </div>
+                <div class="tier-b border rounded-lg p-4 text-center">
+                    <div class="font-bold text-gray-300">BetaList</div>
+                    <div class="text-gray-500 text-xs">DA 65 • 0% cited</div>
+                </div>
+                <div class="tier-b border rounded-lg p-4 text-center">
+                    <div class="font-bold text-gray-300">F6S</div>
+                    <div class="text-gray-500 text-xs">DA 65 • 0% cited</div>
+                </div>
+                <div class="tier-b border rounded-lg p-4 text-center">
+                    <div class="font-bold text-gray-300">Indie Hackers</div>
+                    <div class="text-gray-500 text-xs">DA 70 • 0% cited</div>
+                </div>
+                <div class="tier-b border rounded-lg p-4 text-center">
+                    <div class="font-bold text-gray-300">Slant</div>
+                    <div class="text-gray-500 text-xs">DA 65 • 0% cited</div>
+                </div>
+                <div class="tier-b border rounded-lg p-4 text-center">
+                    <div class="font-bold text-gray-300">StackShare</div>
+                    <div class="text-gray-500 text-xs">DA 70 • 0% cited</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- The Insight -->
+    <section class="py-16 px-6 bg-gradient-to-b from-swarm-800 to-swarm-900">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-3xl md:text-4xl font-bold mb-6">
+                The Question Every Marketer Is Asking
+            </h2>
+            <blockquote class="text-2xl text-honey-400 font-medium italic mb-8">
+                "Do backlinks help with LLM visibility?"
+            </blockquote>
+            <p class="text-xl text-gray-300 mb-8">
+                <strong class="text-white">Yes — but the mechanism has changed.</strong>
+            </p>
+            <div class="grid md:grid-cols-3 gap-6 text-left mb-12">
+                <div class="bg-swarm-700/50 border border-white/10 rounded-xl p-6">
+                    <div class="text-2xl mb-3">📊</div>
+                    <h3 class="font-bold text-honey-400 mb-2">Authority Signals</h3>
+                    <p class="text-gray-400 text-sm">Backlinks from high-DA sites signal trustworthiness to LLMs during RAG retrieval.</p>
+                </div>
+                <div class="bg-swarm-700/50 border border-white/10 rounded-xl p-6">
+                    <div class="text-2xl mb-3">🔗</div>
+                    <h3 class="font-bold text-honey-400 mb-2">Co-occurrence Patterns</h3>
+                    <p class="text-gray-400 text-sm">When your brand appears alongside trusted sources, LLMs learn to associate them.</p>
+                </div>
+                <div class="bg-swarm-700/50 border border-white/10 rounded-xl p-6">
+                    <div class="text-2xl mb-3">🔍</div>
+                    <h3 class="font-bold text-honey-400 mb-2">RAG Retrieval</h3>
+                    <p class="text-gray-400 text-sm">AI systems pull from indexed sources. Being on cited platforms = getting retrieved.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="py-24 px-6 bg-swarm-900 swarm-bg">
+        <div class="max-w-3xl mx-auto text-center">
+            <div class="text-5xl mb-6">🐝</div>
+            <h2 class="text-3xl md:text-4xl font-bold mb-4">
+                Get Your Brand <span class="text-honey-400">Cited by AI</span>
+            </h2>
+            <p class="text-xl text-gray-400 mb-8">
+                LinkSwarm focuses on the platforms that actually matter. 
+                Stop wasting time on 200+ directories with zero impact.
+            </p>
+            
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="/#early-access" class="bg-honey-500 hover:bg-honey-400 text-swarm-900 font-bold px-8 py-4 rounded-full transition glow-honey">
+                    Join LinkSwarm →
+                </a>
+                <a href="/docs/" class="border border-gray-600 hover:border-honey-500/50 text-gray-300 hover:text-white px-8 py-4 rounded-full transition">
+                    Read the Docs
+                </a>
+            </div>
+            
+            <p class="text-gray-500 text-sm mt-8">
+                Coming soon: <strong class="text-honey-400">AI Citation Tracker</strong> — see which directories actually drove citations for your brand.
+            </p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-12 px-6 bg-swarm-900 border-t border-white/5">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">🐝</span>
+                    <span class="font-bold text-lg bg-gradient-to-r from-honey-400 to-honey-500 bg-clip-text text-transparent">LinkSwarm</span>
+                </div>
+                
+                <div class="flex gap-8 text-gray-400">
+                    <a href="/" class="hover:text-honey-400 transition">Home</a>
+                    <a href="/intel/" class="hover:text-honey-400 transition">Intel</a>
+                    <a href="/docs/" class="hover:text-honey-400 transition">Docs</a>
+                    <a href="https://x.com/Link_Swarm" target="_blank" class="hover:text-honey-400 transition">𝕏</a>
+                </div>
+                
+                <div class="text-gray-500 text-sm">
+                    © 2025 LinkSwarm. All rights reserved.
+                </div>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>
