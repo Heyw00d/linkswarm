@@ -77,14 +77,40 @@
                 Stop wasting time on 200+ directories with zero LLM impact.
             </p>
             
+            <!-- One-liner install -->
+            <div class="bg-swarm-800 border border-honey-500/30 rounded-2xl p-6 mb-8 max-w-2xl mx-auto">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-gray-400 text-sm">Quick Start</span>
+                    <button onclick="copyCommand()" class="text-honey-400 hover:text-honey-300 text-sm flex items-center gap-1" id="copyBtn">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                        Copy
+                    </button>
+                </div>
+                <code id="installCmd" class="block bg-swarm-900 rounded-lg p-4 text-sm font-mono text-honey-400 overflow-x-auto">npx listing-swarm --site myproduct</code>
+            </div>
+            
             <div class="flex justify-center gap-4 mb-12">
                 <a href="https://github.com/Heyw00d/linkswarm/tree/main/skill" class="bg-honey-500 hover:bg-honey-400 text-swarm-900 font-bold px-8 py-4 rounded-full">
-                    Get the Skill →
+                    View on GitHub →
                 </a>
                 <a href="/intel/" class="border border-gray-600 hover:border-honey-500/50 text-gray-300 px-8 py-4 rounded-full">
                     See the Research
                 </a>
             </div>
+            
+            <script>
+            function copyCommand() {
+                const cmd = document.getElementById('installCmd').textContent;
+                navigator.clipboard.writeText(cmd);
+                const btn = document.getElementById('copyBtn');
+                btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Copied!';
+                setTimeout(() => {
+                    btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg> Copy';
+                }, 2000);
+            }
+            </script>
         </div>
     </section>
 
