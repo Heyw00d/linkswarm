@@ -22,10 +22,31 @@
             <div class="text-center mb-8">
                 <div class="text-4xl mb-2">🐝</div>
                 <h1 class="text-2xl font-bold">LinkSwarm Dashboard</h1>
-                <p class="text-gray-400 mt-2">Enter your API key to access your dashboard</p>
+                <p class="text-gray-400 mt-2">Access your dashboard</p>
             </div>
             
-            <div class="space-y-4">
+            <!-- Login Tabs -->
+            <div class="flex mb-6 border-b border-gray-700">
+                <button onclick="showLoginTab('email')" id="tabEmail" class="flex-1 py-2 text-center text-amber-400 border-b-2 border-amber-400 font-medium">Email</button>
+                <button onclick="showLoginTab('apikey')" id="tabApiKey" class="flex-1 py-2 text-center text-gray-400 hover:text-white">API Key</button>
+            </div>
+            
+            <!-- Email Login -->
+            <div id="emailLogin" class="space-y-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Email Address</label>
+                    <input type="email" id="emailInput" placeholder="you@example.com" 
+                        class="w-full bg-black/30 border border-gray-700 rounded-lg px-4 py-3 focus:border-amber-500 focus:outline-none">
+                </div>
+                <button onclick="loginWithEmail()" class="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold py-3 rounded-lg transition">
+                    Send Login Link
+                </button>
+                <p id="emailSuccess" class="text-green-400 text-sm text-center hidden"></p>
+                <p id="emailError" class="text-red-400 text-sm text-center hidden"></p>
+            </div>
+            
+            <!-- API Key Login -->
+            <div id="apiKeyLogin" class="space-y-4 hidden">
                 <div>
                     <label class="block text-sm text-gray-400 mb-2">API Key</label>
                     <input type="text" id="apiKeyInput" placeholder="sk_linkswarm_..." 
@@ -278,9 +299,67 @@
         const API = 'https://api.linkswarm.ai';
         let currentApiKey = localStorage.getItem('linkswarm_api_key') || '';
         
+        // Check URL for magic link token
+        const urlParams = new URLSearchParams(window.location.search);
+        const tokenFromUrl = urlParams.get('token');
+        if (tokenFromUrl) {
+            currentApiKey = tokenFromUrl;
+            localStorage.setItem('linkswarm_api_key', tokenFromUrl);
+            window.history.replaceState({}, '', '/dashboard/');
+        }
+        
         // Check if already logged in
         if (currentApiKey) {
             loadDashboard();
+        }
+        
+        // Tab switching
+        function showLoginTab(tab) {
+            document.getElementById('emailLogin').classList.toggle('hidden', tab !== 'email');
+            document.getElementById('apiKeyLogin').classList.toggle('hidden', tab !== 'apikey');
+            document.getElementById('tabEmail').classList.toggle('text-amber-400', tab === 'email');
+            document.getElementById('tabEmail').classList.toggle('border-amber-400', tab === 'email');
+            document.getElementById('tabEmail').classList.toggle('border-b-2', tab === 'email');
+            document.getElementById('tabEmail').classList.toggle('text-gray-400', tab !== 'email');
+            document.getElementById('tabApiKey').classList.toggle('text-amber-400', tab === 'apikey');
+            document.getElementById('tabApiKey').classList.toggle('border-amber-400', tab === 'apikey');
+            document.getElementById('tabApiKey').classList.toggle('border-b-2', tab === 'apikey');
+            document.getElementById('tabApiKey').classList.toggle('text-gray-400', tab !== 'apikey');
+        }
+        
+        // Email login - sends magic link
+        async function loginWithEmail() {
+            const email = document.getElementById('emailInput').value.trim();
+            if (!email || !email.includes('@')) {
+                showError('emailError', 'Please enter a valid email address');
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API}/v1/auth/magic-link`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    document.getElementById('emailError').classList.add('hidden');
+                    document.getElementById('emailSuccess').textContent = 'Check your email for a login link!';
+                    document.getElementById('emailSuccess').classList.remove('hidden');
+                } else {
+                    showError('emailError', data.error || 'Email not found. Have you signed up?');
+                }
+            } catch (e) {
+                showError('emailError', 'Connection error. Please try again.');
+            }
+        }
+        
+        function showError(id, msg) {
+            const el = document.getElementById(id);
+            el.textContent = msg;
+            el.classList.remove('hidden');
         }
         
         async function login() {
