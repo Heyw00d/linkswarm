@@ -271,7 +271,7 @@
                         <div class="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
                             <p class="text-sm text-gray-300 mb-3">Generate an AI article that naturally includes the backlink. Perfect for blog posts.</p>
                             <button onclick="generateAIArticle()" id="generateArticleBtn" class="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2">
-                                <span>✨ Generate Article ($10)</span>
+                                <span>✨ Generate Article (Free)</span>
                             </button>
                             <p class="text-gray-500 text-xs mt-2">Powered by AI. ~800 words with natural link placement.</p>
                         </div>
@@ -1354,9 +1354,9 @@
                 if (res.status === 402) {
                     // Payment required - show payment info
                     const paymentInfo = await res.json();
-                    alert('💳 Payment required: $10 USDC\n\nThis feature requires x402 payment. Coming soon to the dashboard!');
+                    // Free now - no payment required
                     btn.disabled = false;
-                    btn.innerHTML = '<span>✨ Generate Article ($10)</span>';
+                    btn.innerHTML = '<span>✨ Generate Article (Free)</span>';
                     return;
                 }
                 
@@ -1378,12 +1378,12 @@
                 } else {
                     alert(data.error || 'Failed to generate article');
                     btn.disabled = false;
-                    btn.innerHTML = '<span>✨ Generate Article ($10)</span>';
+                    btn.innerHTML = '<span>✨ Generate Article (Free)</span>';
                 }
             } catch (e) {
                 alert('Connection error');
                 btn.disabled = false;
-                btn.innerHTML = '<span>✨ Generate Article ($10)</span>';
+                btn.innerHTML = '<span>✨ Generate Article (Free)</span>';
             }
         }
     </script>
