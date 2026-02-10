@@ -73,6 +73,30 @@
             </div>
         </div>
 
+        <!-- API Usage Stats -->
+        <div class="grid grid-cols-5 gap-4 mb-8">
+            <div class="card border-l-4 border-blue-500">
+                <div class="text-sm text-gray-400 mb-1">API Requests (24h)</div>
+                <div class="text-2xl font-bold text-blue-400" id="statRequests24h">-</div>
+            </div>
+            <div class="card border-l-4 border-blue-500">
+                <div class="text-sm text-gray-400 mb-1">Requests (7d)</div>
+                <div class="text-2xl font-bold text-blue-400" id="statRequests7d">-</div>
+            </div>
+            <div class="card border-l-4 border-cyan-500">
+                <div class="text-sm text-gray-400 mb-1">Total Requests</div>
+                <div class="text-2xl font-bold text-cyan-400" id="statRequestsTotal">-</div>
+            </div>
+            <div class="card border-l-4 border-emerald-500">
+                <div class="text-sm text-gray-400 mb-1">Unique Domains</div>
+                <div class="text-2xl font-bold text-emerald-400" id="statUniqueDomains">-</div>
+            </div>
+            <div class="card border-l-4 border-violet-500">
+                <div class="text-sm text-gray-400 mb-1">Unique IPs</div>
+                <div class="text-2xl font-bold text-violet-400" id="statUniqueIps">-</div>
+            </div>
+        </div>
+
         <div class="grid grid-cols-2 gap-6">
             <!-- Recent Signups -->
             <div class="card">
@@ -140,6 +164,33 @@
                 <div class="text-gray-500">Loading...</div>
             </div>
         </div>
+
+        <!-- API Usage Section -->
+        <div class="grid grid-cols-3 gap-6 mt-6">
+            <!-- Top Endpoints -->
+            <div class="card">
+                <h2 class="text-lg font-semibold mb-4">🎯 Top Endpoints (24h)</h2>
+                <div id="topEndpoints" class="space-y-2">
+                    <div class="text-gray-500">Loading...</div>
+                </div>
+            </div>
+
+            <!-- Top Domains -->
+            <div class="card">
+                <h2 class="text-lg font-semibold mb-4">🌐 Top Domains (7d)</h2>
+                <div id="topDomains" class="space-y-2">
+                    <div class="text-gray-500">Loading...</div>
+                </div>
+            </div>
+
+            <!-- Recent Requests -->
+            <div class="card">
+                <h2 class="text-lg font-semibold mb-4">📡 Recent API Requests</h2>
+                <div id="recentRequests" class="space-y-2 max-h-80 overflow-y-auto text-xs">
+                    <div class="text-gray-500">Loading...</div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -183,6 +234,61 @@
                 document.getElementById('statExchanges').textContent = stats.exchanges;
                 document.getElementById('statSales').textContent = stats.sales || 0;
                 document.getElementById('statRevenue').textContent = '$' + ((stats.revenue || 0) / 100).toFixed(0);
+                
+                // API request stats
+                if (stats.apiRequests) {
+                    document.getElementById('statRequests24h').textContent = stats.apiRequests.last24h.toLocaleString();
+                    document.getElementById('statRequests7d').textContent = stats.apiRequests.last7d.toLocaleString();
+                    document.getElementById('statRequestsTotal').textContent = stats.apiRequests.total.toLocaleString();
+                    document.getElementById('statUniqueDomains').textContent = stats.apiRequests.uniqueDomains;
+                    document.getElementById('statUniqueIps').textContent = stats.apiRequests.uniqueIps;
+                }
+                
+                // Top endpoints
+                if (stats.topEndpoints && stats.topEndpoints.length > 0) {
+                    document.getElementById('topEndpoints').innerHTML = stats.topEndpoints.map(e => `
+                        <div class="flex justify-between items-center py-1 border-b border-[#252533]">
+                            <span class="font-mono text-xs truncate">${e.path}</span>
+                            <span class="text-blue-400 font-bold ml-2">${e.hits}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    document.getElementById('topEndpoints').innerHTML = '<div class="text-gray-500">No data yet</div>';
+                }
+                
+                // Top domains
+                if (stats.topDomains && stats.topDomains.length > 0) {
+                    document.getElementById('topDomains').innerHTML = stats.topDomains.map(d => `
+                        <div class="flex justify-between items-center py-1 border-b border-[#252533]">
+                            <span class="font-mono text-xs truncate">${d.domain}</span>
+                            <span class="text-emerald-400 font-bold ml-2">${d.hits}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    document.getElementById('topDomains').innerHTML = '<div class="text-gray-500">No domains tracked yet</div>';
+                }
+                
+                // Recent requests
+                if (stats.recentRequests && stats.recentRequests.length > 0) {
+                    document.getElementById('recentRequests').innerHTML = stats.recentRequests.slice(0, 20).map(r => {
+                        const statusColor = r.status_code < 300 ? 'text-green-400' : r.status_code < 400 ? 'text-yellow-400' : 'text-red-400';
+                        const time = new Date(r.created_at).toLocaleTimeString();
+                        return `
+                            <div class="py-1 border-b border-[#252533]">
+                                <div class="flex justify-between">
+                                    <span><span class="text-cyan-400">${r.method}</span> <span class="text-gray-300">${r.path}</span></span>
+                                    <span class="${statusColor}">${r.status_code || '-'}</span>
+                                </div>
+                                <div class="flex justify-between text-gray-500">
+                                    <span>${r.domain || r.ip || '-'}</span>
+                                    <span>${r.duration_ms ? r.duration_ms + 'ms' : ''} ${time}</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    document.getElementById('recentRequests').innerHTML = '<div class="text-gray-500">No requests logged yet</div>';
+                }
                 
                 // API Keys
                 if (stats.recentKeys && stats.recentKeys.length > 0) {
