@@ -229,6 +229,70 @@
                 </div>
             </div>
             
+            <!-- Post-Accept Modal - Shows after accepting an exchange -->
+            <div id="postAcceptModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                <div class="glass rounded-xl p-6 max-w-xl w-full max-h-[85vh] overflow-y-auto">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold">✅ Exchange Accepted!</h3>
+                        <button onclick="hidePostAcceptModal()" class="text-gray-400 hover:text-white text-xl">&times;</button>
+                    </div>
+                    
+                    <!-- How it works -->
+                    <div class="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-4">
+                        <div class="flex items-start gap-3">
+                            <span class="text-2xl">🔄</span>
+                            <div>
+                                <p class="font-semibold text-amber-400 mb-1">How LinkSwarm works</p>
+                                <p class="text-sm text-gray-300">This is <strong>not</strong> a reciprocal link exchange. You add a link to <span id="modalPartnerDomain" class="text-amber-400 font-semibold"></span>, and you'll receive a link from a <em>different</em> site in the network. This keeps link profiles natural.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Partner site info -->
+                    <div class="mb-4">
+                        <h4 class="font-semibold mb-2">🌐 About the partner site</h4>
+                        <div id="modalPartnerInfo" class="bg-black/20 rounded-lg p-4 text-sm">
+                            <p class="text-gray-400">Loading partner info...</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Suggested anchors -->
+                    <div class="mb-4">
+                        <h4 class="font-semibold mb-2">⚓ Suggested anchor text</h4>
+                        <div id="modalAnchors" class="flex flex-wrap gap-2">
+                            <span class="bg-gray-700 px-3 py-1 rounded-full text-sm cursor-pointer hover:bg-amber-600" onclick="copyAnchor(this)">Loading...</span>
+                        </div>
+                        <p class="text-gray-500 text-xs mt-2">Click to copy. Use natural, varied anchors.</p>
+                    </div>
+                    
+                    <!-- AI Article option -->
+                    <div class="mb-4">
+                        <h4 class="font-semibold mb-2">🤖 Need content?</h4>
+                        <div class="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
+                            <p class="text-sm text-gray-300 mb-3">Generate an AI article that naturally includes the backlink. Perfect for blog posts.</p>
+                            <button onclick="generateAIArticle()" id="generateArticleBtn" class="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2">
+                                <span>✨ Generate Article ($10)</span>
+                            </button>
+                            <p class="text-gray-500 text-xs mt-2">Powered by AI. ~800 words with natural link placement.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Completion form -->
+                    <div class="border-t border-gray-700 pt-4">
+                        <h4 class="font-semibold mb-2">📤 Mark as complete</h4>
+                        <p class="text-sm text-gray-400 mb-3">Once you've added the link, submit the URL for verification.</p>
+                        <div class="flex gap-2">
+                            <input type="text" id="completionUrl" placeholder="https://yoursite.com/page-with-link" 
+                                class="flex-1 bg-black/30 border border-gray-700 rounded-lg px-4 py-3 focus:border-green-500 focus:outline-none text-sm">
+                            <button onclick="markExchangeComplete()" class="bg-green-600 hover:bg-green-500 px-4 py-3 rounded-lg font-semibold transition whitespace-nowrap">
+                                ✓ Complete
+                            </button>
+                        </div>
+                        <p class="text-gray-500 text-xs mt-2">We'll verify the link exists. You'll earn credits once confirmed.</p>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Discover Partners Section -->
             <div id="discoverSection" class="glass rounded-xl p-6 mb-8 hidden">
                 <h2 class="text-lg font-semibold mb-4">🔍 Discover Partners</h2>
@@ -284,7 +348,7 @@
                         <span class="bg-amber-500 text-black w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 font-bold">4</span>
                         <div>
                             <p class="font-semibold">Exchange links</p>
-                            <p class="text-gray-400">Propose and accept mutual backlinks</p>
+                            <p class="text-gray-400">Give a link, get a link from the network</p>
                         </div>
                     </div>
                 </div>
@@ -532,34 +596,48 @@
                     exchangesList.innerHTML = data.exchanges.map(ex => {
                         const isIncoming = userDomains.includes(ex.to_domain) && !userDomains.includes(ex.from_domain);
                         const isOutgoing = userDomains.includes(ex.from_domain);
-                        const directionLabel = isIncoming ? '← incoming' : '→ outgoing';
+                        const directionLabel = isIncoming ? '← you add link' : '→ they add link';
                         const showActions = isIncoming && ex.status === 'pending';
+                        const showComplete = isIncoming && ex.status === 'accepted';
                         
                         return `
-                        <div class="bg-black/20 rounded-lg p-4">
+                        <div class="bg-black/20 rounded-lg p-4" data-exchange-id="${ex.id}">
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-3">
                                     <span class="${isOutgoing ? 'text-amber-400' : 'text-gray-400'}">${ex.from_domain}</span>
-                                    <span class="text-gray-500">↔</span>
+                                    <span class="text-gray-500">→</span>
                                     <span class="${isIncoming ? 'text-amber-400' : 'text-gray-400'}">${ex.to_domain}</span>
                                     <span class="text-gray-600 text-xs">(${directionLabel})</span>
                                 </div>
                                 <div class="flex items-center gap-2">
                                     ${showActions ? `
-                                        <button onclick="respondExchange(${ex.id}, 'accepted')" class="bg-green-600 hover:bg-green-500 px-3 py-1 rounded text-xs transition">Accept</button>
+                                        <button onclick="acceptExchange(${ex.id}, '${ex.from_domain}')" class="bg-green-600 hover:bg-green-500 px-3 py-1 rounded text-xs transition">Accept</button>
                                         <button onclick="respondExchange(${ex.id}, 'rejected')" class="bg-red-600 hover:bg-red-500 px-3 py-1 rounded text-xs transition">Reject</button>
+                                    ` : showComplete ? `
+                                        <button onclick="showCompleteModal(${ex.id}, '${ex.from_domain}')" class="bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded text-xs transition">Add Link</button>
+                                        <span class="text-xs px-2 py-1 rounded bg-blue-500/20 text-blue-400">accepted</span>
                                     ` : `
                                         <span class="text-xs px-2 py-1 rounded ${
                                             ex.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                                            ex.status === 'accepted' ? 'bg-blue-500/20 text-blue-400' :
+                                            ex.status === 'verified' ? 'bg-emerald-500/20 text-emerald-400' :
                                             ex.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
                                             'bg-yellow-500/20 text-yellow-400'
                                         }">${ex.status}</span>
                                     `}
                                 </div>
                             </div>
-                            ${ex.status === 'accepted' ? `
-                                <div class="mt-2 text-xs text-blue-400">✓ Accepted! Now add backlinks to each other's sites to complete the exchange.</div>
+                            ${ex.status === 'accepted' && isIncoming ? `
+                                <div class="mt-2 text-xs text-blue-400">
+                                    Add a link to <strong>${ex.from_domain}</strong> from your site. You'll receive a link from another site in the network.
+                                </div>
+                            ` : ex.status === 'accepted' && isOutgoing ? `
+                                <div class="mt-2 text-xs text-green-400">
+                                    ✓ Partner accepted! They'll add your link soon. You'll be notified when verified.
+                                </div>
+                            ` : ex.status === 'completed' ? `
+                                <div class="mt-2 text-xs text-green-400">
+                                    ✓ Link placed at: <a href="${ex.placement_url || '#'}" target="_blank" class="underline">${ex.placement_url || 'pending verification'}</a>
+                                </div>
                             ` : ''}
                         </div>
                     `}).join('');
@@ -1058,6 +1136,256 @@
         document.getElementById('apiKeyInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') login();
         });
+        
+        // ============ Post-Accept Modal Functions ============
+        
+        let currentExchangeId = null;
+        let currentPartnerDomain = null;
+        
+        // Accept exchange and show the post-accept modal
+        async function acceptExchange(exchangeId, partnerDomain) {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Accepting...';
+            
+            try {
+                const res = await fetch(`${API}/v1/exchanges/${exchangeId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${currentApiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status: 'accepted' })
+                });
+                
+                if (res.ok) {
+                    // Show the post-accept modal with context
+                    showPostAcceptModal(exchangeId, partnerDomain);
+                    loadDashboard();
+                } else {
+                    const data = await res.json();
+                    alert(data.error || 'Failed to accept exchange');
+                    btn.disabled = false;
+                    btn.textContent = 'Accept';
+                }
+            } catch (e) {
+                alert('Connection error');
+                btn.disabled = false;
+                btn.textContent = 'Accept';
+            }
+        }
+        
+        // Show the post-accept modal with partner info
+        async function showPostAcceptModal(exchangeId, partnerDomain) {
+            currentExchangeId = exchangeId;
+            currentPartnerDomain = partnerDomain;
+            
+            document.getElementById('modalPartnerDomain').textContent = partnerDomain;
+            document.getElementById('postAcceptModal').classList.remove('hidden');
+            
+            // Load partner site info
+            const infoDiv = document.getElementById('modalPartnerInfo');
+            infoDiv.innerHTML = '<p class="text-gray-400">Loading partner info...</p>';
+            
+            try {
+                const res = await fetch(`${API}/v1/sites/${encodeURIComponent(partnerDomain)}/info`, {
+                    headers: { 'Authorization': `Bearer ${currentApiKey}` }
+                });
+                
+                if (res.ok) {
+                    const info = await res.json();
+                    infoDiv.innerHTML = `
+                        <div class="mb-2">
+                            <strong class="text-amber-400">${info.name || partnerDomain}</strong>
+                            <a href="https://${partnerDomain}" target="_blank" class="text-gray-500 text-xs ml-2">↗ Visit</a>
+                        </div>
+                        ${info.description ? `<p class="text-gray-300 mb-2">${info.description}</p>` : ''}
+                        ${info.categories?.length ? `<div class="text-gray-500 text-xs">Categories: ${info.categories.join(', ')}</div>` : ''}
+                        ${info.quality ? `
+                            <div class="mt-2 pt-2 border-t border-gray-700 grid grid-cols-3 gap-2 text-xs">
+                                <div><span class="text-gray-500">Quality:</span> <span class="text-amber-400">${info.quality.score}/100</span></div>
+                                <div><span class="text-gray-500">Traffic:</span> <span class="text-green-400">$${info.quality.etv?.toLocaleString() || '?'}</span></div>
+                                <div><span class="text-gray-500">Keywords:</span> ${info.quality.keywords?.toLocaleString() || '?'}</div>
+                            </div>
+                        ` : ''}
+                    `;
+                } else {
+                    infoDiv.innerHTML = `<p class="text-gray-300">${partnerDomain} <a href="https://${partnerDomain}" target="_blank" class="text-amber-400">↗ Visit site</a></p>`;
+                }
+            } catch (e) {
+                infoDiv.innerHTML = `<p class="text-gray-300">${partnerDomain} <a href="https://${partnerDomain}" target="_blank" class="text-amber-400">↗ Visit site</a></p>`;
+            }
+            
+            // Load suggested anchors
+            const anchorsDiv = document.getElementById('modalAnchors');
+            anchorsDiv.innerHTML = '<span class="text-gray-400 text-sm">Loading suggestions...</span>';
+            
+            try {
+                const res = await fetch(`${API}/v1/sites/${encodeURIComponent(partnerDomain)}/anchors`, {
+                    headers: { 'Authorization': `Bearer ${currentApiKey}` }
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.anchors?.length) {
+                        anchorsDiv.innerHTML = data.anchors.map(a => 
+                            `<span class="bg-gray-700 px-3 py-1 rounded-full text-sm cursor-pointer hover:bg-amber-600 transition" onclick="copyAnchor(this)">${a}</span>`
+                        ).join('');
+                    } else {
+                        // Default anchors
+                        const defaultAnchors = [partnerDomain, `visit ${partnerDomain}`, 'learn more', 'check this out', 'recommended resource'];
+                        anchorsDiv.innerHTML = defaultAnchors.map(a => 
+                            `<span class="bg-gray-700 px-3 py-1 rounded-full text-sm cursor-pointer hover:bg-amber-600 transition" onclick="copyAnchor(this)">${a}</span>`
+                        ).join('');
+                    }
+                } else {
+                    const defaultAnchors = [partnerDomain, `visit ${partnerDomain}`, 'learn more'];
+                    anchorsDiv.innerHTML = defaultAnchors.map(a => 
+                        `<span class="bg-gray-700 px-3 py-1 rounded-full text-sm cursor-pointer hover:bg-amber-600 transition" onclick="copyAnchor(this)">${a}</span>`
+                    ).join('');
+                }
+            } catch (e) {
+                const defaultAnchors = [partnerDomain, 'learn more', 'check this out'];
+                anchorsDiv.innerHTML = defaultAnchors.map(a => 
+                    `<span class="bg-gray-700 px-3 py-1 rounded-full text-sm cursor-pointer hover:bg-amber-600 transition" onclick="copyAnchor(this)">${a}</span>`
+                ).join('');
+            }
+        }
+        
+        // Show modal for already-accepted exchange (Add Link button)
+        function showCompleteModal(exchangeId, partnerDomain) {
+            showPostAcceptModal(exchangeId, partnerDomain);
+        }
+        
+        function hidePostAcceptModal() {
+            document.getElementById('postAcceptModal').classList.add('hidden');
+            currentExchangeId = null;
+            currentPartnerDomain = null;
+            document.getElementById('completionUrl').value = '';
+        }
+        
+        // Copy anchor text to clipboard
+        function copyAnchor(element) {
+            const text = element.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const original = element.textContent;
+                element.textContent = '✓ Copied!';
+                element.classList.add('bg-green-600');
+                setTimeout(() => {
+                    element.textContent = original;
+                    element.classList.remove('bg-green-600');
+                }, 1500);
+            });
+        }
+        
+        // Mark exchange as complete
+        async function markExchangeComplete() {
+            const url = document.getElementById('completionUrl').value.trim();
+            
+            if (!url || !url.startsWith('http')) {
+                alert('Please enter a valid URL where you placed the link');
+                return;
+            }
+            
+            if (!currentExchangeId) {
+                alert('No exchange selected');
+                return;
+            }
+            
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Submitting...';
+            
+            try {
+                const res = await fetch(`${API}/v1/exchanges/${currentExchangeId}/complete`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${currentApiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        placement_url: url,
+                        partner_domain: currentPartnerDomain
+                    })
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    alert('✅ Submitted! We\'ll verify the link and update your credits.');
+                    hidePostAcceptModal();
+                    loadDashboard();
+                } else {
+                    alert(data.error || 'Failed to submit completion');
+                    btn.disabled = false;
+                    btn.textContent = '✓ Complete';
+                }
+            } catch (e) {
+                alert('Connection error');
+                btn.disabled = false;
+                btn.textContent = '✓ Complete';
+            }
+        }
+        
+        // Generate AI article with backlink
+        async function generateAIArticle() {
+            if (!currentPartnerDomain) {
+                alert('No partner site selected');
+                return;
+            }
+            
+            const btn = document.getElementById('generateArticleBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span>⏳ Generating...</span>';
+            
+            try {
+                const res = await fetch(`${API}/v1/generate-content`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${currentApiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        target_domain: currentPartnerDomain,
+                        exchange_id: currentExchangeId
+                    })
+                });
+                
+                if (res.status === 402) {
+                    // Payment required - show payment info
+                    const paymentInfo = await res.json();
+                    alert('💳 Payment required: $10 USDC\n\nThis feature requires x402 payment. Coming soon to the dashboard!');
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>✨ Generate Article ($10)</span>';
+                    return;
+                }
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    // Show generated article in a new modal or textarea
+                    const article = data.article || data.content;
+                    const blob = new Blob([article], { type: 'text/markdown' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `article-${currentPartnerDomain.replace(/\./g, '-')}.md`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    
+                    alert('✅ Article generated and downloaded!');
+                    btn.innerHTML = '<span>✓ Downloaded</span>';
+                } else {
+                    alert(data.error || 'Failed to generate article');
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>✨ Generate Article ($10)</span>';
+                }
+            } catch (e) {
+                alert('Connection error');
+                btn.disabled = false;
+                btn.innerHTML = '<span>✨ Generate Article ($10)</span>';
+            }
+        }
     </script>
 </body>
 </html>
