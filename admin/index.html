@@ -212,6 +212,27 @@
             </div>
         </div>
 
+        <!-- Credit Balances -->
+        <div class="card mt-6">
+            <h2 class="text-lg font-semibold mb-4">💰 Credit Balances</h2>
+            <div id="creditBalances" class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-left text-gray-500 border-b border-gray-700">
+                            <th class="py-2">User</th>
+                            <th class="py-2 text-right">Credits</th>
+                            <th class="py-2 text-right">Sites</th>
+                            <th class="py-2 text-right">Links Placed</th>
+                            <th class="py-2 text-right">Links Received</th>
+                        </tr>
+                    </thead>
+                    <tbody id="creditRows">
+                        <tr><td colspan="5" class="py-4 text-gray-500">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- Listing Swarm Section -->
         <div class="card mt-6">
             <h2 class="text-lg font-semibold mb-4">🐝 Listing Swarm (Directory Submissions)</h2>
@@ -583,6 +604,24 @@
                     }).join('');
                 } else {
                     document.getElementById('recentListings').innerHTML = '<div class="text-gray-500">No submissions yet</div>';
+                }
+
+                // Credit balances
+                if (stats.credits && stats.credits.length > 0) {
+                    document.getElementById('creditRows').innerHTML = stats.credits.map(c => {
+                        const creditColor = c.credits > 0 ? 'text-green-400' : c.credits < 0 ? 'text-red-400' : 'text-gray-400';
+                        return `
+                            <tr class="border-b border-[#252533]">
+                                <td class="py-2 font-mono text-xs text-blue-300">${c.email}</td>
+                                <td class="py-2 text-right ${creditColor} font-bold">${c.credits}</td>
+                                <td class="py-2 text-right text-gray-400">${c.sites}</td>
+                                <td class="py-2 text-right text-purple-400">${c.linksPlaced}</td>
+                                <td class="py-2 text-right text-green-400">${c.linksReceived}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else {
+                    document.getElementById('creditRows').innerHTML = '<tr><td colspan="5" class="py-4 text-gray-500">No users with credits yet</td></tr>';
                 }
 
                 document.getElementById('lastUpdate').textContent = 'Updated ' + new Date().toLocaleTimeString();
