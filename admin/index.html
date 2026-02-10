@@ -469,20 +469,25 @@
                         const statusColor = p.status === 'verified' ? 'text-green-400' : p.status === 'placed' ? 'text-yellow-400' : 'text-gray-400';
                         const linkType = p.link_type === 'dofollow' ? '🔗' : '🔒';
                         const date = new Date(p.assigned_at).toLocaleDateString();
+                        const fromUrl = `https://${p.from_domain}${p.from_page}`;
+                        const toUrl = `https://${p.to_domain}${p.to_page}`;
                         return `
                             <div class="py-2 border-b border-[#252533]">
                                 <div class="flex justify-between items-center">
                                     <span class="font-mono text-xs">
-                                        <span class="text-blue-400">${p.from_domain}</span> 
+                                        <a href="${fromUrl}" target="_blank" class="text-blue-400 hover:underline">${p.from_domain}${p.from_page}</a> 
                                         <span class="text-gray-500">→</span> 
-                                        <span class="text-green-400">${p.to_domain}</span>
+                                        <a href="${toUrl}" target="_blank" class="text-green-400 hover:underline">${p.to_domain}${p.to_page}</a>
                                     </span>
                                     <span class="${statusColor} text-xs">${linkType} ${p.status}</span>
                                 </div>
-                                <div class="text-xs text-gray-500 mt-1">
-                                    ${p.anchor_text ? `"${p.anchor_text}"` : ''} 
-                                    ${p.relevance_score ? `• Score: ${(p.relevance_score * 100).toFixed(0)}%` : ''} 
-                                    • ${date}
+                                <div class="text-xs text-gray-500 mt-1 flex justify-between items-center">
+                                    <span>
+                                        ${p.anchor_text ? `"${p.anchor_text}"` : '(no anchor)'} 
+                                        ${p.relevance_score ? `• Score: ${(p.relevance_score * 100).toFixed(0)}%` : ''} 
+                                        • ${date}
+                                    </span>
+                                    <button onclick="verifyPlacement(${p.id})" class="px-2 py-1 bg-purple-600 hover:bg-purple-500 text-white text-xs rounded">Verify</button>
                                 </div>
                             </div>
                         `;
@@ -632,6 +637,30 @@
                 alert('Error: ' + e.message);
             }
         };
+
+        // Verify a placement
+        async function verifyPlacement(placementId) {
+            if (!token) return alert('Not authenticated');
+            
+            try {
+                const res = await fetch(`${API}/v1/placements/${placementId}/verify`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const result = await res.json();
+                
+                if (result.verified) {
+                    alert(`✅ Link verified!\n\nFrom: ${result.from_url}\nTo: ${result.to_url}`);
+                } else {
+                    alert(`❌ Link not found\n\nReason: ${result.reason}\nChecked: ${result.from_url}`);
+                }
+                
+                loadData(); // Refresh
+            } catch (e) {
+                alert('Verify error: ' + e.message);
+            }
+        }
 
         // Auto-refresh every 30s
         setInterval(() => {
