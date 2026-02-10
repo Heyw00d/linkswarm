@@ -165,6 +165,53 @@
             </div>
         </div>
 
+        <!-- Pool Matches Section -->
+        <div class="card mt-6">
+            <h2 class="text-lg font-semibold mb-4">🔗 Link Pool Activity</h2>
+            <div class="grid grid-cols-5 gap-4 mb-4">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-green-400" id="statVerifiedPlacements">-</div>
+                    <div class="text-xs text-gray-500">Verified Links</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-yellow-400" id="statPendingPlacements">-</div>
+                    <div class="text-xs text-gray-500">Pending</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-blue-400" id="statTotalPlacements">-</div>
+                    <div class="text-xs text-gray-500">Total Matches</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-purple-400" id="statAvailableSlots">-</div>
+                    <div class="text-xs text-gray-500">Available Slots</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-orange-400" id="statPendingRequests">-</div>
+                    <div class="text-xs text-gray-500">Pending Requests</div>
+                </div>
+            </div>
+            <h3 class="text-sm font-semibold text-gray-400 mb-2 mt-4">Recent Placements</h3>
+            <div id="recentPlacements" class="space-y-2 max-h-64 overflow-y-auto text-sm">
+                <div class="text-gray-500">Loading...</div>
+            </div>
+        </div>
+
+        <!-- Contributions & Requests -->
+        <div class="grid grid-cols-2 gap-6 mt-6">
+            <div class="card">
+                <h2 class="text-lg font-semibold mb-4">📥 Recent Contributions</h2>
+                <div id="recentContributions" class="space-y-2 max-h-48 overflow-y-auto text-sm">
+                    <div class="text-gray-500">Loading...</div>
+                </div>
+            </div>
+            <div class="card">
+                <h2 class="text-lg font-semibold mb-4">📤 Recent Link Requests</h2>
+                <div id="recentLinkRequests" class="space-y-2 max-h-48 overflow-y-auto text-sm">
+                    <div class="text-gray-500">Loading...</div>
+                </div>
+            </div>
+        </div>
+
         <!-- API Usage Section -->
         <div class="grid grid-cols-3 gap-6 mt-6">
             <!-- Top Endpoints -->
@@ -364,6 +411,83 @@
                     `).join('');
                 } else {
                     document.getElementById('fullWaitlist').innerHTML = '<div class="text-gray-500">No signups yet</div>';
+                }
+
+                // Pool stats
+                if (stats.pool) {
+                    document.getElementById('statTotalPlacements').textContent = stats.pool.totalPlacements;
+                    document.getElementById('statVerifiedPlacements').textContent = stats.pool.verifiedPlacements;
+                    document.getElementById('statPendingPlacements').textContent = stats.pool.pendingPlacements;
+                    document.getElementById('statAvailableSlots').textContent = stats.pool.availableSlots;
+                    document.getElementById('statPendingRequests').textContent = stats.pool.pendingRequests;
+                }
+                
+                // Recent placements
+                if (stats.recentPlacements && stats.recentPlacements.length > 0) {
+                    document.getElementById('recentPlacements').innerHTML = stats.recentPlacements.map(p => {
+                        const statusColor = p.status === 'verified' ? 'text-green-400' : p.status === 'placed' ? 'text-yellow-400' : 'text-gray-400';
+                        const linkType = p.link_type === 'dofollow' ? '🔗' : '🔒';
+                        const date = new Date(p.assigned_at).toLocaleDateString();
+                        return `
+                            <div class="py-2 border-b border-[#252533]">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-mono text-xs">
+                                        <span class="text-blue-400">${p.from_domain}</span> 
+                                        <span class="text-gray-500">→</span> 
+                                        <span class="text-green-400">${p.to_domain}</span>
+                                    </span>
+                                    <span class="${statusColor} text-xs">${linkType} ${p.status}</span>
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1">
+                                    ${p.anchor_text ? `"${p.anchor_text}"` : ''} 
+                                    ${p.relevance_score ? `• Score: ${(p.relevance_score * 100).toFixed(0)}%` : ''} 
+                                    • ${date}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    document.getElementById('recentPlacements').innerHTML = '<div class="text-gray-500">No placements yet</div>';
+                }
+                
+                // Recent contributions
+                if (stats.recentContributions && stats.recentContributions.length > 0) {
+                    document.getElementById('recentContributions').innerHTML = stats.recentContributions.map(c => {
+                        const statusColor = c.status === 'available' ? 'text-green-400' : c.status === 'filled' ? 'text-yellow-400' : 'text-gray-400';
+                        return `
+                            <div class="py-2 border-b border-[#252533] flex justify-between">
+                                <div>
+                                    <span class="font-mono text-xs text-purple-300">${c.site_domain}</span>
+                                    <span class="text-gray-500 text-xs ml-2">${c.page_url}</span>
+                                </div>
+                                <div class="text-right">
+                                    <span class="${statusColor} text-xs">${c.links_placed}/${c.max_links}</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    document.getElementById('recentContributions').innerHTML = '<div class="text-gray-500">No contributions yet</div>';
+                }
+                
+                // Recent link requests
+                if (stats.recentLinkRequests && stats.recentLinkRequests.length > 0) {
+                    document.getElementById('recentLinkRequests').innerHTML = stats.recentLinkRequests.map(r => {
+                        const statusColor = r.status === 'matched' ? 'text-green-400' : r.status === 'pending' ? 'text-yellow-400' : 'text-gray-400';
+                        return `
+                            <div class="py-2 border-b border-[#252533] flex justify-between">
+                                <div>
+                                    <span class="font-mono text-xs text-orange-300">${r.site_domain}</span>
+                                    <span class="text-gray-500 text-xs ml-2">${r.target_page}</span>
+                                </div>
+                                <div class="text-right">
+                                    <span class="${statusColor} text-xs">${r.status}</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    document.getElementById('recentLinkRequests').innerHTML = '<div class="text-gray-500">No requests yet</div>';
                 }
 
                 document.getElementById('lastUpdate').textContent = 'Updated ' + new Date().toLocaleTimeString();
