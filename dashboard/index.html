@@ -274,6 +274,17 @@
                                 <span>✨ Generate Article (Free)</span>
                             </button>
                             <p class="text-gray-500 text-xs mt-2">Powered by AI. ~800 words with natural link placement.</p>
+                            
+                            <!-- Generated article result -->
+                            <div id="generatedArticleBox" class="hidden mt-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <h5 id="generatedTitle" class="font-semibold text-purple-300"></h5>
+                                    <button onclick="copyGeneratedArticle()" class="bg-purple-600 hover:bg-purple-500 px-3 py-1 rounded text-xs font-semibold transition">
+                                        📋 Copy
+                                    </button>
+                                </div>
+                                <textarea id="generatedArticle" readonly class="w-full h-64 bg-black/50 border border-purple-500/30 rounded-lg p-3 text-sm text-gray-200 font-mono resize-y"></textarea>
+                            </div>
                         </div>
                     </div>
                     
@@ -1278,6 +1289,17 @@
             });
         }
         
+        // Copy generated article to clipboard
+        function copyGeneratedArticle() {
+            const textarea = document.getElementById('generatedArticle');
+            navigator.clipboard.writeText(textarea.value).then(() => {
+                const btn = event.target;
+                const original = btn.innerHTML;
+                btn.innerHTML = '✓ Copied!';
+                setTimeout(() => btn.innerHTML = original, 1500);
+            });
+        }
+        
         // Mark exchange as complete
         async function markExchangeComplete() {
             const url = document.getElementById('completionUrl').value.trim();
@@ -1363,18 +1385,16 @@
                 const data = await res.json();
                 
                 if (res.ok) {
-                    // Show generated article in a new modal or textarea
+                    // Show generated article in the textarea
                     const article = data.article || data.content;
-                    const blob = new Blob([article], { type: 'text/markdown' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `article-${currentPartnerDomain.replace(/\./g, '-')}.md`;
-                    a.click();
-                    URL.revokeObjectURL(url);
+                    const title = data.title || 'Generated Article';
                     
-                    alert('✅ Article generated and downloaded!');
-                    btn.innerHTML = '<span>✓ Downloaded</span>';
+                    document.getElementById('generatedTitle').textContent = title;
+                    document.getElementById('generatedArticle').value = article;
+                    document.getElementById('generatedArticleBox').classList.remove('hidden');
+                    
+                    btn.innerHTML = '<span>✓ Generated!</span>';
+                    btn.disabled = false;
                 } else {
                     alert(data.error || 'Failed to generate article');
                     btn.disabled = false;
