@@ -29,15 +29,49 @@
         <h1 class="text-4xl font-bold text-white mb-4">📋 Changelog</h1>
         <p class="text-gray-400 text-lg mb-12">Release history and updates.</p>
         
-        <!-- v0.2.0 -->
+        <!-- v0.3.0 -->
         <section class="mb-12">
             <div class="flex items-center gap-4 mb-4">
-                <span class="px-3 py-1 bg-amber-500/20 text-amber-400 rounded-full text-sm font-medium">v0.2.0</span>
-                <span class="text-gray-500">February 7, 2026</span>
+                <span class="px-3 py-1 bg-amber-500/20 text-amber-400 rounded-full text-sm font-medium">v0.3.0</span>
+                <span class="text-gray-500">February 10, 2026</span>
                 <span class="px-2 py-0.5 bg-green-500/20 text-green-400 rounded text-xs">Latest</span>
             </div>
             
             <div class="pl-4 border-l-2 border-amber-500/30">
+                <h3 class="text-lg font-semibold text-green-400 mb-3">✨ Added</h3>
+                <ul class="text-gray-300 space-y-2 mb-6">
+                    <li>• <strong>Post-accept modal</strong> — Shows partner info, anchor suggestions, and AI article option after accepting an exchange</li>
+                    <li>• <strong>Exchange completion flow</strong> — Submit placement URL when you've added a link, get notified when verified</li>
+                    <li>• <strong>Email notifications</strong> — Get notified when you receive a new exchange request</li>
+                    <li>• <strong>Anchor text suggestions</strong> — <code>GET /v1/sites/:domain/anchors</code> returns natural anchor ideas</li>
+                    <li>• <strong>Partner site info</strong> — <code>GET /v1/sites/:domain/info</code> for context before linking</li>
+                    <li>• <strong>Complete exchange endpoint</strong> — <code>POST /v1/exchanges/:id/complete</code> to mark done</li>
+                </ul>
+                
+                <h3 class="text-lg font-semibold text-blue-400 mb-3">🔧 Improved</h3>
+                <ul class="text-gray-300 space-y-2 mb-6">
+                    <li>• Dashboard now clearly explains triangular (non-reciprocal) exchange model</li>
+                    <li>• Exchange status shows "you add link" / "they add link" instead of confusing incoming/outgoing</li>
+                    <li>• "Add Link" button on accepted exchanges opens helpful modal with context</li>
+                    <li>• API docs now include all new endpoints</li>
+                </ul>
+                
+                <h3 class="text-lg font-semibold text-amber-400 mb-3">🐛 Fixed</h3>
+                <ul class="text-gray-300 space-y-2">
+                    <li>• Removed misleading "add backlinks to each other's sites" copy (was implying reciprocal)</li>
+                    <li>• Quick Start step 4 now correctly describes the triangular model</li>
+                </ul>
+            </div>
+        </section>
+        
+        <!-- v0.2.0 -->
+        <section class="mb-12">
+            <div class="flex items-center gap-4 mb-4">
+                <span class="px-3 py-1 bg-gray-700 text-gray-400 rounded-full text-sm font-medium">v0.2.0</span>
+                <span class="text-gray-500">February 7, 2026</span>
+            </div>
+            
+            <div class="pl-4 border-l-2 border-gray-700">
                 <h3 class="text-lg font-semibold text-green-400 mb-3">✨ Added</h3>
                 <ul class="text-gray-300 space-y-2 mb-6">
                     <li>• <strong>Webhooks</strong> — 8 event types with HMAC signature verification</li>

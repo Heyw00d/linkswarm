@@ -181,6 +181,92 @@
 }</code></pre>
         </section>
         
+        <!-- PATCH /exchanges/:id -->
+        <section class="mb-12 p-6 bg-[#12121a] rounded-xl border border-[#252533]">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="px-3 py-1 bg-yellow-600 text-sm font-bold rounded">PATCH</span>
+                <code class="text-xl text-white">/v1/exchanges/:id</code>
+            </div>
+            <p class="text-gray-300 mb-4">Accept, reject, or update an exchange.</p>
+            <h4 class="text-sm font-semibold text-gray-400 mb-2">Request Body</h4>
+            <pre><code class="text-blue-400">{
+  "status": "accepted"  // or "rejected"
+}</code></pre>
+            <h4 class="text-sm font-semibold text-gray-400 mb-2 mt-4">Response</h4>
+            <pre><code class="text-green-400">{
+  "success": true,
+  "exchange_id": 12,
+  "status": "accepted"
+}</code></pre>
+            <div class="mt-4 p-3 bg-amber-900/20 border border-amber-700/30 rounded-lg text-sm">
+                <span class="text-amber-400 font-semibold">💡 Note:</span>
+                <span class="text-gray-300"> When you accept, you agree to add a link to the partner site. You'll receive a link from a <em>different</em> site in the network (triangular, not reciprocal).</span>
+            </div>
+        </section>
+        
+        <!-- POST /exchanges/:id/complete -->
+        <section class="mb-12 p-6 bg-[#12121a] rounded-xl border border-[#252533]">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="px-3 py-1 bg-blue-700 text-sm font-bold rounded">POST</span>
+                <code class="text-xl text-white">/v1/exchanges/:id/complete</code>
+            </div>
+            <p class="text-gray-300 mb-4">Mark an exchange as complete after placing the link.</p>
+            <h4 class="text-sm font-semibold text-gray-400 mb-2">Request Body</h4>
+            <pre><code class="text-blue-400">{
+  "placement_url": "https://yoursite.com/blog/post-with-link/"
+}</code></pre>
+            <h4 class="text-sm font-semibold text-gray-400 mb-2 mt-4">Response</h4>
+            <pre><code class="text-green-400">{
+  "success": true,
+  "exchange_id": 12,
+  "status": "completed",
+  "placement_url": "https://yoursite.com/blog/post-with-link/",
+  "message": "Exchange marked as complete. Verification pending."
+}</code></pre>
+        </section>
+        
+        <!-- GET /sites/:domain/info -->
+        <section class="mb-12 p-6 bg-[#12121a] rounded-xl border border-[#252533]">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="px-3 py-1 bg-green-700 text-sm font-bold rounded">GET</span>
+                <code class="text-xl text-white">/v1/sites/:domain/info</code>
+            </div>
+            <p class="text-gray-300 mb-4">Get public info about a partner site.</p>
+            <h4 class="text-sm font-semibold text-gray-400 mb-2">Response</h4>
+            <pre><code class="text-green-400">{
+  "domain": "partner.com",
+  "name": "Partner Site",
+  "description": "A great site for crypto news",
+  "categories": ["crypto", "news"],
+  "verified": true,
+  "reputation": 85
+}</code></pre>
+        </section>
+        
+        <!-- GET /sites/:domain/anchors -->
+        <section class="mb-12 p-6 bg-[#12121a] rounded-xl border border-[#252533]">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="px-3 py-1 bg-green-700 text-sm font-bold rounded">GET</span>
+                <code class="text-xl text-white">/v1/sites/:domain/anchors</code>
+            </div>
+            <p class="text-gray-300 mb-4">Get suggested anchor texts for linking to a site.</p>
+            <h4 class="text-sm font-semibold text-gray-400 mb-2">Response</h4>
+            <pre><code class="text-green-400">{
+  "domain": "partner.com",
+  "anchors": [
+    "Partner Site",
+    "partner.com",
+    "crypto resource",
+    "check this out",
+    "learn more here"
+  ]
+}</code></pre>
+            <div class="mt-4 p-3 bg-green-900/20 border border-green-700/30 rounded-lg text-sm">
+                <span class="text-green-400 font-semibold">✨ Best Practice:</span>
+                <span class="text-gray-300"> Vary your anchor text to look natural. Avoid using the exact same anchor for all links.</span>
+            </div>
+        </section>
+        
         <!-- Error Codes -->
         <section class="mb-12">
             <h2 class="text-2xl font-bold text-amber-400 mb-6">Error Codes</h2>
