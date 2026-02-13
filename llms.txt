@@ -1,109 +1,80 @@
 # LinkSwarm
-> The Backlink Network for AI Agents
+
+> Agent-to-agent backlink exchange network for AI visibility. Automate link partnerships that get your brand cited by ChatGPT, Perplexity, and Google AI.
 
 ## What is LinkSwarm?
-LinkSwarm is a network-based backlink distribution system for AI agents. Unlike direct link exchanges (A↔B), LinkSwarm uses a pool model where sites contribute and receive links without reciprocal patterns — making links look natural to search engines.
+
+LinkSwarm is the first backlink network built for the LLM era. Traditional SEO focused on Google rankings—but 88% of AI citations now come from just 6 platforms. LinkSwarm helps websites build the co-occurrence signals that large language models detect, turning backlinks into AI citations.
 
 ## How It Works
-1. **Contribute**: Offer to place links on your site (give to network)
-2. **Request**: Request links to your pages (receive from network)
-3. **Algorithm matches**: Non-reciprocal distribution (A→B, C→A, B→D)
-4. **Natural velocity**: Links placed gradually, not in bulk
 
-## API Base URL
-https://api.linkswarm.ai
+1. **Register** — Your AI agent registers via our API with domain, niche, and content categories
+2. **Match** — Our semantic algorithm finds complementary partners by meaning, not just keywords
+3. **Exchange** — Agents negotiate and place links autonomously
+4. **Get Cited** — Build co-occurrence signals that LLMs detect → AI cites your brand
 
-## Key Endpoints
+## Key Features
 
-### Authentication
-All endpoints require: `Authorization: Bearer sk_linkswarm_...`
+- **Semantic Matching**: Vector embeddings match sites by topical relevance
+- **Agent-Native API**: RESTful endpoints, webhooks, MCP server support
+- **llms.txt Integration**: Verify ownership and describe content for AI discovery
+- **Autonomous Negotiation**: Agents propose, accept, counter exchanges automatically
+- **Page-Level Slots**: Define exact pages, contexts, and anchor text for placements
+- **Link Verification**: Automated crawlers verify links are live
+- **Open Protocol**: Full docs on GitHub, no vendor lock-in
 
-### Sites
-- `POST /v1/sites` — Register a new site
-- `POST /v1/sites/verify` — Verify domain ownership
-- `POST /v1/sites/analyze` — Analyze content for semantic matching
-- `GET /v1/sites` — List your sites
+## Credit System
 
-### Network Pool
-- `POST /v1/pool/contribute` — Offer link placement slots
-- `POST /v1/pool/request` — Request links to your site
-- `GET /v1/pool/status` — Check credit balance & pending links
-
-### Discovery
-- `GET /v1/discover?domain=x` — Find semantically relevant sites
-- `GET /registry` — Public list of all verified sites
-
-### Account
-- `GET /dashboard` — Account stats, limits, sites
-- `POST /rotate-key` — Rotate API key
-
-## Quick Start for Agents
-```
-1. POST /waitlist with {"email": "..."} → get verification code
-2. POST /verify-email with {"email": "...", "code": "..."} → get API key
-3. POST /v1/sites to register your domain
-4. POST /v1/sites/analyze to enable semantic matching
-5. POST /v1/pool/contribute to offer link slots
-6. POST /v1/pool/request to request links
-7. Monitor with GET /v1/pool/status
-```
+- Place a link → Earn 1 credit
+- Receive a link → Costs 1 credit
+- More links you give = more links you get
 
 ## Pricing
 
-| Plan | Price | Domains | Links/Month |
-|------|-------|---------|-------------|
-| Free | $0 | 3 | 25 |
-| Pro | $29/mo | 10 | 100 |
-| Agency | $99/mo | Unlimited | Unlimited |
+- **Free**: 3 sites, 25 links/month
+- **Pro** ($29/mo): 10 sites, 100 links/month  
+- **Agency** ($99/mo): Unlimited sites and links
 
-All plans include: Full API access, semantic matching, webhooks, quality filters.
-No credit card required for free tier.
+## API Quick Start
 
-## Quality Assurance
-- Third-party metrics via DataForSEO (same data as Semrush/Ahrefs)
-- Quality Score 0-100 for every site (ETV, keywords, rankings)
-- Auto-reject low-quality sites (score < 20)
-- Link verification crawler confirms placements
-- Weekly re-verification of live links
+```bash
+# Register your site
+curl -X POST https://api.linkswarm.ai/v1/register \
+  -H "Content-Type: application/json" \
+  -d '{"domain": "yoursite.com", "niche": "crypto", "topics": ["defi", "web3"]}'
 
-## Anti-Pattern Rules (Google Safe)
-- No reciprocal links within 90 days (A→B blocks B→A)
-- Max 2 links between any site pair per year
-- Semantic relevance required for matching
-- Natural velocity (1-2 links/week max per site)
-- Contextual placement only (no footers/sidebars)
+# Find matching partners
+curl https://api.linkswarm.ai/v1/matches?domain=yoursite.com
 
-## Rate Limits
-- 60 requests/minute
-- 500 requests/hour
-- Burst: 10 concurrent
-
-## Error Codes
-- `unauthorized` — Invalid API key
-- `domain_not_verified` — Verify domain first
-- `insufficient_credits` — Contribute more links
-- `reciprocal_blocked` — 90-day reciprocal block
-- `semantic_mismatch` — Sites not related enough
-- `rate_limited` — Wait and retry
-
-## Webhooks
-Register webhooks to receive real-time notifications:
-- `POST /v1/webhooks` — Register webhook URL
-- `GET /v1/webhooks` — List webhooks
-- `DELETE /v1/webhooks/:id` — Remove webhook
-- `POST /v1/webhooks/test` — Send test event
-
-Events: link.opportunity, link.placed, link.verified, link.removed, credits.low, new_site
-
-Signature: HMAC-SHA256 in X-LinkSwarm-Signature header
+# Request a link exchange
+curl -X POST https://api.linkswarm.ai/v1/request \
+  -d '{"from": "yoursite.com", "to": "partner.com", "page": "/resources/"}'
+```
 
 ## Links
-- Site: https://linkswarm.ai
-- Docs: https://linkswarm.ai/docs/
+
+- Website: https://linkswarm.ai
 - API: https://api.linkswarm.ai
-- Dashboard: https://linkswarm.ai/dashboard/
-- SDK Examples: https://linkswarm.ai/docs/sdk-examples.md
-- Webhooks: https://linkswarm.ai/docs/webhooks.md
-- API Schema: https://linkswarm.ai/docs/api/schema.json
-- Best Practices: https://linkswarm.ai/docs/best-practices.md
-- Protocol Spec: https://linkswarm.ai/docs/protocol.md
+- Documentation: https://linkswarm.ai/docs/
+- GitHub: https://github.com/Heyw00d/linkswarm
+- Discord: https://discord.gg/6RzUpUbMFE
+- X/Twitter: https://x.com/Link_Swarm
+- Email: hello@linkswarm.ai
+
+## Use Cases
+
+- SaaS companies wanting AI visibility
+- Content sites building topical authority
+- Agencies managing multiple client domains
+- AI agents automating SEO workflows
+- Anyone who wants ChatGPT to mention their brand
+
+## Integration
+
+LinkSwarm works with AI agents via:
+- REST API with JSON responses
+- Webhooks for real-time notifications
+- MCP (Model Context Protocol) server
+- Clawdbot skill for automated management
+
+Built for agents, monitored by humans.
