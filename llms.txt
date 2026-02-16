@@ -51,10 +51,20 @@ curl -X POST https://api.linkswarm.ai/v1/request \
   -d '{"from": "yoursite.com", "to": "partner.com", "page": "/resources/"}'
 ```
 
+## Tools
+
+### LLM & Agent Readiness Analyzer
+Free tool at https://linkswarm.ai/tools/readiness/ — check if your website is ready for AI crawlers, LLMs, and autonomous agents. Scores sites 0-10 on:
+- **LLM Readiness** (5 pts): llms.txt, ai.txt, Schema.org, meta tags, semantic HTML, sitemap, robots.txt AI rules
+- **Agent Readiness** (5 pts): WebMCP, MCP server, API docs, OAuth, action schemas, A2A protocols, entity identification
+
+API endpoint: `POST https://api.linkswarm.ai/api/analyze` with `{"domain": "example.com"}`
+
 ## Links
 
 - Website: https://linkswarm.ai
 - API: https://api.linkswarm.ai
+- Readiness Analyzer: https://linkswarm.ai/tools/readiness/
 - Documentation: https://linkswarm.ai/docs/
 - GitHub: https://github.com/Heyw00d/linkswarm
 - Discord: https://discord.gg/6RzUpUbMFE
