@@ -152,6 +152,10 @@
                     <div class="text-gray-400 text-sm">Total Requests</div>
                     <div class="text-2xl font-bold" id="statTotalRequests">0</div>
                 </div>
+                <div class="glass rounded-xl p-4 border border-amber-500/30">
+                    <div class="text-amber-400 text-sm">💰 Credits</div>
+                    <div class="text-2xl font-bold text-amber-400" id="statCredits">0</div>
+                </div>
             </div>
             
             <!-- API Key Section -->
@@ -541,6 +545,10 @@
                 document.getElementById('statExchanges').textContent = data.limits.exchanges_used_this_month;
                 document.getElementById('statExchangesLimit').textContent = data.limits.exchanges_per_month;
                 document.getElementById('statTotalRequests').textContent = data.user.requests_total.toLocaleString();
+                
+                // Credits
+                const credits = data.credits?.balance || 0;
+                document.getElementById('statCredits').textContent = credits;
                 
                 // Sites
                 const sitesList = document.getElementById('sitesList');
@@ -1351,7 +1359,10 @@
                 const data = await res.json();
                 
                 if (res.ok) {
-                    alert('✅ Submitted! We\'ll verify the link and update your credits.');
+                    const creditsMsg = data.credits_earned 
+                        ? `\n\n🎉 +${data.credits_earned} credit earned!\nNew balance: ${data.new_balance} credits`
+                        : '';
+                    alert(`✅ Link submitted successfully!${creditsMsg}`);
                     hidePostAcceptModal();
                     loadDashboard();
                 } else {
