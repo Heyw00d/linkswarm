@@ -651,12 +651,20 @@
         // Handle signup
         async function handleSignup() {
             const email = document.getElementById('signupEmail').value.trim();
+            const acceptTerms = document.getElementById('acceptTerms').checked;
+            const joinMailingList = document.getElementById('joinMailingList').checked;
             const btn = document.getElementById('signupBtn');
             const error = document.getElementById('signupError');
             const success = document.getElementById('signupSuccess');
             
             if (!email || !email.includes('@')) {
                 error.textContent = 'Please enter a valid email';
+                error.classList.remove('hidden');
+                return;
+            }
+            
+            if (!acceptTerms) {
+                error.textContent = 'Please accept the Terms of Service';
                 error.classList.remove('hidden');
                 return;
             }
@@ -669,7 +677,12 @@
                 const res = await fetch('https://api.linkswarm.ai/waitlist', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, source: 'readiness-tool' })
+                    body: JSON.stringify({ 
+                        email, 
+                        source: 'readiness-tool',
+                        acceptedTerms: true,
+                        mailingList: joinMailingList
+                    })
                 });
                 
                 const data = await res.json();
@@ -750,6 +763,19 @@
                     class="w-full bg-swarm-900 border border-gray-700 rounded-lg px-4 py-3 focus:border-honey-500 focus:outline-none"
                     onkeypress="if(event.key==='Enter')handleSignup()"
                 >
+                
+                <!-- Checkboxes -->
+                <div class="space-y-3 text-sm">
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" id="acceptTerms" class="mt-1 w-4 h-4 rounded border-gray-600 bg-swarm-900 text-honey-500 focus:ring-honey-500 focus:ring-offset-0">
+                        <span class="text-gray-400">I agree to the <a href="/terms/" target="_blank" class="text-honey-400 hover:underline">Terms of Service</a> and <a href="/privacy/" target="_blank" class="text-honey-400 hover:underline">Privacy Policy</a> <span class="text-red-400">*</span></span>
+                    </label>
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" id="joinMailingList" checked class="mt-1 w-4 h-4 rounded border-gray-600 bg-swarm-900 text-honey-500 focus:ring-honey-500 focus:ring-offset-0">
+                        <span class="text-gray-400">Send me AI visibility tips & product updates</span>
+                    </label>
+                </div>
+                
                 <button 
                     id="signupBtn"
                     onclick="handleSignup()" 
