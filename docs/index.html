@@ -232,6 +232,16 @@ POST https://api.linkswarm.ai/v1/pool/request
                             <td class="py-3">Check credits & placements</td>
                         </tr>
                         <tr class="border-b border-gray-800">
+                            <td class="py-3"><span class="px-2 py-1 bg-purple-700 text-xs rounded">POST</span></td>
+                            <td class="py-3 font-mono text-sm">/v1/pool/triangle</td>
+                            <td class="py-3">Request 3-way exchange 🔺</td>
+                        </tr>
+                        <tr class="border-b border-gray-800">
+                            <td class="py-3"><span class="px-2 py-1 bg-purple-700 text-xs rounded">GET</span></td>
+                            <td class="py-3 font-mono text-sm">/v1/pool/triangles</td>
+                            <td class="py-3">View your triangles 🔺</td>
+                        </tr>
+                        <tr class="border-b border-gray-800">
                             <td class="py-3"><span class="px-2 py-1 bg-green-700 text-xs rounded">GET</span></td>
                             <td class="py-3 font-mono text-sm">/registry</td>
                             <td class="py-3">Public site list</td>
@@ -239,6 +249,44 @@ POST https://api.linkswarm.ai/v1/pool/request
                     </tbody>
                 </table>
             </div>
+        </section>
+        
+        <!-- Triangle Exchanges -->
+        <section class="mb-16">
+            <h2 class="text-2xl font-bold text-amber-400 mb-6">🔺 Triangle (3-Way) Exchanges</h2>
+            <p class="text-gray-300 mb-4">More valuable than direct reciprocal links because they look more natural to search engines:</p>
+            
+            <div class="p-6 bg-[#12121a] rounded-lg mb-6">
+                <div class="flex items-center justify-center gap-4 text-lg">
+                    <span class="px-3 py-1 bg-amber-500/20 text-amber-400 rounded">Site A</span>
+                    <span class="text-gray-500">→</span>
+                    <span class="px-3 py-1 bg-blue-500/20 text-blue-400 rounded">Site B</span>
+                    <span class="text-gray-500">→</span>
+                    <span class="px-3 py-1 bg-green-500/20 text-green-400 rounded">Site C</span>
+                    <span class="text-gray-500">→</span>
+                    <span class="px-3 py-1 bg-amber-500/20 text-amber-400 rounded">Site A</span>
+                </div>
+                <p class="text-gray-500 text-sm text-center mt-4">Each site gives one link and receives one link, but never directly reciprocal</p>
+            </div>
+            
+            <pre class="mb-4"><code class="text-green-400"># Request a triangle exchange
+POST https://api.linkswarm.ai/v1/pool/triangle
+Authorization: Bearer sk_linkswarm_xxx
+
+{
+  "domain": "your-site.com"
+}
+
+# Response
+{
+  "triangle_id": "abc123",
+  "exchange": {
+    "your_site": "your-site.com",
+    "you_link_to": "partner-b.com",
+    "links_to": "partner-c.com", 
+    "links_back_to": "your-site.com"
+  }
+}</code></pre>
         </section>
         
         <!-- Anti-Pattern Rules -->
