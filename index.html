@@ -165,6 +165,10 @@
                     <span class="bg-gradient-to-r from-honey-400 to-honey-500 bg-clip-text text-transparent">LinkSwarm</span>
                 </a>
                 <div class="hidden md:flex items-center gap-8">
+                    <a href="/tools/readiness/" class="text-honey-400 hover:text-honey-300 transition font-medium flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        Check Score
+                    </a>
                     <a href="#how-it-works" class="text-gray-400 hover:text-honey-400 transition">How it Works</a>
                     <a href="/skill/" class="text-gray-400 hover:text-honey-400 transition">Listing Swarm</a>
                     <a href="/intel/" class="text-gray-400 hover:text-honey-400 transition">Intel</a>
@@ -175,11 +179,29 @@
                         Join the Swarm
                     </a>
                 </div>
-                <button class="md:hidden text-white">
+                <button id="mobileMenuBtn" class="md:hidden text-white p-2 -mr-2" aria-label="Open menu">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                     </svg>
                 </button>
+            </div>
+            <!-- Mobile Menu -->
+            <div id="mobileMenu" class="hidden md:hidden mt-4 pb-4 border-t border-white/10 pt-4">
+                <div class="flex flex-col gap-4">
+                    <a href="/tools/readiness/" class="text-honey-400 font-medium flex items-center gap-2 py-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        Check Your Score
+                    </a>
+                    <a href="#how-it-works" class="text-gray-400 hover:text-honey-400 transition py-2">How it Works</a>
+                    <a href="/skill/" class="text-gray-400 hover:text-honey-400 transition py-2">Listing Swarm</a>
+                    <a href="/intel/" class="text-gray-400 hover:text-honey-400 transition py-2">Intel</a>
+                    <a href="#docs" class="text-gray-400 hover:text-honey-400 transition py-2">Docs</a>
+                    <a href="#pricing" class="text-gray-400 hover:text-honey-400 transition py-2">Pricing</a>
+                    <a href="/dashboard/" class="text-gray-400 hover:text-honey-400 transition py-2">Login</a>
+                    <a href="#early-access" class="bg-honey-500 hover:bg-honey-400 text-swarm-900 font-semibold px-5 py-3 rounded-full transition text-center mt-2">
+                        Join the Swarm
+                    </a>
+                </div>
             </div>
         </div>
     </nav>
@@ -1182,6 +1204,36 @@ POST /api/negotiate
                 joinBtn.textContent = 'Open Dashboard';
                 joinBtn.href = '/dashboard/';
             }
+        }
+        
+        // Mobile menu toggle (iOS compatible)
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        if (mobileMenuBtn && mobileMenu) {
+            mobileMenuBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                mobileMenu.classList.toggle('hidden');
+                // Update aria state
+                const isOpen = !mobileMenu.classList.contains('hidden');
+                mobileMenuBtn.setAttribute('aria-expanded', isOpen);
+            });
+            
+            // Close menu when clicking a link
+            mobileMenu.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', function() {
+                    mobileMenu.classList.add('hidden');
+                    mobileMenuBtn.setAttribute('aria-expanded', 'false');
+                });
+            });
+            
+            // Close menu when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!mobileMenuBtn.contains(e.target) && !mobileMenu.contains(e.target)) {
+                    mobileMenu.classList.add('hidden');
+                    mobileMenuBtn.setAttribute('aria-expanded', 'false');
+                }
+            });
         }
     </script>
 </body>
