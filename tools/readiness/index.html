@@ -320,15 +320,20 @@
                 <h2 class="text-2xl font-bold text-center mb-8">What We Check</h2>
                 <div class="grid md:grid-cols-2 gap-6">
                     <div class="bg-swarm-700/50 rounded-xl p-6 border border-white/5">
-                        <h3 class="font-semibold text-honey-400 mb-3">🤖 LLM Readiness (5 pts)</h3>
+                        <h3 class="font-semibold text-honey-400 mb-3">🤖 LLM Readiness (7 pts → normalized to 5)</h3>
                         <ul class="space-y-2 text-gray-300 text-sm">
                             <li>• <strong>llms.txt</strong> - Structured site summary for LLMs</li>
                             <li>• <strong>ai.txt</strong> - AI crawler directives</li>
                             <li>• <strong>Schema.org</strong> - JSON-LD structured data</li>
+                            <li>• <strong>FAQ Schema</strong> - FAQPage markup (bonus)</li>
                             <li>• <strong>Meta tags</strong> - OG tags, descriptions</li>
                             <li>• <strong>Semantic HTML</strong> - Proper heading hierarchy</li>
                             <li>• <strong>sitemap.xml</strong> - Content discovery</li>
                             <li>• <strong>robots.txt</strong> - AI crawler rules</li>
+                            <li>• <strong>Readability</strong> - Flesch score (60+ is good)</li>
+                            <li>• <strong>Semantic URLs</strong> - Natural language slugs</li>
+                            <li>• <strong>Date signals</strong> - dateModified/datePublished</li>
+                            <li>• <strong>Content depth</strong> - Word count, lists, tables</li>
                         </ul>
                     </div>
                     <div class="bg-swarm-700/50 rounded-xl p-6 border border-white/5">
@@ -344,6 +349,7 @@
                         </ul>
                     </div>
                 </div>
+                <p class="text-center text-gray-500 text-sm mt-4">Based on Ziff Davis AEO research showing semantic URLs get 11.4% more LLM citations</p>
             </div>
         </div>
     </main>
@@ -534,7 +540,9 @@
             const categoryIcons = {
                 'directory': '📁',
                 'content': '📝',
-                'offsite': '🔗'
+                'offsite': '🔗',
+                'aeo': '🎯',
+                'technical': '⚙️'
             };
             
             const impactClass = impactColors[item.impact] || impactColors['medium'];
