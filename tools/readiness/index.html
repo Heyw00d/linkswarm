@@ -192,7 +192,7 @@
                         </button>
                     </div>
                 </form>
-                <p class="text-xs text-gray-500 mt-3">Free • No signup required • Results in ~10 seconds</p>
+                <p class="text-xs text-gray-500 mt-3">Free preview • Full results require signup • Results in ~10 seconds</p>
             </div>
             
             <!-- Results Container (hidden initially) -->
@@ -251,8 +251,8 @@
                     </div>
                 </div>
                 
-                <!-- Detailed Breakdown -->
-                <div class="grid md:grid-cols-2 gap-6 mb-8">
+                <!-- Detailed Breakdown (Gated for free users) -->
+                <div id="breakdownSection" class="grid md:grid-cols-2 gap-6 mb-8 relative">
                     
                     <!-- LLM Breakdown -->
                     <div class="bg-swarm-700 rounded-2xl p-6 border border-white/5">
@@ -273,26 +273,47 @@
                             <!-- Populated by JS -->
                         </div>
                     </div>
+                    
+                    <!-- Gated overlay -->
+                    <div id="breakdownGate" class="hidden absolute inset-0 bg-gradient-to-b from-transparent via-swarm-900/80 to-swarm-900 flex items-end justify-center pb-8 rounded-2xl">
+                        <button onclick="showSignupModal()" class="bg-honey-500 hover:bg-honey-400 text-swarm-900 font-semibold px-6 py-3 rounded-xl transition flex items-center gap-2">
+                            <span>🔓</span> Sign up free to see full breakdown
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- Recommendations -->
                 <div class="bg-swarm-700 rounded-2xl p-6 border border-white/5 mb-8">
                     <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
                         <span>💡</span> Recommendations
+                        <span id="recCount" class="text-sm text-gray-500 font-normal"></span>
                     </h3>
                     <div id="recommendations" class="space-y-4">
                         <!-- Populated by JS -->
                     </div>
+                    <!-- Gated recommendations message -->
+                    <div id="recommendationsGate" class="hidden mt-4 p-4 bg-swarm-800 rounded-xl border border-honey-500/30 text-center">
+                        <p class="text-gray-300 mb-3">🔒 <span id="hiddenRecCount">3</span> more recommendations hidden</p>
+                        <button onclick="showSignupModal()" class="bg-honey-500 hover:bg-honey-400 text-swarm-900 font-semibold px-5 py-2 rounded-lg transition text-sm">
+                            Unlock All Recommendations →
+                        </button>
+                    </div>
                 </div>
                 
-                <!-- How to Improve -->
-                <div class="bg-gradient-to-br from-swarm-700 to-swarm-800 rounded-2xl p-6 border border-honey-500/20 mb-8">
+                <!-- How to Improve (Gated) -->
+                <div id="improveSection" class="bg-gradient-to-br from-swarm-700 to-swarm-800 rounded-2xl p-6 border border-honey-500/20 mb-8 relative">
                     <h3 class="text-lg font-semibold mb-2 flex items-center gap-2">
                         <span>🚀</span> How to Improve Your Score
                     </h3>
                     <p class="text-gray-400 text-sm mb-4">Beyond technical fixes, these actions boost your LLM visibility:</p>
                     <div id="howToImprove" class="grid md:grid-cols-2 gap-4">
                         <!-- Populated by JS -->
+                    </div>
+                    <!-- Gated overlay -->
+                    <div id="improveGate" class="hidden absolute inset-0 bg-gradient-to-b from-transparent via-swarm-900/80 to-swarm-900 flex items-end justify-center pb-8 rounded-2xl">
+                        <button onclick="showSignupModal()" class="bg-honey-500 hover:bg-honey-400 text-swarm-900 font-semibold px-6 py-3 rounded-xl transition flex items-center gap-2">
+                            <span>🔓</span> Sign up free to see improvement tips
+                        </button>
                     </div>
                 </div>
                 
@@ -572,6 +593,184 @@
             domainInput.value = domainParam;
             form.dispatchEvent(new Event('submit'));
         }
+        
+        // Check if user is logged in
+        function isLoggedIn() {
+            return !!localStorage.getItem('linkswarm_api_key');
+        }
+        
+        // Apply gating based on login status
+        function applyGating(totalRecs) {
+            const loggedIn = isLoggedIn();
+            
+            // Gate the breakdowns
+            const breakdownGate = document.getElementById('breakdownGate');
+            const breakdownSection = document.getElementById('breakdownSection');
+            if (!loggedIn) {
+                breakdownGate.classList.remove('hidden');
+                breakdownSection.style.minHeight = '200px';
+            } else {
+                breakdownGate.classList.add('hidden');
+            }
+            
+            // Gate the improvement tips
+            const improveGate = document.getElementById('improveGate');
+            const improveSection = document.getElementById('improveSection');
+            if (!loggedIn) {
+                improveGate.classList.remove('hidden');
+                improveSection.style.minHeight = '200px';
+            } else {
+                improveGate.classList.add('hidden');
+            }
+            
+            // Gate recommendations (show only 2 for free users)
+            const recommendationsGate = document.getElementById('recommendationsGate');
+            const recCount = document.getElementById('recCount');
+            const hiddenRecCount = document.getElementById('hiddenRecCount');
+            
+            if (!loggedIn && totalRecs > 2) {
+                recommendationsGate.classList.remove('hidden');
+                hiddenRecCount.textContent = totalRecs - 2;
+                recCount.textContent = '(showing 2 of ' + totalRecs + ')';
+            } else {
+                recommendationsGate.classList.add('hidden');
+                recCount.textContent = '';
+            }
+        }
+        
+        // Show signup modal
+        function showSignupModal() {
+            document.getElementById('signupModal').classList.remove('hidden');
+        }
+        
+        // Close signup modal
+        function closeSignupModal() {
+            document.getElementById('signupModal').classList.add('hidden');
+        }
+        
+        // Handle signup
+        async function handleSignup() {
+            const email = document.getElementById('signupEmail').value.trim();
+            const btn = document.getElementById('signupBtn');
+            const error = document.getElementById('signupError');
+            const success = document.getElementById('signupSuccess');
+            
+            if (!email || !email.includes('@')) {
+                error.textContent = 'Please enter a valid email';
+                error.classList.remove('hidden');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.textContent = 'Signing up...';
+            error.classList.add('hidden');
+            
+            try {
+                const res = await fetch('https://api.linkswarm.ai/waitlist', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, source: 'readiness-tool' })
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    if (data.verified && data.apiKey) {
+                        // Already verified - save and unlock
+                        localStorage.setItem('linkswarm_api_key', data.apiKey);
+                        success.textContent = 'Welcome back! Unlocking full results...';
+                        success.classList.remove('hidden');
+                        setTimeout(() => {
+                            closeSignupModal();
+                            applyGating(0); // Remove all gates
+                            location.reload(); // Refresh to show full results
+                        }, 1500);
+                    } else {
+                        // Need verification
+                        success.innerHTML = '📧 Check your email for verification!<br><small class="text-gray-400">After verifying, refresh this page.</small>';
+                        success.classList.remove('hidden');
+                        btn.textContent = 'Check Email';
+                        btn.disabled = false;
+                    }
+                } else {
+                    throw new Error(data.error || 'Signup failed');
+                }
+            } catch (e) {
+                error.textContent = e.message || 'Something went wrong';
+                error.classList.remove('hidden');
+                btn.textContent = 'Sign Up Free';
+                btn.disabled = false;
+            }
+        }
+        
+        // Modify displayResults to apply gating
+        const originalDisplayResults = displayResults;
+        displayResults = function(data) {
+            const loggedIn = isLoggedIn();
+            
+            // Limit recommendations for free users
+            let recsToShow = data.recommendations;
+            const totalRecs = data.recommendations.length;
+            
+            if (!loggedIn && totalRecs > 2) {
+                recsToShow = data.recommendations.slice(0, 2);
+            }
+            
+            // Replace recommendations temporarily
+            const originalRecs = data.recommendations;
+            data.recommendations = recsToShow;
+            
+            // Call original function
+            originalDisplayResults(data);
+            
+            // Restore original
+            data.recommendations = originalRecs;
+            
+            // Apply gating UI
+            applyGating(totalRecs);
+        };
     </script>
+    
+    <!-- Signup Modal -->
+    <div id="signupModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-swarm-800 rounded-2xl p-8 max-w-md w-full border border-honey-500/30 relative">
+            <button onclick="closeSignupModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl">&times;</button>
+            
+            <div class="text-center mb-6">
+                <span class="text-4xl">🐝</span>
+                <h3 class="text-2xl font-bold mt-2">Unlock Full Results</h3>
+                <p class="text-gray-400 mt-2">Sign up free to see all recommendations and detailed breakdowns</p>
+            </div>
+            
+            <div class="space-y-4">
+                <input 
+                    type="email" 
+                    id="signupEmail" 
+                    placeholder="you@example.com" 
+                    class="w-full bg-swarm-900 border border-gray-700 rounded-lg px-4 py-3 focus:border-honey-500 focus:outline-none"
+                    onkeypress="if(event.key==='Enter')handleSignup()"
+                >
+                <button 
+                    id="signupBtn"
+                    onclick="handleSignup()" 
+                    class="w-full bg-honey-500 hover:bg-honey-400 text-swarm-900 font-semibold py-3 rounded-lg transition"
+                >
+                    Sign Up Free
+                </button>
+                <p id="signupError" class="hidden text-red-400 text-sm text-center"></p>
+                <p id="signupSuccess" class="hidden text-green-400 text-sm text-center"></p>
+            </div>
+            
+            <div class="mt-6 text-center text-sm text-gray-500">
+                Already have an account? <a href="/dashboard/" class="text-honey-400 hover:underline">Log in</a>
+            </div>
+            
+            <div class="mt-4 pt-4 border-t border-gray-700">
+                <p class="text-xs text-gray-500 text-center">
+                    ✓ Full score breakdown &nbsp; ✓ All recommendations &nbsp; ✓ Improvement tips
+                </p>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
