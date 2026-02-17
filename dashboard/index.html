@@ -377,7 +377,24 @@
         // Check URL for magic link token
         const urlParams = new URLSearchParams(window.location.search);
         const tokenFromUrl = urlParams.get('token');
-        if (tokenFromUrl) {
+        const emailFromUrl = urlParams.get('email');
+        if (tokenFromUrl && emailFromUrl) {
+            // Verify token and get API key
+            fetch(`${API}/v1/auth/verify-token?token=${tokenFromUrl}&email=${encodeURIComponent(emailFromUrl)}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.api_key) {
+                        currentApiKey = data.api_key;
+                        localStorage.setItem('linkswarm_api_key', data.api_key);
+                        window.history.replaceState({}, '', '/dashboard/');
+                        loadDashboard();
+                    } else {
+                        alert('Login link expired or invalid. Please request a new one.');
+                    }
+                })
+                .catch(() => alert('Error verifying login link.'));
+        } else if (tokenFromUrl) {
+            // Legacy: direct API key in URL
             currentApiKey = tokenFromUrl;
             localStorage.setItem('linkswarm_api_key', tokenFromUrl);
             window.history.replaceState({}, '', '/dashboard/');
