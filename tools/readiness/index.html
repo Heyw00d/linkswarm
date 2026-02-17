@@ -285,6 +285,17 @@
                     </div>
                 </div>
                 
+                <!-- How to Improve -->
+                <div class="bg-gradient-to-br from-swarm-700 to-swarm-800 rounded-2xl p-6 border border-honey-500/20 mb-8">
+                    <h3 class="text-lg font-semibold mb-2 flex items-center gap-2">
+                        <span>🚀</span> How to Improve Your Score
+                    </h3>
+                    <p class="text-gray-400 text-sm mb-4">Beyond technical fixes, these actions boost your LLM visibility:</p>
+                    <div id="howToImprove" class="grid md:grid-cols-2 gap-4">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+                
                 <!-- CTA -->
                 <div class="bg-gradient-to-r from-honey-500/20 to-purple-500/20 rounded-2xl p-8 text-center border border-honey-500/30">
                     <h3 class="text-2xl font-bold mb-3">Want AI to cite your brand?</h3>
@@ -452,6 +463,16 @@
                 }
             }
             
+            // Render How to Improve
+            const howToImprove = document.getElementById('howToImprove');
+            howToImprove.innerHTML = '';
+            
+            if (data.howToImprove && data.howToImprove.length > 0) {
+                for (const item of data.howToImprove) {
+                    howToImprove.appendChild(createImproveItem(item));
+                }
+            }
+            
             // Scroll to results
             results.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
@@ -494,6 +515,43 @@
                 </div>
                 <p class="text-sm text-gray-400 mb-2">${rec.description}</p>
                 ${rec.link ? `<a href="${rec.link}" target="_blank" class="text-sm text-honey-400 hover:underline">Learn more →</a>` : ''}
+            `;
+            
+            return div;
+        }
+        
+        function createImproveItem(item) {
+            const div = document.createElement('div');
+            div.className = 'bg-swarm-800/50 rounded-lg p-4 hover:bg-swarm-800 transition';
+            
+            const impactColors = {
+                'very high': 'text-green-400 bg-green-500/20',
+                'high': 'text-honey-400 bg-honey-500/20',
+                'medium': 'text-blue-400 bg-blue-500/20',
+                'low': 'text-gray-400 bg-gray-500/20'
+            };
+            
+            const categoryIcons = {
+                'directory': '📁',
+                'content': '📝',
+                'offsite': '🔗'
+            };
+            
+            const impactClass = impactColors[item.impact] || impactColors['medium'];
+            const icon = categoryIcons[item.category] || '💡';
+            
+            div.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <span class="text-xl">${icon}</span>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between gap-2 mb-1">
+                            <h4 class="font-medium text-sm">${item.title}</h4>
+                            <span class="text-xs px-2 py-0.5 rounded ${impactClass}">${item.impact} impact</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mb-2">${item.description}</p>
+                        ${item.link ? `<a href="${item.link}" target="_blank" class="text-xs text-honey-400 hover:underline">Take action →</a>` : ''}
+                    </div>
+                </div>
             `;
             
             return div;
