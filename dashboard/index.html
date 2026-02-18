@@ -659,6 +659,9 @@
                                             ex.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
                                             'bg-yellow-500/20 text-yellow-400'
                                         }">${ex.status}</span>
+                                        ${ex.status === 'verified' && ex.placement_url ? `
+                                            <a href="${ex.placement_url}" target="_blank" class="bg-emerald-600 hover:bg-emerald-500 px-3 py-1 rounded text-xs transition">View Link</a>
+                                        ` : ''}
                                     `}
                                 </div>
                             </div>
@@ -673,6 +676,10 @@
                             ` : ex.status === 'completed' ? `
                                 <div class="mt-2 text-xs text-green-400">
                                     ✓ Link placed at: <a href="${ex.placement_url || '#'}" target="_blank" class="underline">${ex.placement_url || 'pending verification'}</a>
+                                </div>
+                            ` : ex.status === 'verified' && ex.placement_url ? `
+                                <div class="mt-2 text-xs text-emerald-400">
+                                    ✓ Verified! <a href="${ex.placement_url}" target="_blank" class="underline hover:text-emerald-300">${ex.placement_url}</a>
                                 </div>
                             ` : ''}
                         </div>
