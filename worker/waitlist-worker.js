@@ -54,6 +54,25 @@ export default {
         throw new Error('Database error');
       }
 
+      // Post to Discord signups channel
+      if (env.DISCORD_SIGNUPS_WEBHOOK) {
+        await fetch(env.DISCORD_SIGNUPS_WEBHOOK, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            embeds: [{
+              title: '📧 New Waitlist Signup',
+              color: 0x10B981,
+              fields: [
+                { name: 'Email', value: email, inline: true },
+                { name: 'Source', value: source, inline: true }
+              ],
+              timestamp: new Date().toISOString()
+            }]
+          })
+        }).catch(() => {}); // Don't fail if Discord is down
+      }
+
       return new Response(JSON.stringify({ success: true, email }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });

@@ -176,7 +176,10 @@ app.post('/api/register', async (c) => {
     VALUES (${email}, ${apiKey}, ${verificationCode}, ${new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()}, false)
   `;
   
-  // TODO: Send verification email
+  // Send verification email via Resend
+  if (c.env.RESEND_API_KEY) {
+    await sendVerificationEmail(c.env, email, verificationCode);
+  }
   
   return c.json({ 
     success: true,
@@ -436,6 +439,85 @@ app.post('/v1/pool/request', requireAuth, async (c) => {
   });
 });
 
+// Send verification email via Resend
+async function sendVerificationEmail(env, email, code) {
+  const htmlEmail = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f0f23; color: #fff; padding: 40px 20px; }
+    .container { max-width: 600px; margin: 0 auto; }
+    .header { text-align: center; margin-bottom: 30px; }
+    .logo { font-size: 32px; margin-bottom: 10px; }
+    .brand { color: #fbbf24; font-size: 24px; font-weight: bold; }
+    .card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 24px; margin: 20px 0; text-align: center; }
+    .code { font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #fbbf24; font-family: monospace; }
+    .footer { text-align: center; color: #6b7280; font-size: 12px; margin-top: 40px; }
+    a { color: #fbbf24; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">🐝</div>
+      <div class="brand">LinkSwarm</div>
+      <p style="color: #9ca3af;">Welcome! Verify your email to get started.</p>
+    </div>
+    
+    <div class="card">
+      <p style="color: #9ca3af; margin-bottom: 16px;">Your verification code:</p>
+      <div class="code">${code}</div>
+      <p style="color: #6b7280; font-size: 12px; margin-top: 16px;">This code expires in 24 hours.</p>
+    </div>
+    
+    <p style="text-align: center; color: #9ca3af;">Enter this code in the CLI or API to verify your account.</p>
+    
+    <div class="footer">
+      <p>LinkSwarm — Fair link exchanges for the AI era</p>
+      <p><a href="https://linkswarm.ai">linkswarm.ai</a></p>
+    </div>
+  </div>
+</body>
+</html>`.trim();
+
+  const textEmail = `
+🐝 LinkSwarm
+
+Welcome! Your verification code is: ${code}
+
+Enter this code in the CLI or API to verify your account.
+This code expires in 24 hours.
+
+---
+LinkSwarm - Fair link exchanges
+https://linkswarm.ai
+  `.trim();
+
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'LinkSwarm <hello@linkswarm.ai>',
+        to: email,
+        subject: '🐝 Verify your LinkSwarm account',
+        html: htmlEmail,
+        text: textEmail
+      })
+    });
+    if (!res.ok) {
+      console.error('Resend verification error:', await res.text());
+    }
+  } catch (err) {
+    console.error('Failed to send verification email:', err);
+  }
+}
+
 // Send match notification email
 async function sendMatchNotification(env, sql, contribution, targetSite, anchor, targetPage) {
   const [contributor] = await sql`SELECT email, notify_matches FROM api_keys WHERE email = ${contribution.owner_email}`;
@@ -444,33 +526,83 @@ async function sendMatchNotification(env, sql, contribution, targetSite, anchor,
   // Get contributor's site info for the notification
   const [fromSite] = await sql`SELECT name, domain FROM sites WHERE domain = ${contribution.site_domain}`;
   
-  // Build email - FIX: Use proper field access
+  // Build email data - properly extract all fields
   const fromDomain = fromSite?.domain || contribution.site_domain;
   const fromPage = contribution.page_url || '/';
   const toDomain = targetSite?.domain || 'Unknown';
   const toPage = targetPage || '/';
   const anchorText = anchor || targetSite?.name || toDomain;
   
-  const emailBody = `
-🔗 New LinkSwarm Match!
+  // HTML email template
+  const htmlEmail = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f0f23; color: #fff; padding: 40px 20px; }
+    .container { max-width: 600px; margin: 0 auto; }
+    .header { text-align: center; margin-bottom: 30px; }
+    .logo { font-size: 32px; margin-bottom: 10px; }
+    .brand { color: #fbbf24; font-size: 24px; font-weight: bold; }
+    .card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 24px; margin: 20px 0; }
+    .label { color: #9ca3af; font-size: 14px; margin-bottom: 4px; }
+    .value { color: #fbbf24; font-size: 16px; font-weight: 500; }
+    .value-secondary { color: #fff; font-size: 16px; }
+    .cta { display: inline-block; background: #fbbf24; color: #000; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-top: 20px; }
+    .footer { text-align: center; color: #6b7280; font-size: 12px; margin-top: 40px; }
+    a { color: #fbbf24; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">🐝</div>
+      <div class="brand">LinkSwarm</div>
+      <p style="color: #9ca3af;">Great news! Your link request was matched.</p>
+    </div>
+    
+    <div class="card">
+      <div class="label">Match details:</div>
+      <p><span class="label">From:</span> <span class="value">${fromDomain}</span></p>
+      <p><span class="label">Page:</span> <span class="value-secondary">${fromPage}</span></p>
+      <p><span class="label">To:</span> <span class="value">${toDomain}${toPage}</span></p>
+      <p><span class="label">Anchor:</span> <span class="value-secondary">"${anchorText}"</span></p>
+    </div>
+    
+    <p>The contributing site will place your link soon. You'll be notified when it's live.</p>
+    
+    <center>
+      <a href="https://linkswarm.ai/dashboard" class="cta">View in dashboard →</a>
+    </center>
+    
+    <div class="footer">
+      <p>LinkSwarm — Fair link exchanges for the AI era</p>
+      <p><a href="https://linkswarm.ai">linkswarm.ai</a></p>
+    </div>
+  </div>
+</body>
+</html>`.trim();
 
-You have a new link exchange opportunity:
+  // Plain text version
+  const textEmail = `
+🐝 LinkSwarm
 
+Great news! Your link request was matched.
+
+Match details:
 From: ${fromDomain}
 Page: ${fromPage}
-
 To: ${toDomain}${toPage}
 Anchor: "${anchorText}"
 
-Action Required:
-Please add the following link to your page at ${fromDomain}${fromPage}:
+The contributing site will place your link soon. You'll be notified when it's live.
 
-<a href="https://${toDomain}${toPage}">${anchorText}</a>
-
-Once placed, confirm at: https://linkswarm.ai/dashboard
+View in dashboard → https://linkswarm.ai/dashboard
 
 ---
 LinkSwarm - Fair link exchanges
+https://linkswarm.ai
   `.trim();
   
   // Post to Discord exchanges webhook
@@ -493,8 +625,32 @@ LinkSwarm - Fair link exchanges
     }).catch(() => {});
   }
   
-  // TODO: Send actual email via SMTP
-  console.log('Match notification:', { to: contributor.email, body: emailBody });
+  // Send email via Resend
+  if (env.RESEND_API_KEY) {
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: 'LinkSwarm <hello@linkswarm.ai>',
+          to: contributor.email,
+          subject: '🔗 Your link request was matched!',
+          html: htmlEmail,
+          text: textEmail
+        })
+      });
+      if (!res.ok) {
+        console.error('Resend error:', await res.text());
+      }
+    } catch (err) {
+      console.error('Failed to send email:', err);
+    }
+  } else {
+    console.log('RESEND_API_KEY not set, skipping email. Match:', { to: contributor.email, from: fromDomain, to: toDomain });
+  }
 }
 
 // ============ POOL: STATUS ============

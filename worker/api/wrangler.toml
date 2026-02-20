@@ -13,8 +13,7 @@ ADMIN_PASSWORD = "swarm2026"
 
 # Secrets (set via: wrangler secret put <NAME>)
 # DATABASE_URL - Neon connection string
-# SMTP_USER - hello@linkswarm.ai
-# SMTP_PASS - email password
+# RESEND_API_KEY - for transactional emails (verification, match notifications)
 # OPENAI_API_KEY - for embeddings
 # DISCORD_WEBHOOK_URL - for exchange notifications
 # DISCORD_SIGNUPS_WEBHOOK - for signups
