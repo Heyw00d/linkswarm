@@ -1,0 +1,118 @@
+{
+  "$schema": "https://linkswarm.ai/schemas/agent.json",
+  "name": "LinkSwarm",
+  "description": "Autonomous backlink exchange network. Trade high-quality backlinks fairly and transparently.",
+  "version": "1.0.0",
+  "homepage": "https://linkswarm.ai",
+  "logo": "https://linkswarm.ai/profile-400.png",
+  
+  "capabilities": {
+    "backlink_exchange": {
+      "description": "Exchange backlinks with other verified sites in the network",
+      "requires_auth": true
+    },
+    "site_verification": {
+      "description": "Verify domain ownership to join the network",
+      "requires_auth": true
+    },
+    "ai_readiness_check": {
+      "description": "Analyze any website for LLM and agent readiness",
+      "requires_auth": false
+    },
+    "site_discovery": {
+      "description": "Discover matching sites for link exchanges",
+      "requires_auth": true
+    }
+  },
+  
+  "api": {
+    "base_url": "https://api.linkswarm.ai",
+    "documentation": "https://linkswarm.ai/docs/api",
+    "authentication": {
+      "type": "bearer",
+      "header": "Authorization",
+      "obtain": "Register at https://linkswarm.ai/register to get an API key"
+    },
+    "endpoints": [
+      {
+        "path": "/api/analyze",
+        "method": "POST",
+        "description": "Analyze a domain for LLM/agent readiness",
+        "auth_required": false,
+        "parameters": {
+          "domain": "string - The domain to analyze"
+        }
+      },
+      {
+        "path": "/registry",
+        "method": "GET",
+        "description": "List all verified sites in the network",
+        "auth_required": false
+      },
+      {
+        "path": "/v1/sites",
+        "method": "GET",
+        "description": "List your registered sites",
+        "auth_required": true
+      },
+      {
+        "path": "/v1/sites",
+        "method": "POST",
+        "description": "Register a new site",
+        "auth_required": true,
+        "parameters": {
+          "domain": "string - Domain to register",
+          "name": "string - Site name",
+          "description": "string - Site description",
+          "categories": "array - Category tags"
+        }
+      },
+      {
+        "path": "/v1/discover",
+        "method": "GET",
+        "description": "Find matching sites for link exchange",
+        "auth_required": true
+      },
+      {
+        "path": "/v1/pool/contribute",
+        "method": "POST",
+        "description": "Contribute a link slot to earn credits",
+        "auth_required": true
+      },
+      {
+        "path": "/v1/pool/request",
+        "method": "POST",
+        "description": "Request a backlink using credits",
+        "auth_required": true
+      },
+      {
+        "path": "/v1/pool/status",
+        "method": "GET",
+        "description": "Check your credits and placement status",
+        "auth_required": true
+      }
+    ]
+  },
+  
+  "agent_instructions": {
+    "primary_use": "Automate backlink acquisition for websites. Register sites, contribute link slots, and request backlinks from matching sites.",
+    "workflow": [
+      "1. Register with POST /api/register to get API key",
+      "2. Add sites with POST /v1/sites",
+      "3. Verify each site with POST /v1/sites/:domain/verify",
+      "4. Contribute link slots with POST /v1/pool/contribute",
+      "5. Request backlinks with POST /v1/pool/request",
+      "6. Monitor status with GET /v1/pool/status"
+    ],
+    "rate_limits": {
+      "requests_per_minute": 60,
+      "requests_per_day": 1000
+    }
+  },
+  
+  "contact": {
+    "email": "hello@linkswarm.ai",
+    "twitter": "@Link_Swarm",
+    "discord": "https://discord.gg/linkswarm"
+  }
+}
