@@ -1,0 +1,21 @@
+name = "linkswarm-api"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+workers_dev = true
+
+routes = [
+  { pattern = "api.linkswarm.ai/*", zone_name = "linkswarm.ai" }
+]
+
+[vars]
+# Non-secret config
+ADMIN_PASSWORD = "swarm2026"
+
+# Secrets (set via: wrangler secret put <NAME>)
+# DATABASE_URL - Neon connection string
+# SMTP_USER - hello@linkswarm.ai
+# SMTP_PASS - email password
+# OPENAI_API_KEY - for embeddings
+# DISCORD_WEBHOOK_URL - for exchange notifications
+# DISCORD_SIGNUPS_WEBHOOK - for signups
+# STRIPE_SK_LIVE - stripe secret
