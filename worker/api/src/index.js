@@ -1025,27 +1025,54 @@ app.post('/waitlist', async (c) => {
 
 // ============ ADMIN: DASHBOARD ============
 
-app.get('/dashboard', requireAdmin, async (c) => {
+app.get('/dashboard', requireAuth, async (c) => {
   const sql = getDb(c.env);
+  const user = c.get('user');
   
-  const [siteCount] = await sql`SELECT COUNT(*) as count FROM sites WHERE verified = true`;
-  const [userCount] = await sql`SELECT COUNT(*) as count FROM api_keys WHERE email_verified = true`;
-  const [exchangeCount] = await sql`SELECT COUNT(*) as count FROM exchanges`;
-  const [pendingCount] = await sql`SELECT COUNT(*) as count FROM exchanges WHERE status = 'pending'`;
-  const [completedCount] = await sql`SELECT COUNT(*) as count FROM exchanges WHERE status = 'completed'`;
-  const recentSites = await sql`SELECT domain, name, created_at FROM sites ORDER BY created_at DESC LIMIT 5`;
-  const recentExchanges = await sql`SELECT * FROM exchanges ORDER BY created_at DESC LIMIT 10`;
+  // Get user's sites count
+  const [userSites] = await sql`SELECT COUNT(*) as count FROM sites WHERE owner_email = ${user.email}`;
+  
+  // Plan limits
+  const planLimits = {
+    free: { sites: 3, requests: 10 },
+    pro: { sites: 25, requests: 100 },
+    agency: { sites: 999, requests: 999 }
+  };
+  const plan = user.plan || 'free';
+  const limits = planLimits[plan] || planLimits.free;
+  
+  // Get user's exchanges
+  const userExchanges = await sql`
+    SELECT e.* FROM exchanges e
+    JOIN sites s ON (e.from_domain = s.domain OR e.to_domain = s.domain)
+    WHERE s.owner_email = ${user.email}
+    ORDER BY e.created_at DESC LIMIT 10
+  `;
+  
+  // Get user's sites
+  const userSitesList = await sql`
+    SELECT domain, name, verified, created_at FROM sites 
+    WHERE owner_email = ${user.email}
+    ORDER BY created_at DESC LIMIT 10
+  `;
   
   return c.json({
-    stats: {
-      sites: siteCount?.count || 0,
-      users: userCount?.count || 0,
-      exchanges: exchangeCount?.count || 0,
-      pending: pendingCount?.count || 0,
-      completed: completedCount?.count || 0
+    user: {
+      email: user.email,
+      api_key: user.api_key,
+      plan: plan
     },
-    recentSites,
-    recentExchanges
+    limits: {
+      sites: limits.sites,
+      sites_used: parseInt(userSites?.count || 0),
+      requests: limits.requests
+    },
+    upgrade_urls: plan === 'free' ? {
+      pro: 'https://linkswarm.ai/upgrade/pro',
+      agency: 'https://linkswarm.ai/upgrade/agency'
+    } : null,
+    recentSites: userSitesList,
+    recentExchanges: userExchanges
   });
 });
 
