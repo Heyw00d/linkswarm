@@ -521,6 +521,7 @@
                 
                 if (res.ok && data.success) {
                     document.getElementById('passwordError').classList.add('hidden');
+                    currentApiKey = data.api_key;
                     localStorage.setItem('linkswarm_api_key', data.api_key);
                     localStorage.setItem('linkswarm_email', data.email);
                     await loadDashboard();
