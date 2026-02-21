@@ -5,6 +5,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { neon } from '@neondatabase/serverless';
+import bcrypt from 'bcryptjs';
 
 const app = new Hono();
 
@@ -308,6 +309,11 @@ app.post('/v1/auth/magic-link', async (c) => {
                 Log In to Dashboard
               </a>
             </p>
+            <div style="margin: 30px 0; padding: 20px; background: rgba(251,191,36,0.1); border-radius: 8px;">
+              <p style="margin: 0 0 10px 0; font-weight: bold;">Want to set a password?</p>
+              <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">You can use the same link to set a password for faster future logins:</p>
+              <a href="https://linkswarm.ai/set-password?token=${token}&email=${encodeURIComponent(email)}" style="color: #f59e0b; text-decoration: none;">Set Password →</a>
+            </div>
             <p style="color: #666; font-size: 14px;">This link expires in 15 minutes.</p>
             <p style="color: #666; font-size: 14px;">If you didn't request this, you can ignore this email.</p>
           </div>
@@ -361,6 +367,265 @@ app.get('/v1/auth/verify-token', async (c) => {
     api_key: user.api_key,
     email: user.email
   });
+});
+
+// ============ PASSWORD AUTH ============
+
+// Set password for existing user (from magic link)
+app.post('/v1/auth/set-password', async (c) => {
+  const sql = neon(c.env.DATABASE_URL);
+  const { email, token, password } = await c.req.json();
+  
+  if (!email || !token || !password) {
+    return c.json({ error: 'Email, token, and password required' }, 400);
+  }
+  
+  if (password.length < 8) {
+    return c.json({ error: 'Password must be at least 8 characters' }, 400);
+  }
+  
+  // Verify token (same logic as magic link)
+  const [user] = await sql`
+    SELECT * FROM api_keys 
+    WHERE email = ${email.toLowerCase()} 
+      AND verification_code = ${token}
+      AND code_expires_at > NOW()
+  `;
+  
+  if (!user) {
+    return c.json({ error: 'Invalid or expired token' }, 401);
+  }
+  
+  // Hash password and store it
+  const saltRounds = 12;
+  const passwordHash = await bcrypt.hash(password, saltRounds);
+  
+  await sql`
+    UPDATE api_keys 
+    SET password_hash = ${passwordHash}, 
+        verification_code = NULL, 
+        code_expires_at = NULL 
+    WHERE email = ${email.toLowerCase()}
+  `;
+  
+  // Send confirmation email
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${c.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'LinkSwarm <noreply@linkswarm.ai>',
+        to: email,
+        subject: '🐝 Password set successfully',
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #f59e0b;">🐝 LinkSwarm</h1>
+            <p>Your password has been set successfully!</p>
+            <p>You can now log in using your email and password at:</p>
+            <p style="margin: 30px 0;">
+              <a href="https://linkswarm.ai/dashboard" style="background: #f59e0b; color: #000; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">
+                Go to Dashboard
+              </a>
+            </p>
+            <p style="color: #666; font-size: 14px;">If you didn't set this password, please contact support immediately.</p>
+          </div>
+        `
+      })
+    });
+    
+    if (!res.ok) {
+      console.error('Resend error:', await res.text());
+    }
+  } catch (err) {
+    console.error('Email error:', err);
+  }
+  
+  return c.json({ 
+    success: true, 
+    api_key: user.api_key,
+    email: user.email,
+    message: 'Password set successfully'
+  });
+});
+
+// Login with email and password
+app.post('/v1/auth/login', async (c) => {
+  const sql = neon(c.env.DATABASE_URL);
+  const { email, password } = await c.req.json();
+  
+  if (!email || !password) {
+    return c.json({ error: 'Email and password required' }, 400);
+  }
+  
+  // Find user
+  const [user] = await sql`SELECT * FROM api_keys WHERE email = ${email.toLowerCase()} AND email_verified = true`;
+  
+  if (!user) {
+    return c.json({ error: 'Invalid email or password' }, 401);
+  }
+  
+  if (!user.password_hash) {
+    return c.json({ error: 'No password set. Please use magic link or set a password first.' }, 401);
+  }
+  
+  // Verify password
+  const isValid = await bcrypt.compare(password, user.password_hash);
+  
+  if (!isValid) {
+    return c.json({ error: 'Invalid email or password' }, 401);
+  }
+  
+  return c.json({ 
+    success: true, 
+    api_key: user.api_key,
+    email: user.email
+  });
+});
+
+// Forgot password - send reset email
+app.post('/v1/auth/forgot-password', async (c) => {
+  const sql = neon(c.env.DATABASE_URL);
+  const { email } = await c.req.json();
+  
+  if (!email || !email.includes('@')) {
+    return c.json({ error: 'Invalid email' }, 400);
+  }
+  
+  // Check if user exists
+  const [user] = await sql`SELECT * FROM api_keys WHERE email = ${email.toLowerCase()} AND email_verified = true`;
+  
+  if (!user) {
+    // Don't reveal if email exists or not for security
+    return c.json({ success: true, message: 'If that email exists, we sent you a reset link.' });
+  }
+  
+  // Generate reset token
+  const resetToken = crypto.randomUUID() + '-' + crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+  
+  // Store reset token
+  await sql`
+    UPDATE api_keys 
+    SET password_reset_token = ${resetToken}, 
+        password_reset_expires = ${expiresAt.toISOString()}
+    WHERE email = ${email.toLowerCase()}
+  `;
+  
+  // Send reset email
+  const resetLink = `https://linkswarm.ai/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+  
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${c.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'LinkSwarm <noreply@linkswarm.ai>',
+        to: email,
+        subject: '🐝 Reset your LinkSwarm password',
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #f59e0b;">🐝 LinkSwarm</h1>
+            <p>You requested a password reset for your LinkSwarm account.</p>
+            <p style="margin: 30px 0;">
+              <a href="${resetLink}" style="background: #f59e0b; color: #000; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">
+                Reset Password
+              </a>
+            </p>
+            <p style="color: #666; font-size: 14px;">This link expires in 24 hours.</p>
+            <p style="color: #666; font-size: 14px;">If you didn't request this, you can ignore this email.</p>
+          </div>
+        `
+      })
+    });
+    
+    if (!res.ok) {
+      console.error('Resend error:', await res.text());
+      return c.json({ error: 'Failed to send reset email' }, 500);
+    }
+  } catch (err) {
+    console.error('Email error:', err);
+    return c.json({ error: 'Failed to send reset email' }, 500);
+  }
+  
+  return c.json({ success: true, message: 'If that email exists, we sent you a reset link.' });
+});
+
+// Reset password with token
+app.post('/v1/auth/reset-password', async (c) => {
+  const sql = neon(c.env.DATABASE_URL);
+  const { email, token, newPassword } = await c.req.json();
+  
+  if (!email || !token || !newPassword) {
+    return c.json({ error: 'Email, token, and new password required' }, 400);
+  }
+  
+  if (newPassword.length < 8) {
+    return c.json({ error: 'Password must be at least 8 characters' }, 400);
+  }
+  
+  // Verify reset token
+  const [user] = await sql`
+    SELECT * FROM api_keys 
+    WHERE email = ${email.toLowerCase()} 
+      AND password_reset_token = ${token}
+      AND password_reset_expires > NOW()
+  `;
+  
+  if (!user) {
+    return c.json({ error: 'Invalid or expired reset token' }, 401);
+  }
+  
+  // Hash new password
+  const saltRounds = 12;
+  const passwordHash = await bcrypt.hash(newPassword, saltRounds);
+  
+  // Update password and clear reset token
+  await sql`
+    UPDATE api_keys 
+    SET password_hash = ${passwordHash}, 
+        password_reset_token = NULL, 
+        password_reset_expires = NULL 
+    WHERE email = ${email.toLowerCase()}
+  `;
+  
+  return c.json({ 
+    success: true, 
+    message: 'Password reset successfully'
+  });
+});
+
+// ============ DATABASE MIGRATION ============
+
+// Run database migration to add password fields
+app.post('/admin/migrate-passwords', requireAdmin, async (c) => {
+  const sql = neon(c.env.DATABASE_URL);
+  
+  try {
+    // Add password fields to api_keys table
+    await sql`
+      ALTER TABLE api_keys 
+      ADD COLUMN IF NOT EXISTS password_hash TEXT,
+      ADD COLUMN IF NOT EXISTS password_reset_token TEXT,
+      ADD COLUMN IF NOT EXISTS password_reset_expires TIMESTAMP
+    `;
+    
+    return c.json({ 
+      success: true, 
+      message: 'Password fields added to api_keys table'
+    });
+  } catch (err) {
+    console.error('Migration error:', err);
+    return c.json({ 
+      error: 'Migration failed', 
+      details: err.message 
+    }, 500);
+  }
 });
 
 // ============ LLM READINESS ANALYZER ============

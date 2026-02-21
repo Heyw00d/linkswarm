@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forgot Password — LinkSwarm</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #0f0f23 100%); min-height: 100vh; }
+        .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .glow { box-shadow: 0 0 30px rgba(251,191,36,0.1); }
+    </style>
+</head>
+<body class="text-white">
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="glass rounded-2xl p-8 max-w-md w-full glow">
+            <div class="text-center mb-8">
+                <div class="text-4xl mb-2">🐝</div>
+                <h1 class="text-2xl font-bold">Forgot Password</h1>
+                <p class="text-gray-400 mt-2">We'll send you a reset link</p>
+            </div>
+            
+            <div id="formContainer">
+                <form id="forgotForm" class="space-y-6">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Email Address</label>
+                        <input type="email" id="emailInput" placeholder="you@example.com" required
+                            class="w-full bg-black/30 border border-gray-700 rounded-lg px-4 py-3 focus:border-amber-500 focus:outline-none">
+                    </div>
+                    
+                    <button type="submit" id="submitBtn"
+                        class="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold py-3 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        Send Reset Link
+                    </button>
+                </form>
+                
+                <div id="messageContainer" class="mt-4 text-center">
+                    <p id="errorMessage" class="text-red-400 text-sm hidden"></p>
+                    <p id="successMessage" class="text-green-400 text-sm hidden"></p>
+                </div>
+            </div>
+            
+            <div id="successContainer" class="hidden text-center">
+                <div class="text-green-400 text-6xl mb-4">📧</div>
+                <h2 class="text-xl font-bold mb-2">Check Your Email</h2>
+                <p class="text-gray-400 mb-2">If an account exists with that email, we've sent you a password reset link.</p>
+                <p class="text-gray-500 text-sm mb-6">The link will expire in 24 hours.</p>
+                <button onclick="showForm()" class="text-amber-400 hover:text-amber-300 text-sm">
+                    ← Try another email
+                </button>
+            </div>
+            
+            <div class="mt-6 pt-6 border-t border-gray-700 text-center">
+                <p class="text-gray-500 text-sm">Remember your password?</p>
+                <a href="/dashboard" class="text-amber-400 hover:text-amber-300 text-sm">Back to Login →</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showForm() {
+            document.getElementById('formContainer').classList.remove('hidden');
+            document.getElementById('successContainer').classList.add('hidden');
+            document.getElementById('emailInput').value = '';
+            document.getElementById('emailInput').focus();
+        }
+
+        // Handle form submission
+        document.getElementById('forgotForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('emailInput').value;
+            const errorEl = document.getElementById('errorMessage');
+            const successEl = document.getElementById('successMessage');
+            const submitBtn = document.getElementById('submitBtn');
+            
+            // Clear previous messages
+            errorEl.classList.add('hidden');
+            successEl.classList.add('hidden');
+            
+            // Validate email
+            if (!email || !email.includes('@')) {
+                errorEl.textContent = 'Please enter a valid email address.';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+            
+            // Disable submit button
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Sending...';
+            
+            try {
+                const response = await fetch('/v1/auth/forgot-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: email
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    // Always show success for security (don't reveal if email exists)
+                    document.getElementById('formContainer').classList.add('hidden');
+                    document.getElementById('successContainer').classList.remove('hidden');
+                } else {
+                    errorEl.textContent = data.error || 'Failed to send reset email. Please try again.';
+                    errorEl.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Forgot password error:', error);
+                errorEl.textContent = 'Network error. Please try again.';
+                errorEl.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Send Reset Link';
+            }
+        });
+
+        // Focus email input on load
+        document.getElementById('emailInput').focus();
+    </script>
+</body>
+</html>

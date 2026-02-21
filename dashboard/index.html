@@ -27,12 +27,35 @@
             
             <!-- Login Tabs -->
             <div class="flex mb-6 border-b border-gray-700">
-                <button onclick="showLoginTab('email')" id="tabEmail" class="flex-1 py-2 text-center text-amber-400 border-b-2 border-amber-400 font-medium">Email</button>
+                <button onclick="showLoginTab('password')" id="tabPassword" class="flex-1 py-2 text-center text-amber-400 border-b-2 border-amber-400 font-medium">Password</button>
+                <button onclick="showLoginTab('email')" id="tabEmail" class="flex-1 py-2 text-center text-gray-400 hover:text-white">Magic Link</button>
                 <button onclick="showLoginTab('apikey')" id="tabApiKey" class="flex-1 py-2 text-center text-gray-400 hover:text-white">API Key</button>
             </div>
             
-            <!-- Email Login -->
-            <div id="emailLogin" class="space-y-4">
+            <!-- Password Login -->
+            <div id="passwordLogin" class="space-y-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Email Address</label>
+                    <input type="email" id="passwordEmailInput" placeholder="you@example.com" 
+                        class="w-full bg-black/30 border border-gray-700 rounded-lg px-4 py-3 focus:border-amber-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Password</label>
+                    <input type="password" id="passwordInput" placeholder="Enter your password" 
+                        class="w-full bg-black/30 border border-gray-700 rounded-lg px-4 py-3 focus:border-amber-500 focus:outline-none">
+                </div>
+                <button onclick="loginWithPassword()" class="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold py-3 rounded-lg transition">
+                    Sign In
+                </button>
+                <div class="text-center">
+                    <a href="/forgot-password" class="text-amber-400 hover:text-amber-300 text-sm">Forgot password?</a>
+                </div>
+                <p id="passwordSuccess" class="text-green-400 text-sm text-center hidden"></p>
+                <p id="passwordError" class="text-red-400 text-sm text-center hidden"></p>
+            </div>
+            
+            <!-- Magic Link Login -->
+            <div id="emailLogin" class="space-y-4 hidden">
                 <div>
                     <label class="block text-sm text-gray-400 mb-2">Email Address</label>
                     <input type="email" id="emailInput" placeholder="you@example.com" 
@@ -419,12 +442,24 @@
         
         // Tab switching
         function showLoginTab(tab) {
+            // Hide all login forms
+            document.getElementById('passwordLogin').classList.toggle('hidden', tab !== 'password');
             document.getElementById('emailLogin').classList.toggle('hidden', tab !== 'email');
             document.getElementById('apiKeyLogin').classList.toggle('hidden', tab !== 'apikey');
+            
+            // Update password tab
+            document.getElementById('tabPassword').classList.toggle('text-amber-400', tab === 'password');
+            document.getElementById('tabPassword').classList.toggle('border-amber-400', tab === 'password');
+            document.getElementById('tabPassword').classList.toggle('border-b-2', tab === 'password');
+            document.getElementById('tabPassword').classList.toggle('text-gray-400', tab !== 'password');
+            
+            // Update email tab
             document.getElementById('tabEmail').classList.toggle('text-amber-400', tab === 'email');
             document.getElementById('tabEmail').classList.toggle('border-amber-400', tab === 'email');
             document.getElementById('tabEmail').classList.toggle('border-b-2', tab === 'email');
             document.getElementById('tabEmail').classList.toggle('text-gray-400', tab !== 'email');
+            
+            // Update API key tab
             document.getElementById('tabApiKey').classList.toggle('text-amber-400', tab === 'apikey');
             document.getElementById('tabApiKey').classList.toggle('border-amber-400', tab === 'apikey');
             document.getElementById('tabApiKey').classList.toggle('border-b-2', tab === 'apikey');
@@ -457,6 +492,43 @@
                 }
             } catch (e) {
                 showError('emailError', 'Connection error. Please try again.');
+            }
+        }
+        
+        // Password login
+        async function loginWithPassword() {
+            const email = document.getElementById('passwordEmailInput').value.trim();
+            const password = document.getElementById('passwordInput').value;
+            
+            if (!email || !email.includes('@')) {
+                showError('passwordError', 'Please enter a valid email address');
+                return;
+            }
+            
+            if (!password) {
+                showError('passwordError', 'Please enter your password');
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API}/v1/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok && data.success) {
+                    document.getElementById('passwordError').classList.add('hidden');
+                    localStorage.setItem('linkswarm_api_key', data.api_key);
+                    localStorage.setItem('linkswarm_email', data.email);
+                    await loadDashboard();
+                } else {
+                    showError('passwordError', data.error || 'Login failed. Please try again.');
+                }
+            } catch (e) {
+                showError('passwordError', 'Connection error. Please try again.');
             }
         }
         

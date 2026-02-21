@@ -2,13 +2,16 @@
  * LinkSwarm Discord Community Bot
  * - Welcomes new members
  * - Answers questions about LinkSwarm
+ * - HTTP API for message relay
  */
 
 const { Client, GatewayIntentBits, Events, EmbedBuilder } = require('discord.js');
+const http = require('http');
 
 // Mission Control API
 const MC_API = 'https://mission-control-api.viewfi-analytics-prod.workers.dev';
 const MC_KEY = 'mc-api-key-2026';
+const HTTP_PORT = 3848;
 
 async function logToMC(message) {
   try {
@@ -128,9 +131,94 @@ function detectQuestion(content) {
   return null;
 }
 
+// Recent messages cache (last 100)
+const recentMessages = [];
+const MAX_MESSAGES = 100;
+
 // Bot ready
 client.once(Events.ClientReady, (c) => {
   console.log(`🐝 LinkSwarm Bot ready! Logged in as ${c.user.tag}`);
+  
+  // Start HTTP server for message relay
+  const server = http.createServer(async (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    
+    const url = new URL(req.url, `http://localhost:${HTTP_PORT}`);
+    
+    // GET /messages - fetch recent messages
+    if (url.pathname === '/messages' && req.method === 'GET') {
+      const limit = parseInt(url.searchParams.get('limit')) || 20;
+      const channelName = url.searchParams.get('channel');
+      
+      let filtered = recentMessages;
+      if (channelName) {
+        filtered = recentMessages.filter(m => m.channel.toLowerCase().includes(channelName.toLowerCase()));
+      }
+      
+      res.end(JSON.stringify({
+        count: filtered.length,
+        messages: filtered.slice(-limit).reverse()
+      }));
+      return;
+    }
+    
+    // GET /channels - list channels
+    if (url.pathname === '/channels' && req.method === 'GET') {
+      const channels = [];
+      client.guilds.cache.forEach(guild => {
+        guild.channels.cache.forEach(ch => {
+          if (ch.type === 0) { // Text channel
+            channels.push({ id: ch.id, name: ch.name, guild: guild.name });
+          }
+        });
+      });
+      res.end(JSON.stringify({ channels }));
+      return;
+    }
+    
+    // POST /send - send a message
+    if (url.pathname === '/send' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => body += chunk);
+      req.on('end', async () => {
+        try {
+          const { channelId, message } = JSON.parse(body);
+          const channel = client.channels.cache.get(channelId);
+          if (!channel) {
+            res.statusCode = 404;
+            res.end(JSON.stringify({ error: 'Channel not found' }));
+            return;
+          }
+          const sent = await channel.send(message);
+          res.end(JSON.stringify({ success: true, messageId: sent.id }));
+        } catch (err) {
+          res.statusCode = 500;
+          res.end(JSON.stringify({ error: err.message }));
+        }
+      });
+      return;
+    }
+    
+    // GET /guilds - list guilds
+    if (url.pathname === '/guilds' && req.method === 'GET') {
+      const guilds = client.guilds.cache.map(g => ({ id: g.id, name: g.name, memberCount: g.memberCount }));
+      res.end(JSON.stringify({ guilds }));
+      return;
+    }
+    
+    // Health check
+    if (url.pathname === '/health') {
+      res.end(JSON.stringify({ status: 'ok', guilds: client.guilds.cache.size }));
+      return;
+    }
+    
+    res.statusCode = 404;
+    res.end(JSON.stringify({ error: 'Not found' }));
+  });
+  
+  server.listen(HTTP_PORT, '127.0.0.1', () => {
+    console.log(`📡 HTTP relay server running on http://127.0.0.1:${HTTP_PORT}`);
+  });
 });
 
 // Welcome new members
@@ -158,13 +246,33 @@ client.on(Events.GuildMemberAdd, async (member) => {
   }
 });
 
-// Answer questions
+// Handle all messages
 client.on(Events.MessageCreate, async (message) => {
-  // Ignore bots and DMs
+  // Ignore bots
   if (message.author.bot) return;
   if (!message.guild) return;
   
   const content = message.content;
+  
+  // Cache message for relay
+  recentMessages.push({
+    id: message.id,
+    author: message.author.tag,
+    authorId: message.author.id,
+    content: content,
+    channel: message.channel.name,
+    channelId: message.channel.id,
+    guild: message.guild.name,
+    timestamp: message.createdAt.toISOString()
+  });
+  
+  // Trim cache
+  while (recentMessages.length > MAX_MESSAGES) {
+    recentMessages.shift();
+  }
+  
+  // Log all messages to MC for visibility
+  await logToMC(`[#${message.channel.name}] ${message.author.tag}: ${content.substring(0, 200)}`);
   
   // Check if bot is mentioned or message contains a question
   const isMentioned = message.mentions.has(client.user);
