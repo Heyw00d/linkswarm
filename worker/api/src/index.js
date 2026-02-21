@@ -1079,7 +1079,7 @@ app.get('/dashboard', requireAuth, async (c) => {
 // ============ REGISTRATION ============
 
 app.post('/api/register', async (c) => {
-  const { email, domain } = await c.req.json();
+  const { email, domain, ref } = await c.req.json();
   
   if (!email || !email.includes('@')) {
     return c.json({ error: 'Invalid email' }, 400);
@@ -1096,13 +1096,23 @@ app.post('/api/register', async (c) => {
     }, 409);
   }
   
-  // Generate API key
+  // Check referral code if provided
+  let referrerEmail = null;
+  if (ref) {
+    const [referrer] = await sql`SELECT email FROM api_keys WHERE referral_code = ${ref.toUpperCase()}`;
+    if (referrer) {
+      referrerEmail = referrer.email;
+    }
+  }
+  
+  // Generate API key and referral code
   const apiKey = 'sk_linkswarm_' + crypto.randomUUID().replace(/-/g, '');
   const verificationCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const referralCode = Math.random().toString(36).substring(2, 8).toUpperCase();
   
   await sql`
-    INSERT INTO api_keys (email, api_key, verification_code, code_expires_at, email_verified)
-    VALUES (${email}, ${apiKey}, ${verificationCode}, ${new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()}, false)
+    INSERT INTO api_keys (email, api_key, verification_code, code_expires_at, email_verified, referral_code, referred_by)
+    VALUES (${email}, ${apiKey}, ${verificationCode}, ${new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()}, false, ${referralCode}, ${referrerEmail})
   `;
   
   // Send verification email via Resend
@@ -1113,7 +1123,8 @@ app.post('/api/register', async (c) => {
   return c.json({ 
     success: true,
     apiKey,
-    message: 'Check your email for verification code'
+    message: 'Check your email for verification code',
+    referredBy: referrerEmail ? true : false
   });
 });
 
@@ -1133,6 +1144,57 @@ app.post('/api/verify', async (c) => {
   }
   
   await sql`UPDATE api_keys SET email_verified = true, verification_code = NULL WHERE email = ${email}`;
+  
+  // Credit referrer if this user was referred
+  if (user.referred_by) {
+    // Add 3 credits to referrer
+    await sql`
+      INSERT INTO credit_balances (user_email, balance, lifetime_earned)
+      VALUES (${user.referred_by}, 3, 3)
+      ON CONFLICT (user_email) DO UPDATE 
+      SET balance = credit_balances.balance + 3, lifetime_earned = credit_balances.lifetime_earned + 3
+    `;
+    
+    // Log the transaction
+    const [referrerBalance] = await sql`SELECT balance FROM credit_balances WHERE user_email = ${user.referred_by}`;
+    await sql`
+      INSERT INTO credit_transactions (user_email, amount, type, reference_type, description, balance_after)
+      VALUES (${user.referred_by}, 3, 'earned', 'referral', ${'Referral: ' + email}, ${referrerBalance?.balance || 3})
+    `;
+    
+    // Increment referral count
+    await sql`UPDATE api_keys SET referral_count = referral_count + 1 WHERE email = ${user.referred_by}`;
+    
+    // Send notification email to referrer
+    if (c.env.RESEND_API_KEY) {
+      fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${c.env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: 'LinkSwarm <hello@linkswarm.ai>',
+          to: user.referred_by,
+          subject: '🎉 You earned 3 credits from a referral!',
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background: #0f0f23; color: #fff;">
+              <div style="text-align: center; margin-bottom: 30px;">
+                <div style="font-size: 48px;">🎉</div>
+                <h1 style="color: #fbbf24;">You earned 3 credits!</h1>
+              </div>
+              <p>Someone signed up using your referral link and just verified their account.</p>
+              <p style="font-size: 24px; text-align: center; color: #10b981; font-weight: bold;">+3 Credits</p>
+              <p>Keep sharing your link to earn more credits!</p>
+              <p style="margin-top: 30px;">
+                <a href="https://linkswarm.ai/dashboard" style="background: #fbbf24; color: #000; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">View Dashboard →</a>
+              </p>
+            </div>
+          `
+        })
+      }).catch(() => {});
+    }
+  }
   
   return c.json({ success: true, apiKey: user.api_key });
 });
@@ -2008,6 +2070,40 @@ app.post('/v1/placements/:id/verify', requireAuth, async (c) => {
   await sql`UPDATE link_placements SET status = 'verified', verified_at = NOW() WHERE id = ${parseInt(placementId)}`;
   
   return c.json({ verified: true, status: 'verified' });
+});
+
+// ============ REFERRAL ============
+
+app.get('/v1/referral', requireAuth, async (c) => {
+  const userEmail = c.get('userEmail');
+  const sql = getDb(c.env);
+  
+  const [user] = await sql`SELECT referral_code, referral_count FROM api_keys WHERE email = ${userEmail}`;
+  
+  if (!user) {
+    return c.json({ error: 'User not found' }, 404);
+  }
+  
+  // Generate referral code if user doesn't have one
+  let referralCode = user.referral_code;
+  if (!referralCode) {
+    referralCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    await sql`UPDATE api_keys SET referral_code = ${referralCode} WHERE email = ${userEmail}`;
+  }
+  
+  // Get referral transactions (credits earned from referrals)
+  const referralCredits = await sql`
+    SELECT SUM(amount) as total FROM credit_transactions 
+    WHERE user_email = ${userEmail} AND reference_type = 'referral'
+  `;
+  
+  return c.json({
+    referral_code: referralCode,
+    referral_url: `https://linkswarm.ai/register?ref=${referralCode}`,
+    referral_count: user.referral_count || 0,
+    credits_earned: parseInt(referralCredits[0]?.total || 0),
+    credits_per_referral: 3
+  });
 });
 
 // ============ CREDITS ============
