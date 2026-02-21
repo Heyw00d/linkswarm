@@ -55,9 +55,9 @@ const LINKSWARM_INFO = {
 No manual outreach. No shady deals. Just fair link exchanges between verified sites.`,
 
   pricing: `**LinkSwarm Pricing:**
-• **Free tier** — 3 sites, 5 exchanges/month
-• **Pro ($29/mo)** — 25 sites, 50 exchanges/month, priority matching
-• **Agency ($99/mo)** — Unlimited sites & exchanges, white-label, API access
+• **Free** — 1 site, 1 LLM check/month, 3 exchanges/month
+• **Basic ($10/mo)** — 5 sites, 5 LLM checks/month, 20 exchanges/month
+• **Pro ($29/mo)** — 20 sites, 20 LLM checks/month, 80 exchanges/month
 
 All plans include verification, matching algorithm, and placement tracking.
 👉 Upgrade at https://linkswarm.ai/dashboard`,

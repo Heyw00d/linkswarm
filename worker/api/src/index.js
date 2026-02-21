@@ -639,6 +639,58 @@ app.post('/api/analyze', async (c) => {
     return c.json({ error: 'Domain required' }, 400);
   }
   
+  const sql = getDb(c.env);
+  
+  // Check for authenticated user (optional but enables higher limits)
+  const authHeader = c.req.header('Authorization');
+  const apiKey = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  
+  let userEmail = null;
+  let userPlan = 'free';
+  
+  if (apiKey) {
+    const [user] = await sql`SELECT email, plan FROM api_keys WHERE api_key = ${apiKey} AND email_verified = true`;
+    if (user) {
+      userEmail = user.email;
+      userPlan = user.plan || 'free';
+    }
+  }
+  
+  // Plan limits for LLM checks per month
+  const llmLimits = { free: 1, basic: 5, pro: 20 };
+  const limit = llmLimits[userPlan] || 1;
+  
+  // Check usage this month
+  const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+  const trackingKey = userEmail || c.req.header('CF-Connecting-IP') || 'anonymous';
+  
+  const [usage] = await sql`
+    SELECT count FROM usage_tracking 
+    WHERE user_email = ${trackingKey} AND feature = 'llm_check' AND month = ${currentMonth}
+  `;
+  
+  const currentUsage = usage?.count || 0;
+  
+  if (currentUsage >= limit) {
+    return c.json({ 
+      error: 'Monthly limit reached',
+      usage: currentUsage,
+      limit: limit,
+      plan: userPlan,
+      upgrade_url: userPlan === 'free' ? 'https://linkswarm.ai/upgrade/basic' : 
+                   userPlan === 'basic' ? 'https://linkswarm.ai/upgrade/pro' : null,
+      message: `You've used ${currentUsage}/${limit} LLM checks this month. ${userPlan === 'pro' ? 'Contact us for higher limits.' : 'Upgrade for more checks.'}`
+    }, 429);
+  }
+  
+  // Increment usage
+  await sql`
+    INSERT INTO usage_tracking (user_email, feature, month, count)
+    VALUES (${trackingKey}, 'llm_check', ${currentMonth}, 1)
+    ON CONFLICT (user_email, feature, month) 
+    DO UPDATE SET count = usage_tracking.count + 1
+  `;
+  
   // Clean domain
   const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').toLowerCase();
   
@@ -1033,10 +1085,11 @@ app.get('/dashboard', requireAuth, async (c) => {
   const [userSites] = await sql`SELECT COUNT(*) as count FROM sites WHERE owner_email = ${user.email}`;
   
   // Plan limits
+  // Plan limits: Pro = 4X Basic
   const planLimits = {
-    free: { sites: 3, requests: 10 },
-    pro: { sites: 25, requests: 100 },
-    agency: { sites: 999, requests: 999 }
+    free: { sites: 1, llm_checks: 1, exchanges: 3, requests: 10 },
+    basic: { sites: 5, llm_checks: 5, exchanges: 20, requests: 50 },
+    pro: { sites: 20, llm_checks: 20, exchanges: 80, requests: 200 }
   };
   const plan = user.plan || 'free';
   const limits = planLimits[plan] || planLimits.free;
@@ -2256,8 +2309,8 @@ app.post('/webhook/stripe', async (c) => {
     const customerEmail = session.customer_email || session.customer_details?.email;
     const amount = session.amount_total / 100;
     
-    // Determine plan based on amount
-    const plan = amount >= 99 ? 'agency' : amount >= 29 ? 'pro' : 'free';
+    // Determine plan based on amount ($10 = basic, $29 = pro)
+    const plan = amount >= 29 ? 'pro' : amount >= 10 ? 'basic' : 'free';
     
     if (customerEmail) {
       // Update user plan
@@ -2324,8 +2377,8 @@ app.post('/webhook/stripe', async (c) => {
       
       // Post to Discord - paying-customers channel
       if (c.env.DISCORD_CUSTOMERS_WEBHOOK) {
-        const planEmoji = plan === 'agency' ? '🏢' : '⭐';
-        const planColor = plan === 'agency' ? 0xF59E0B : 0x8B5CF6;
+        const planEmoji = plan === 'pro' ? '⭐' : '🔵';
+        const planColor = plan === 'pro' ? 0x8B5CF6 : 0x3B82F6;
         await fetch(c.env.DISCORD_CUSTOMERS_WEBHOOK, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
