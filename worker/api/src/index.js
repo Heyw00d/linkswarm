@@ -2225,7 +2225,7 @@ app.post('/webhook/stripe', async (c) => {
         });
       }
       
-      // Post to Discord
+      // Post to Discord - general webhook
       if (c.env.DISCORD_WEBHOOK_URL) {
         await fetch(c.env.DISCORD_WEBHOOK_URL, {
           method: 'POST',
@@ -2242,7 +2242,31 @@ app.post('/webhook/stripe', async (c) => {
               timestamp: new Date().toISOString()
             }]
           })
-        });
+        }).catch(() => {});
+      }
+      
+      // Post to Discord - paying-customers channel
+      if (c.env.DISCORD_CUSTOMERS_WEBHOOK) {
+        const planEmoji = plan === 'agency' ? '🏢' : '⭐';
+        const planColor = plan === 'agency' ? 0xF59E0B : 0x8B5CF6;
+        await fetch(c.env.DISCORD_CUSTOMERS_WEBHOOK, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: `${planEmoji} **New ${plan.toUpperCase()} customer!**`,
+            embeds: [{
+              title: `💳 ${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan - $${amount}`,
+              color: planColor,
+              fields: [
+                { name: '📧 Email', value: `\`${customerEmail}\``, inline: true },
+                { name: '💰 Amount', value: `$${amount}`, inline: true },
+                { name: '📅 Date', value: new Date().toLocaleDateString(), inline: true }
+              ],
+              footer: { text: 'LinkSwarm 🐝' },
+              timestamp: new Date().toISOString()
+            }]
+          })
+        }).catch(() => {});
       }
     }
   }
