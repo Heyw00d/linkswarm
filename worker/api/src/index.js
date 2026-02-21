@@ -8,6 +8,193 @@ import { neon } from '@neondatabase/serverless';
 
 const app = new Hono();
 
+// Blocked categories for spam filtering
+const BLOCKED_CATEGORIES = [
+  'gambling', 'casino', 'betting', 'adult', 'porn', 'xxx',
+  'pharma', 'payday-loans', 'kratom', 'cbd', 'vape',
+  'replica', 'counterfeit', 'illegal'
+];
+
+// Get domain authority score using DataForSEO
+async function getDomainAuthority(domain, env) {
+  if (!env || !env.DATAFORSEO_AUTH) {
+    return { score: null, error: 'DataForSEO not configured' };
+  }
+  
+  try {
+    // DataForSEO Labs Domain Rank Overview
+    const res = await fetch('https://api.dataforseo.com/v3/dataforseo_labs/google/domain_rank_overview/live', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${env.DATAFORSEO_AUTH}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify([{
+        target: domain,
+        location_code: 2840,  // United States
+        language_code: 'en'
+      }])
+    });
+    
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error('DataForSEO error:', errText);
+      return { score: null, error: `API error: ${res.status}` };
+    }
+    
+    const data = await res.json();
+    
+    if (data.tasks && data.tasks[0] && data.tasks[0].result && data.tasks[0].result[0]) {
+      const result = data.tasks[0].result[0];
+      const items = result.items && result.items[0];
+      
+      if (items && items.metrics && items.metrics.organic) {
+        const organic = items.metrics.organic;
+        
+        // Calculate authority score based on keyword rankings
+        // Weighted: pos_1 keywords worth most, declining from there
+        const totalKeywords = organic.count || 0;
+        const pos1 = organic.pos_1 || 0;
+        const pos2_3 = organic.pos_2_3 || 0;
+        const pos4_10 = organic.pos_4_10 || 0;
+        const etv = organic.etv || 0;
+        
+        // Authority score: log scale of total ranking keywords, capped at 100
+        // Sites with 10k+ keywords = 50+, 100k+ = 70+, 1M+ = 90+
+        let authorityScore = 0;
+        if (totalKeywords > 0) {
+          authorityScore = Math.min(100, Math.round(Math.log10(totalKeywords) * 15));
+        }
+        
+        return {
+          score: authorityScore,
+          keywords: totalKeywords,
+          pos1Keywords: pos1,
+          pos2_3Keywords: pos2_3,
+          pos4_10Keywords: pos4_10,
+          topKeywords: pos1 + pos2_3 + pos4_10,
+          etv: Math.round(etv),
+          etvFormatted: etv > 1000000 ? `$${(etv/1000000).toFixed(1)}M` : etv > 1000 ? `$${(etv/1000).toFixed(0)}K` : `$${Math.round(etv)}`
+        };
+      }
+    }
+    
+    // Domain not found in DataForSEO (too new or no rankings)
+    return { score: 0, keywords: 0, topKeywords: 0, etv: 0, notIndexed: true };
+  } catch (err) {
+    console.error('Authority check error:', err);
+    return { score: null, error: err.message };
+  }
+}
+
+// Scan site content and classify categories
+async function scanSiteContent(domain, env) {
+  try {
+    // Fetch the homepage
+    const response = await fetch(`https://${domain}`, {
+      headers: { 'User-Agent': 'LinkSwarm-Bot/1.0 (site-verification)' },
+      redirect: 'follow'
+    });
+    
+    if (!response.ok) {
+      return { success: false, error: `Failed to fetch: ${response.status}` };
+    }
+    
+    const html = await response.text();
+    
+    // Extract text content (strip HTML)
+    const textContent = html
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .substring(0, 4000); // Limit to ~4k chars for API
+    
+    // Extract title and meta description
+    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
+    const title = titleMatch ? titleMatch[1].trim() : '';
+    const description = descMatch ? descMatch[1].trim() : '';
+    
+    // Use OpenAI to classify
+    if (!env.OPENAI_API_KEY) {
+      // Fallback: keyword-based detection
+      const lowerContent = (title + ' ' + description + ' ' + textContent).toLowerCase();
+      const detectedBlocked = BLOCKED_CATEGORIES.filter(cat => 
+        lowerContent.includes(cat) || 
+        (cat === 'gambling' && (lowerContent.includes('bet ') || lowerContent.includes('slots'))) ||
+        (cat === 'casino' && lowerContent.includes('jackpot')) ||
+        (cat === 'adult' && (lowerContent.includes('18+') || lowerContent.includes('nsfw')))
+      );
+      
+      return {
+        success: true,
+        title,
+        description,
+        suggestedCategories: [],
+        blockedCategories: detectedBlocked,
+        isBlocked: detectedBlocked.length > 0,
+        method: 'keyword'
+      };
+    }
+    
+    // OpenAI classification
+    const prompt = `Analyze this website and classify it.
+
+Title: ${title}
+Description: ${description}
+Content excerpt: ${textContent.substring(0, 2000)}
+
+Return JSON only:
+{
+  "categories": ["category1", "category2"], // e.g. "saas", "fintech", "crypto", "ai", "ecommerce", "blog", "news"
+  "blockedCategories": [], // ONLY if site contains: gambling, casino, betting, adult, porn, pharma, payday-loans, illegal content
+  "isBlocked": false, // true if blockedCategories is not empty
+  "confidence": 0.9, // 0-1 how confident you are
+  "reason": "brief explanation"
+}`;
+
+    const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        response_format: { type: 'json_object' },
+        max_tokens: 200
+      })
+    });
+    
+    if (!aiResponse.ok) {
+      console.error('OpenAI error:', await aiResponse.text());
+      return { success: false, error: 'AI classification failed' };
+    }
+    
+    const aiData = await aiResponse.json();
+    const classification = JSON.parse(aiData.choices[0].message.content);
+    
+    return {
+      success: true,
+      title,
+      description,
+      suggestedCategories: classification.categories || [],
+      blockedCategories: classification.blockedCategories || [],
+      isBlocked: classification.isBlocked || false,
+      confidence: classification.confidence || 0.5,
+      reason: classification.reason || '',
+      method: 'ai'
+    };
+    
+  } catch (err) {
+    console.error('Site scan error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
 // Helper to get SQL client
 function getDb(env) {
   return neon(env.DATABASE_URL);
@@ -67,6 +254,455 @@ app.get('/', (c) => c.json({
 }));
 
 app.get('/health', (c) => c.json({ status: 'ok', service: 'linkswarm-api' }));
+
+// ============ MAGIC LINK AUTH ============
+
+// Send magic link email for passwordless login
+app.post('/v1/auth/magic-link', async (c) => {
+  const sql = neon(c.env.DATABASE_URL);
+  const { email } = await c.req.json();
+  
+  if (!email || !email.includes('@')) {
+    return c.json({ error: 'Invalid email' }, 400);
+  }
+  
+  // Check if user exists
+  const [user] = await sql`SELECT * FROM api_keys WHERE email = ${email.toLowerCase()} AND email_verified = true`;
+  
+  if (!user) {
+    return c.json({ error: 'Email not found. Have you signed up?' }, 404);
+  }
+  
+  // Generate a secure token
+  const token = crypto.randomUUID() + '-' + crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+  
+  // Store token in database (reusing verification_code field)
+  await sql`
+    UPDATE api_keys 
+    SET verification_code = ${token}, 
+        code_expires_at = ${expiresAt.toISOString()}
+    WHERE email = ${email.toLowerCase()}
+  `;
+  
+  // Send magic link email
+  const magicLink = `https://linkswarm.ai/dashboard/?token=${token}&email=${encodeURIComponent(email)}`;
+  
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${c.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'LinkSwarm <noreply@linkswarm.ai>',
+        to: email,
+        subject: '🐝 Your LinkSwarm Login Link',
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #f59e0b;">🐝 LinkSwarm</h1>
+            <p>Click the button below to log in to your dashboard:</p>
+            <p style="margin: 30px 0;">
+              <a href="${magicLink}" style="background: #f59e0b; color: #000; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">
+                Log In to Dashboard
+              </a>
+            </p>
+            <p style="color: #666; font-size: 14px;">This link expires in 15 minutes.</p>
+            <p style="color: #666; font-size: 14px;">If you didn't request this, you can ignore this email.</p>
+          </div>
+        `
+      })
+    });
+    
+    if (!res.ok) {
+      console.error('Resend error:', await res.text());
+      return c.json({ error: 'Failed to send email' }, 500);
+    }
+  } catch (err) {
+    console.error('Email error:', err);
+    return c.json({ error: 'Failed to send email' }, 500);
+  }
+  
+  return c.json({ success: true, message: 'Check your email for a login link' });
+});
+
+// Verify magic link token and return API key
+app.get('/v1/auth/verify-token', async (c) => {
+  const sql = neon(c.env.DATABASE_URL);
+  const token = c.req.query('token');
+  const email = c.req.query('email');
+  
+  if (!token || !email) {
+    return c.json({ error: 'Token and email required' }, 400);
+  }
+  
+  // Look up the token
+  const [user] = await sql`
+    SELECT * FROM api_keys 
+    WHERE email = ${email.toLowerCase()} 
+      AND verification_code = ${token}
+      AND code_expires_at > NOW()
+  `;
+  
+  if (!user) {
+    return c.json({ error: 'Invalid or expired token' }, 401);
+  }
+  
+  // Clear the token (one-time use)
+  await sql`
+    UPDATE api_keys 
+    SET verification_code = NULL, code_expires_at = NULL 
+    WHERE email = ${email.toLowerCase()}
+  `;
+  
+  return c.json({ 
+    success: true, 
+    api_key: user.api_key,
+    email: user.email
+  });
+});
+
+// ============ LLM READINESS ANALYZER ============
+
+app.post('/api/analyze', async (c) => {
+  const body = await c.req.json();
+  const { domain } = body;
+  
+  if (!domain) {
+    return c.json({ error: 'Domain required' }, 400);
+  }
+  
+  // Clean domain
+  const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').toLowerCase();
+  
+  // Get authority score in parallel with other checks
+  const authorityPromise = getDomainAuthority(cleanDomain, c.env);
+  
+  const scores = {
+    llm: 0,
+    agent: 0,
+    authority: 0,
+    total: 0
+  };
+  
+  const breakdown = {
+    llm: { items: {}, suggestions: [] },
+    agent: { items: {}, suggestions: [] }
+  };
+  
+  try {
+    // Parallel fetch for speed
+    const [
+      homepageRes,
+      robotsRes,
+      llmsTxtRes,
+      aiTxtRes,
+      wellKnownAgentRes,
+      sitemapRes
+    ] = await Promise.allSettled([
+      fetch(`https://${cleanDomain}/`, { headers: { 'User-Agent': 'LinkSwarm-Analyzer/1.0' }, redirect: 'follow' }),
+      fetch(`https://${cleanDomain}/robots.txt`, { headers: { 'User-Agent': 'LinkSwarm-Analyzer/1.0' } }),
+      fetch(`https://${cleanDomain}/llms.txt`, { headers: { 'User-Agent': 'LinkSwarm-Analyzer/1.0' } }),
+      fetch(`https://${cleanDomain}/ai.txt`, { headers: { 'User-Agent': 'LinkSwarm-Analyzer/1.0' } }),
+      fetch(`https://${cleanDomain}/.well-known/agent.json`, { headers: { 'User-Agent': 'LinkSwarm-Analyzer/1.0' } }),
+      fetch(`https://${cleanDomain}/sitemap.xml`, { headers: { 'User-Agent': 'LinkSwarm-Analyzer/1.0' } })
+    ]);
+    
+    // LLM Scoring
+    // 1. llms.txt (2 points)
+    const hasLlmsTxt = llmsTxtRes.status === 'fulfilled' && llmsTxtRes.value.ok;
+    breakdown.llm.items['llms.txt'] = { score: hasLlmsTxt ? 2 : 0, max: 2, found: hasLlmsTxt };
+    scores.llm += hasLlmsTxt ? 2 : 0;
+    if (!hasLlmsTxt) breakdown.llm.suggestions.push('Add /llms.txt with context about your site for LLMs');
+    
+    // 2. ai.txt (1 point)
+    const hasAiTxt = aiTxtRes.status === 'fulfilled' && aiTxtRes.value.ok;
+    breakdown.llm.items['ai.txt'] = { score: hasAiTxt ? 1 : 0, max: 1, found: hasAiTxt };
+    scores.llm += hasAiTxt ? 1 : 0;
+    if (!hasAiTxt) breakdown.llm.suggestions.push('Add /ai.txt with AI-specific instructions');
+    
+    // 3. robots.txt (1 point, check for AI bot allowance)
+    let robotsScore = 0;
+    let robotsContent = '';
+    if (robotsRes.status === 'fulfilled' && robotsRes.value.ok) {
+      robotsContent = await robotsRes.value.text();
+      const allowsAI = !robotsContent.toLowerCase().includes('user-agent: gptbot') || 
+                       !robotsContent.toLowerCase().includes('disallow: /');
+      robotsScore = 1;
+      if (robotsContent.toLowerCase().includes('gptbot') && robotsContent.toLowerCase().includes('disallow')) {
+        robotsScore = 0.5;
+        breakdown.llm.suggestions.push('Consider allowing GPTBot and other AI crawlers in robots.txt');
+      }
+    }
+    breakdown.llm.items['robots.txt'] = { score: robotsScore, max: 1, found: robotsRes.status === 'fulfilled' && robotsRes.value.ok };
+    scores.llm += robotsScore;
+    
+    // 4. Schema.org markup (2 points)
+    let schemaScore = 0;
+    let hasSchema = false;
+    if (homepageRes.status === 'fulfilled' && homepageRes.value.ok) {
+      const html = await homepageRes.value.text();
+      hasSchema = html.includes('application/ld+json') || html.includes('itemtype="http://schema.org');
+      schemaScore = hasSchema ? 2 : 0;
+      
+      // Check meta description
+      const hasMetaDesc = html.includes('name="description"') || html.includes("name='description'");
+      breakdown.llm.items['Meta Description'] = { score: hasMetaDesc ? 1 : 0, max: 1, found: hasMetaDesc };
+      scores.llm += hasMetaDesc ? 1 : 0;
+      if (!hasMetaDesc) breakdown.llm.suggestions.push('Add a meta description tag');
+      
+      // Check Open Graph
+      const hasOG = html.includes('og:title') || html.includes('og:description');
+      breakdown.llm.items['Open Graph'] = { score: hasOG ? 0.5 : 0, max: 0.5, found: hasOG };
+      scores.llm += hasOG ? 0.5 : 0;
+    }
+    breakdown.llm.items['Schema.org'] = { score: schemaScore, max: 2, found: hasSchema };
+    scores.llm += schemaScore;
+    if (!hasSchema) breakdown.llm.suggestions.push('Add Schema.org JSON-LD structured data');
+    
+    // 5. Sitemap (1 point)
+    const hasSitemap = sitemapRes.status === 'fulfilled' && sitemapRes.value.ok;
+    breakdown.llm.items['Sitemap'] = { score: hasSitemap ? 1 : 0, max: 1, found: hasSitemap };
+    scores.llm += hasSitemap ? 1 : 0;
+    if (!hasSitemap) breakdown.llm.suggestions.push('Add /sitemap.xml for better crawlability');
+    
+    // Agent Scoring
+    // 1. .well-known/agent.json (2 points)
+    const hasAgentJson = wellKnownAgentRes.status === 'fulfilled' && wellKnownAgentRes.value.ok;
+    breakdown.agent.items['agent.json'] = { score: hasAgentJson ? 2 : 0, max: 2, found: hasAgentJson };
+    scores.agent += hasAgentJson ? 2 : 0;
+    if (!hasAgentJson) breakdown.agent.suggestions.push('Add /.well-known/agent.json for agent discovery');
+    
+    // 2. API documentation indicators (1.5 points)
+    let hasApiDocs = false;
+    if (homepageRes.status === 'fulfilled' && homepageRes.value.ok) {
+      // Already have HTML from above, but need to re-fetch for this check
+      const homepage = await (await fetch(`https://${cleanDomain}/`, { headers: { 'User-Agent': 'LinkSwarm-Analyzer/1.0' } })).text();
+      hasApiDocs = homepage.toLowerCase().includes('/api') || 
+                   homepage.toLowerCase().includes('developer') ||
+                   homepage.toLowerCase().includes('documentation');
+    }
+    breakdown.agent.items['API/Docs'] = { score: hasApiDocs ? 1.5 : 0, max: 1.5, found: hasApiDocs };
+    scores.agent += hasApiDocs ? 1.5 : 0;
+    if (!hasApiDocs) breakdown.agent.suggestions.push('Consider exposing an API or documentation for agents');
+    
+    // 3. HTTPS (1 point - implicit since we're fetching via https)
+    breakdown.agent.items['HTTPS'] = { score: 1, max: 1, found: true };
+    scores.agent += 1;
+    
+    // 4. Fast response (1 point - if we got here quickly)
+    breakdown.agent.items['Accessible'] = { score: 1, max: 1, found: true };
+    scores.agent += 1;
+    
+    // 5. No blocking (0.5 points)
+    const noBlocking = robotsScore > 0;
+    breakdown.agent.items['No Blocking'] = { score: noBlocking ? 0.5 : 0, max: 0.5, found: noBlocking };
+    scores.agent += noBlocking ? 0.5 : 0;
+    
+    // Get authority result
+    const authorityResult = await authorityPromise;
+    scores.authority = authorityResult.score !== null ? authorityResult.score / 10 : null;
+    
+    // Calculate totals (scale to 10)
+    const llmMax = 8.5;
+    const agentMax = 6;
+    scores.llm = Math.min(10, (scores.llm / llmMax) * 10);
+    scores.agent = Math.min(10, (scores.agent / agentMax) * 10);
+    
+    // Total = weighted average (readiness 50%, authority 50%)
+    // If authority unavailable, just use readiness
+    if (scores.authority !== null) {
+      const readinessScore = (scores.llm + scores.agent) / 2;
+      scores.total = (readinessScore * 0.5) + (scores.authority * 0.5);
+    } else {
+      scores.total = (scores.llm + scores.agent) / 2;
+    }
+    
+    // Add authority to breakdown
+    breakdown.authority = {
+      score: authorityResult.score,
+      keywords: authorityResult.keywords,
+      topKeywords: authorityResult.topKeywords,
+      pos1Keywords: authorityResult.pos1Keywords,
+      etv: authorityResult.etv,
+      etvFormatted: authorityResult.etvFormatted,
+      notIndexed: authorityResult.notIndexed,
+      items: {
+        'Authority Score': { 
+          score: authorityResult.score || 0, 
+          max: 100, 
+          found: authorityResult.score !== null 
+        },
+        'Ranking Keywords': {
+          score: Math.min(100, Math.round(Math.log10((authorityResult.keywords || 1)) * 15)),
+          max: 100,
+          value: authorityResult.keywords || 0,
+          found: !authorityResult.notIndexed
+        },
+        'Top 10 Keywords': {
+          score: Math.min(100, Math.round(Math.log10((authorityResult.topKeywords || 1)) * 20)),
+          max: 100,
+          value: authorityResult.topKeywords || 0,
+          found: !authorityResult.notIndexed
+        },
+        'Est. Traffic Value': {
+          score: authorityResult.etv > 0 ? Math.min(100, Math.round(Math.log10(authorityResult.etv) * 10)) : 0,
+          max: 100,
+          value: authorityResult.etvFormatted || '$0',
+          found: !authorityResult.notIndexed
+        }
+      },
+      suggestions: []
+    };
+    
+    if (authorityResult.notIndexed) {
+      breakdown.authority.suggestions.push('Site not indexed in search engines yet — build content and backlinks to get ranked');
+    } else if (authorityResult.score !== null && authorityResult.score < 30) {
+      breakdown.authority.suggestions.push('Low authority score — build quality backlinks to improve LLM visibility');
+    }
+    if (authorityResult.topKeywords !== undefined && authorityResult.topKeywords < 100) {
+      breakdown.authority.suggestions.push('Few top 10 rankings — optimize content for target keywords');
+    }
+    
+    // Determine grade
+    let grade;
+    if (scores.total >= 9) grade = { letter: 'A+', label: 'Excellent', color: '#10b981' };
+    else if (scores.total >= 8) grade = { letter: 'A', label: 'Great', color: '#22c55e' };
+    else if (scores.total >= 7) grade = { letter: 'B+', label: 'Good', color: '#84cc16' };
+    else if (scores.total >= 6) grade = { letter: 'B', label: 'Above Average', color: '#eab308' };
+    else if (scores.total >= 5) grade = { letter: 'C', label: 'Average', color: '#f97316' };
+    else if (scores.total >= 4) grade = { letter: 'D', label: 'Below Average', color: '#ef4444' };
+    else grade = { letter: 'F', label: 'Needs Work', color: '#dc2626' };
+    
+    // Build recommendations array from suggestions
+    const recommendations = [];
+    
+    // LLM recommendations
+    if (!hasLlmsTxt) {
+      recommendations.push({
+        title: 'Add llms.txt',
+        description: 'Create a /llms.txt file to help LLMs understand your site. Include key information about your product, services, and how AI should interpret your content.',
+        priority: 'high',
+        category: 'llm',
+        link: 'https://llmstxt.org/'
+      });
+    }
+    if (!hasSchema) {
+      recommendations.push({
+        title: 'Add Schema.org Markup',
+        description: 'Implement JSON-LD structured data to help search engines and AI understand your content better.',
+        priority: 'high',
+        category: 'llm',
+        link: 'https://schema.org/docs/gs.html'
+      });
+    }
+    if (!hasSitemap) {
+      recommendations.push({
+        title: 'Create a Sitemap',
+        description: 'Add a /sitemap.xml file to help crawlers discover all your pages efficiently.',
+        priority: 'medium',
+        category: 'llm',
+        link: 'https://www.sitemaps.org/'
+      });
+    }
+    if (!hasAiTxt) {
+      recommendations.push({
+        title: 'Add ai.txt',
+        description: 'Create an /ai.txt file with AI-specific instructions and permissions.',
+        priority: 'low',
+        category: 'llm'
+      });
+    }
+    
+    // Agent recommendations
+    if (!hasAgentJson) {
+      recommendations.push({
+        title: 'Add agent.json',
+        description: 'Create /.well-known/agent.json to enable AI agent discovery and integration with your site.',
+        priority: 'medium',
+        category: 'agent',
+        link: 'https://linkswarm.ai/docs/agent-json'
+      });
+    }
+    if (!hasApiDocs) {
+      recommendations.push({
+        title: 'Expose API Documentation',
+        description: 'Consider adding developer documentation or API access points for programmatic interaction.',
+        priority: 'low',
+        category: 'agent'
+      });
+    }
+    
+    // Authority recommendations
+    if (authorityResult.notIndexed) {
+      recommendations.push({
+        title: 'Get Indexed in Search Engines',
+        description: 'Your site has no search rankings yet. Build content, get backlinks, and submit to Google Search Console.',
+        priority: 'high',
+        category: 'authority',
+        link: 'https://search.google.com/search-console'
+      });
+    } else if (authorityResult.score !== null && authorityResult.score < 30) {
+      recommendations.push({
+        title: 'Build Domain Authority',
+        description: `Authority score ${authorityResult.score}/100 (${authorityResult.keywords?.toLocaleString() || 0} ranking keywords). LLMs cite high-authority sources. Build quality backlinks to improve.`,
+        priority: 'high',
+        category: 'authority',
+        link: 'https://linkswarm.ai/register'
+      });
+    }
+    
+    // Build howToImprove array
+    const howToImprove = [];
+    if (!hasLlmsTxt) {
+      howToImprove.push({
+        title: 'Create /llms.txt',
+        steps: [
+          'Create a file called llms.txt in your root directory',
+          'Add a brief description of your site/product',
+          'Include key facts, features, and use cases',
+          'Specify how AI should interpret your content'
+        ]
+      });
+    }
+    if (!hasAgentJson) {
+      howToImprove.push({
+        title: 'Create /.well-known/agent.json',
+        steps: [
+          'Create a .well-known directory if it doesn\'t exist',
+          'Add agent.json with your site capabilities',
+          'Include API endpoints agents can use',
+          'Specify authentication requirements'
+        ]
+      });
+    }
+    if (!hasSchema) {
+      howToImprove.push({
+        title: 'Add JSON-LD Schema',
+        steps: [
+          'Choose appropriate schema types for your content',
+          'Add <script type="application/ld+json"> to your HTML head',
+          'Include Organization, WebSite, and Product schemas',
+          'Validate with Google\'s Rich Results Test'
+        ]
+      });
+    }
+    
+    return c.json({
+      domain: cleanDomain,
+      scores,
+      grade,
+      breakdown,
+      recommendations,
+      howToImprove
+    });
+    
+  } catch (err) {
+    console.error('Analyze error:', err);
+    return c.json({ error: 'Failed to analyze domain', details: err.message }, 500);
+  }
+});
 
 // ============ PUBLIC: REGISTRY ============
 
@@ -259,10 +895,63 @@ app.post('/v1/sites/:domain/verify', requireAuth, async (c) => {
   const domain = c.req.param('domain');
   const sql = getDb(c.env);
   
-  // For now, auto-verify (in production, check DNS)
-  await sql`UPDATE sites SET verified = true WHERE domain = ${domain} AND owner_email = ${userEmail}`;
+  // Check site ownership
+  const [site] = await sql`SELECT * FROM sites WHERE domain = ${domain} AND owner_email = ${userEmail}`;
+  if (!site) {
+    return c.json({ error: 'Site not found or not owned by you' }, 404);
+  }
   
-  return c.json({ success: true, verified: true });
+  // Scan site content for classification and spam detection
+  const scan = await scanSiteContent(domain, c.env);
+  
+  if (!scan.success) {
+    return c.json({ 
+      error: 'Could not verify site', 
+      details: scan.error,
+      tip: 'Make sure your site is accessible at https://' + domain
+    }, 400);
+  }
+  
+  // Block sites with prohibited content
+  if (scan.isBlocked) {
+    await sql`UPDATE sites SET verified = false, flagged = true, flag_reason = ${scan.blockedCategories.join(', ')} WHERE domain = ${domain}`;
+    
+    return c.json({ 
+      verified: false,
+      blocked: true,
+      reason: `Site contains prohibited content: ${scan.blockedCategories.join(', ')}`,
+      details: scan.reason || 'Sites in these categories are not allowed in the network.'
+    }, 403);
+  }
+  
+  // Auto-update categories if user didn't provide any
+  const existingCategories = site.categories || [];
+  const newCategories = existingCategories.length > 0 
+    ? existingCategories 
+    : scan.suggestedCategories;
+  
+  // Update site with verification and scanned data
+  await sql`
+    UPDATE sites 
+    SET verified = true, 
+        categories = ${newCategories},
+        description = COALESCE(NULLIF(description, ''), ${scan.description || ''}),
+        name = COALESCE(NULLIF(name, domain), ${scan.title || domain}),
+        scanned_at = NOW(),
+        scan_confidence = ${scan.confidence || 0}
+    WHERE domain = ${domain} AND owner_email = ${userEmail}
+  `;
+  
+  return c.json({ 
+    success: true, 
+    verified: true,
+    categories: newCategories,
+    scanResult: {
+      method: scan.method,
+      confidence: scan.confidence,
+      suggestedCategories: scan.suggestedCategories
+    }
+  });
 });
 
 // ============ DISCOVER ============
@@ -377,13 +1066,14 @@ app.post('/v1/pool/request', requireAuth, async (c) => {
     RETURNING id
   `;
   
-  // Try to find a match
+  // Try to find a match (excluding blocked categories)
   const siteCategories = categories || site.categories || [];
   const [contribution] = await sql`
     SELECT * FROM link_contributions 
     WHERE status = 'available' 
     AND owner_email != ${userEmail}
     AND categories && ${siteCategories}
+    AND NOT (categories && ${BLOCKED_CATEGORIES})
     ORDER BY created_at ASC
     LIMIT 1
   `;
@@ -436,6 +1126,111 @@ app.post('/v1/pool/request', requireAuth, async (c) => {
     request_id: request.id,
     status: match ? 'matched' : 'pending',
     match
+  });
+});
+
+// ============ POOL: AUTO-MATCH (Cron endpoint) ============
+
+app.post('/v1/pool/auto-match', requireAdmin, async (c) => {
+  const sql = getDb(c.env);
+  const matches = [];
+  
+  // Get all pending requests
+  const pendingRequests = await sql`
+    SELECT lr.*, s.name as site_name, s.categories as site_categories
+    FROM link_requests lr
+    JOIN sites s ON lr.site_domain = s.domain
+    WHERE lr.status = 'pending'
+    ORDER BY lr.created_at ASC
+  `;
+  
+  for (const request of pendingRequests) {
+    const requestCategories = request.categories || request.site_categories || [];
+    
+    // Find a matching contribution (excluding blocked categories)
+    const [contribution] = await sql`
+      SELECT * FROM link_contributions 
+      WHERE status = 'available' 
+      AND owner_email != ${request.owner_email}
+      AND categories && ${requestCategories}
+      AND NOT (categories && ${BLOCKED_CATEGORIES})
+      ORDER BY created_at ASC
+      LIMIT 1
+    `;
+    
+    if (!contribution) continue;
+    
+    // Check requester has credits
+    const [balance] = await sql`SELECT balance FROM credit_balances WHERE user_email = ${request.owner_email}`;
+    if (!balance || balance.balance < 1) continue;
+    
+    // Create placement
+    const relevanceScore = 0.8;
+    const [placement] = await sql`
+      INSERT INTO link_placements (
+        contribution_id, request_id, from_domain, from_page, to_domain, to_page, 
+        anchor_text, relevance_score, status
+      ) VALUES (
+        ${contribution.id}, ${request.id}, ${contribution.site_domain}, ${contribution.page_url},
+        ${request.site_domain}, ${request.target_page || '/'}, 
+        ${request.preferred_anchor || request.site_name || request.site_domain}, 
+        ${relevanceScore}, 'assigned'
+      )
+      RETURNING id
+    `;
+    
+    // Update contribution & request
+    await sql`UPDATE link_contributions SET status = 'matched', links_placed = links_placed + 1 WHERE id = ${contribution.id}`;
+    await sql`UPDATE link_requests SET status = 'matched', fulfilled_by = ${placement.id} WHERE id = ${request.id}`;
+    
+    // Deduct credit
+    await sql`UPDATE credit_balances SET balance = balance - 1, lifetime_spent = lifetime_spent + 1 WHERE user_email = ${request.owner_email}`;
+    const [newBalance] = await sql`SELECT balance FROM credit_balances WHERE user_email = ${request.owner_email}`;
+    
+    await sql`
+      INSERT INTO credit_transactions (user_email, amount, type, reference_type, reference_id, description, balance_after)
+      VALUES (${request.owner_email}, -1, 'spend', 'request', ${request.id}, 'Auto-matched link request', ${newBalance.balance})
+    `;
+    
+    // Get site info for notification
+    const [targetSite] = await sql`SELECT * FROM sites WHERE domain = ${request.site_domain}`;
+    
+    // Send notification
+    await sendMatchNotification(c.env, sql, contribution, targetSite, request.preferred_anchor, request.target_page);
+    
+    matches.push({
+      request_id: request.id,
+      placement_id: placement.id,
+      from: contribution.site_domain,
+      to: request.site_domain
+    });
+  }
+  
+  // Post summary to Discord if any matches
+  if (matches.length > 0 && c.env.DISCORD_WEBHOOK_URL) {
+    fetch(c.env.DISCORD_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        embeds: [{
+          title: '🤖 Auto-Match Complete',
+          color: 0x10B981,
+          description: `Matched ${matches.length} pending request(s)`,
+          fields: matches.slice(0, 5).map(m => ({
+            name: `${m.from} → ${m.to}`,
+            value: `Placement #${m.placement_id}`,
+            inline: true
+          })),
+          timestamp: new Date().toISOString()
+        }]
+      })
+    }).catch(() => {});
+  }
+  
+  return c.json({
+    success: true,
+    matches_created: matches.length,
+    matches
   });
 });
 
