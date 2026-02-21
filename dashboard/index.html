@@ -195,6 +195,10 @@
                 <h2 class="text-lg font-semibold mb-4">🔑 Your API Key</h2>
                 <div class="flex items-center gap-4">
                     <code id="apiKeyDisplay" class="flex-1 bg-black/30 px-4 py-3 rounded-lg font-mono text-sm text-amber-400 select-all"></code>
+                    <input type="hidden" id="apiKeyHidden">
+                    <button id="toggleKeyBtn" onclick="toggleApiKey()" class="bg-gray-700 hover:bg-gray-600 px-4 py-3 rounded-lg transition">
+                        👁 Show
+                    </button>
                     <button onclick="copyApiKey()" class="bg-gray-700 hover:bg-gray-600 px-4 py-3 rounded-lg transition">
                         Copy
                     </button>
@@ -635,7 +639,10 @@
                 
                 // User info
                 document.getElementById('userEmail').textContent = data.user.email;
-                document.getElementById('apiKeyDisplay').textContent = data.user.api_key;
+                // Store API key but show masked version
+                document.getElementById('apiKeyHidden').value = data.user.api_key;
+                document.getElementById('apiKeyDisplay').textContent = maskApiKey(data.user.api_key);
+                document.getElementById('apiKeyDisplay').dataset.masked = 'true';
                 
                 // Plan
                 const plan = data.user.plan || 'free';
@@ -883,8 +890,31 @@
             }
         }
         
+        function maskApiKey(key) {
+            if (!key) return '';
+            // Show first 12 chars, mask the rest
+            return key.substring(0, 12) + '••••••••••••••••••••••••••••••••••••';
+        }
+        
+        function toggleApiKey() {
+            const display = document.getElementById('apiKeyDisplay');
+            const hidden = document.getElementById('apiKeyHidden');
+            const btn = document.getElementById('toggleKeyBtn');
+            
+            if (display.dataset.masked === 'true') {
+                display.textContent = hidden.value;
+                display.dataset.masked = 'false';
+                btn.textContent = '🙈 Hide';
+            } else {
+                display.textContent = maskApiKey(hidden.value);
+                display.dataset.masked = 'true';
+                btn.textContent = '👁 Show';
+            }
+        }
+        
         function copyApiKey() {
-            navigator.clipboard.writeText(currentApiKey);
+            const apiKey = document.getElementById('apiKeyHidden').value || currentApiKey;
+            navigator.clipboard.writeText(apiKey);
             alert('API key copied to clipboard!');
         }
         
