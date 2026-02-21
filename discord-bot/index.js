@@ -55,19 +55,21 @@ const LINKSWARM_INFO = {
 No manual outreach. No shady deals. Just fair link exchanges between verified sites.`,
 
   pricing: `**LinkSwarm Pricing:**
-• **Free tier** — 3 link exchanges/month
-• **Pro** — $29/mo, unlimited exchanges
-• **Agency** — $99/mo, manage multiple domains
+• **Free tier** — 3 sites, 5 exchanges/month
+• **Pro ($29/mo)** — 25 sites, 50 exchanges/month, priority matching
+• **Agency ($99/mo)** — Unlimited sites & exchanges, white-label, API access
 
-All plans include verification, matching algorithm, and placement tracking.`,
+All plans include verification, matching algorithm, and placement tracking.
+👉 Upgrade at https://linkswarm.ai/dashboard`,
 
   register: `**To register your site:**
 1. Go to https://linkswarm.ai/register
-2. Enter your domain
-3. Add the verification file to your site
-4. Once verified, you'll appear in the network!
+2. Enter your email and domain
+3. Verify your email (check inbox!)
+4. Add DNS TXT record or meta tag to verify ownership
+5. Once verified, you'll appear in the network!
 
-Takes about 2 minutes. Your site starts matching immediately.`,
+Takes about 2 minutes. Your site starts matching immediately. 🚀`,
 
   benefits: `**Why use LinkSwarm?**
 ✅ Automated matching — AI finds relevant sites
@@ -75,14 +77,140 @@ Takes about 2 minutes. Your site starts matching immediately.`,
 ✅ Quality control — All sites verified
 ✅ Track everything — See which links are live
 ✅ Save time — No cold outreach needed
-✅ LLM visibility — Backlinks boost AI citations`,
+✅ LLM visibility — Backlinks boost AI citations
+✅ Credit system — Earn credits by giving links
+
+Better than manual outreach, safer than PBNs! 🐝`,
 
   stats: `**Network Stats:**
-• 17 verified sites
-• Multiple niches (crypto, fintech, real estate, AI tools)
+• 19+ verified sites
+• Multiple niches (crypto, fintech, SaaS, real estate, AI tools)
 • Growing daily!
 
-Join at linkswarm.ai/register`
+Join at https://linkswarm.ai/register`,
+
+  credits: `**How Credits Work:**
+• **Earn credits** by adding links to other sites
+• **Spend credits** to request links to your site
+• **1 credit = 1 link exchange**
+• Start with 0 credits — contribute first to earn!
+
+💡 **Tip:** You also get **3 free credits** for each person you refer!
+Share your referral link from the dashboard.`,
+
+  verification: `**How to Verify Your Site:**
+
+**Option 1 — DNS TXT Record (recommended):**
+Add a TXT record to your domain:
+\`linkswarm-verify=YOUR_TOKEN\`
+
+**Option 2 — HTML Meta Tag:**
+Add to your homepage \`<head>\`:
+\`<meta name="linkswarm-verify" content="YOUR_TOKEN">\`
+
+Find your verification token in the dashboard after adding your site.
+Usually takes 1-5 minutes to verify! ✅`,
+
+  api: `**LinkSwarm API:**
+Full REST API for automation and integrations.
+
+📚 **Docs:** https://linkswarm.ai/docs/api/
+🔑 **Get your API key:** Dashboard → Settings → API Key
+
+**Popular endpoints:**
+• \`GET /v1/sites\` — List your sites
+• \`POST /v1/sites\` — Add a new site
+• \`GET /v1/discover\` — Find link partners
+• \`POST /v1/pool/contribute\` — Offer a link slot
+• \`POST /v1/pool/request\` — Request a backlink
+
+Pro & Agency plans get higher rate limits.`,
+
+  llm: `**LLM Readiness & AI Visibility:**
+Backlinks help your site get cited by AI models like ChatGPT, Claude, and Perplexity!
+
+🤖 **Check your LLM Readiness score:**
+Dashboard → Your Sites → Click "LLM Readiness"
+
+**What we check:**
+• llms.txt file
+• Schema.org markup
+• ai.txt file
+• agent.json
+• Domain authority
+• Keyword rankings
+
+Higher scores = more likely to be cited by AI! 📈`,
+
+  referral: `**Referral Program:**
+Earn **3 credits** for every person you refer! 🎁
+
+**How it works:**
+1. Get your unique referral link from the dashboard
+2. Share it with friends, on social, in communities
+3. When they sign up and verify their email → you get 3 credits!
+
+No limit on referrals. The more you share, the more you earn! 🚀`,
+
+  support: `**Need Help?**
+• 💬 Ask here in Discord — we're friendly!
+• 📧 Email: hello@linkswarm.ai
+• 🐦 Twitter: @Link_Swarm
+• 📚 Docs: https://linkswarm.ai/docs/
+
+For account issues, email us with your registered email address.`,
+
+  reciprocal: `**Are these reciprocal links?**
+**No!** LinkSwarm uses a **triangular exchange** system:
+
+• You give a link to Site A
+• You receive a link from Site B (different site!)
+
+This keeps link profiles natural and avoids the "reciprocal link" penalty that search engines watch for. Much safer! ✅`,
+
+  quality: `**How do you ensure quality?**
+Every site in the network is:
+
+✅ **Verified** — Domain ownership confirmed
+✅ **Scanned** — Checked for spam/prohibited content
+✅ **Scored** — Quality metrics from DataForSEO
+✅ **Matched** — Only paired with relevant sites
+
+Low-quality or spammy sites get rejected. We keep the network clean! 🧹`,
+
+  safe: `**Is LinkSwarm safe for SEO?**
+Yes! Here's why:
+
+✅ **No reciprocal links** — Triangular exchanges only
+✅ **Relevant matches** — Sites matched by niche/category
+✅ **Natural anchor text** — Varied, contextual anchors
+✅ **Quality control** — All sites verified & scanned
+✅ **Gradual growth** — Not 1000 links overnight
+
+We follow SEO best practices. Much safer than PBNs or link farms! 🛡️`,
+
+  niche: `**What niches are in the network?**
+Current categories include:
+• 💰 Crypto & DeFi
+• 🏦 Fintech & Banking
+• 🤖 AI & SaaS tools
+• 🏠 Real Estate
+• 📊 Analytics
+• 🎮 Gaming
+• 📝 Blogs & Content
+
+More niches joining daily! Register your site to expand your category. 🌐`,
+
+  dashboard: `**Dashboard Features:**
+• 📊 View your sites & stats
+• 🔍 Discover link partners
+• 💰 Track credits & transactions
+• 🔗 Manage exchanges
+• 🤖 Check LLM Readiness scores
+• 🎁 Get your referral link
+• ⚙️ API key & settings
+
+👉 https://linkswarm.ai/dashboard`
 };
 
 // Welcome message for new members
@@ -112,20 +240,84 @@ Feel free to ask questions — I'm here to help! 🐝`)
 function detectQuestion(content) {
   const lower = content.toLowerCase();
   
-  if (lower.includes('what is linkswarm') || lower.includes('what does linkswarm') || lower.includes('how does linkswarm work')) {
+  // What is LinkSwarm
+  if (lower.includes('what is linkswarm') || lower.includes('what does linkswarm') || lower.includes('how does linkswarm work') || lower.includes('explain linkswarm')) {
     return LINKSWARM_INFO.what;
   }
-  if (lower.includes('price') || lower.includes('pricing') || lower.includes('cost') || lower.includes('how much')) {
+  
+  // Pricing
+  if (lower.includes('price') || lower.includes('pricing') || lower.includes('cost') || lower.includes('how much') || lower.includes('plans') || lower.includes('subscription')) {
     return LINKSWARM_INFO.pricing;
   }
-  if (lower.includes('register') || lower.includes('sign up') || lower.includes('join') || lower.includes('get started')) {
+  
+  // Registration
+  if ((lower.includes('register') || lower.includes('sign up') || lower.includes('signup') || lower.includes('join') || lower.includes('get started') || lower.includes('create account')) && !lower.includes('referral')) {
     return LINKSWARM_INFO.register;
   }
-  if (lower.includes('why') || lower.includes('benefit') || lower.includes('worth it')) {
+  
+  // Benefits
+  if (lower.includes('why should') || lower.includes('benefit') || lower.includes('worth it') || lower.includes('why use') || lower.includes('advantages')) {
     return LINKSWARM_INFO.benefits;
   }
-  if (lower.includes('stats') || lower.includes('how many') || lower.includes('network size')) {
+  
+  // Stats
+  if (lower.includes('stats') || lower.includes('how many sites') || lower.includes('network size') || lower.includes('how big')) {
     return LINKSWARM_INFO.stats;
+  }
+  
+  // Credits
+  if (lower.includes('credit') || lower.includes('earn') || lower.includes('points') || lower.includes('how do i get')) {
+    return LINKSWARM_INFO.credits;
+  }
+  
+  // Verification
+  if (lower.includes('verify') || lower.includes('verification') || lower.includes('dns') || lower.includes('txt record') || lower.includes('meta tag') || lower.includes('prove ownership')) {
+    return LINKSWARM_INFO.verification;
+  }
+  
+  // API
+  if (lower.includes('api') || lower.includes('integrate') || lower.includes('automation') || lower.includes('programmatic') || lower.includes('endpoint')) {
+    return LINKSWARM_INFO.api;
+  }
+  
+  // LLM / AI visibility
+  if (lower.includes('llm') || lower.includes('chatgpt') || lower.includes('claude') || lower.includes('ai visibility') || lower.includes('ai citation') || lower.includes('perplexity') || lower.includes('readiness')) {
+    return LINKSWARM_INFO.llm;
+  }
+  
+  // Referral
+  if (lower.includes('referral') || lower.includes('refer a friend') || lower.includes('invite') || lower.includes('share link')) {
+    return LINKSWARM_INFO.referral;
+  }
+  
+  // Support
+  if (lower.includes('help') || lower.includes('support') || lower.includes('contact') || lower.includes('email') || lower.includes('stuck') || lower.includes('issue')) {
+    return LINKSWARM_INFO.support;
+  }
+  
+  // Reciprocal links
+  if (lower.includes('reciprocal') || lower.includes('link back') || lower.includes('exchange directly') || lower.includes('two-way')) {
+    return LINKSWARM_INFO.reciprocal;
+  }
+  
+  // Quality
+  if (lower.includes('quality') || lower.includes('spam') || lower.includes('trust') || lower.includes('legitimate') || lower.includes('scam')) {
+    return LINKSWARM_INFO.quality;
+  }
+  
+  // Safety / SEO safe
+  if (lower.includes('safe') || lower.includes('penalty') || lower.includes('google') || lower.includes('risk') || lower.includes('pbn') || lower.includes('black hat')) {
+    return LINKSWARM_INFO.safe;
+  }
+  
+  // Niches
+  if (lower.includes('niche') || lower.includes('categories') || lower.includes('what sites') || lower.includes('industry') || lower.includes('type of sites')) {
+    return LINKSWARM_INFO.niche;
+  }
+  
+  // Dashboard
+  if (lower.includes('dashboard') || lower.includes('where do i') || lower.includes('how do i see') || lower.includes('manage') || lower.includes('settings')) {
+    return LINKSWARM_INFO.dashboard;
   }
   
   return null;
