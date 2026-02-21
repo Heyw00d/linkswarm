@@ -491,7 +491,8 @@
                     showError('emailError', data.error || 'Email not found. Have you signed up?');
                 }
             } catch (e) {
-                showError('emailError', 'Connection error. Please try again.');
+                console.error('Magic link error:', e);
+                showError('emailError', `Error: ${e.message || e}`);
             }
         }
         
@@ -511,13 +512,16 @@
             }
             
             try {
+                console.log('Attempting login to:', `${API}/v1/auth/login`);
                 const res = await fetch(`${API}/v1/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
                 
+                console.log('Login response status:', res.status);
                 const data = await res.json();
+                console.log('Login response data:', data);
                 
                 if (res.ok && data.success) {
                     document.getElementById('passwordError').classList.add('hidden');
@@ -526,10 +530,11 @@
                     localStorage.setItem('linkswarm_email', data.email);
                     await loadDashboard();
                 } else {
-                    showError('passwordError', data.error || 'Login failed. Please try again.');
+                    showError('passwordError', data.error || `Login failed (${res.status}). Please try again.`);
                 }
             } catch (e) {
-                showError('passwordError', 'Connection error. Please try again.');
+                console.error('Login error:', e);
+                showError('passwordError', `Error: ${e.message || e}`);
             }
         }
         
@@ -573,11 +578,14 @@
         
         async function loadDashboard() {
             try {
+                console.log('Loading dashboard with API key:', currentApiKey ? currentApiKey.substring(0, 8) + '...' : 'EMPTY');
                 const res = await fetch(`${API}/dashboard`, {
                     headers: { 'Authorization': `Bearer ${currentApiKey}` }
                 });
                 
+                console.log('Dashboard response status:', res.status);
                 if (!res.ok) {
+                    console.error('Dashboard load failed, logging out');
                     logout();
                     return;
                 }
