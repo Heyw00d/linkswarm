@@ -406,40 +406,44 @@
         const urlParams = new URLSearchParams(window.location.search);
         const tokenFromUrl = urlParams.get('token');
         const emailFromUrl = urlParams.get('email');
-        if (tokenFromUrl && emailFromUrl) {
-            // Verify token and get API key - clear any old stored key first
-            localStorage.removeItem('linkswarm_api_key');
-            currentApiKey = '';
-            
-            fetch(`${API}/v1/auth/verify-token?token=${tokenFromUrl}&email=${encodeURIComponent(emailFromUrl)}`)
-                .then(r => {
-                    if (!r.ok) throw new Error('Verification failed');
-                    return r.json();
-                })
-                .then(data => {
+        
+        async function initDashboard() {
+            if (tokenFromUrl && emailFromUrl) {
+                // Verify magic link token
+                localStorage.removeItem('linkswarm_api_key');
+                currentApiKey = '';
+                
+                try {
+                    const res = await fetch(`${API}/v1/auth/verify-token?token=${tokenFromUrl}&email=${encodeURIComponent(emailFromUrl)}`);
+                    if (!res.ok) throw new Error('Verification failed');
+                    const data = await res.json();
+                    
                     if (data.api_key) {
                         currentApiKey = data.api_key;
                         localStorage.setItem('linkswarm_api_key', data.api_key);
                         window.history.replaceState({}, '', '/dashboard/');
-                        loadDashboard();
+                        await loadDashboard();
                     } else {
-                        alert('Login link expired or invalid. Please request a new one.');
+                        alert('Login link expired or invalid.');
+                        window.location.href = '/login/';
                     }
-                })
-                .catch((err) => {
+                } catch (err) {
                     console.error('Verify error:', err);
-                    alert('Error verifying login link. It may have expired.');
-                });
-        } else if (tokenFromUrl) {
-            // Legacy: direct API key in URL
-            currentApiKey = tokenFromUrl;
-            localStorage.setItem('linkswarm_api_key', tokenFromUrl);
-            window.history.replaceState({}, '', '/dashboard/');
-            loadDashboard();
-        } else if (currentApiKey) {
-            // Check if already logged in (only if not processing a token)
-            loadDashboard();
+                    alert('Error verifying login link.');
+                    window.location.href = '/login/';
+                }
+            } else if (currentApiKey) {
+                // Already have API key, load dashboard
+                await loadDashboard();
+            } else {
+                // No auth, redirect to login
+                window.location.href = '/login/';
+            }
         }
+        
+        // Hide login screen, show dashboard directly (we'll redirect if not auth'd)
+        document.getElementById('loginScreen').classList.add('hidden');
+        initDashboard();
         
         // Tab switching
         function showLoginTab(tab) {
@@ -594,21 +598,28 @@
         
         function logout() {
             localStorage.removeItem('linkswarm_api_key');
+            localStorage.removeItem('linkswarm_email');
             currentApiKey = '';
-            document.getElementById('loginScreen').classList.remove('hidden');
-            document.getElementById('dashboardScreen').classList.add('hidden');
+            window.location.href = '/login/';
         }
         
         async function loadDashboard() {
             try {
                 console.log('Loading dashboard with API key:', currentApiKey ? currentApiKey.substring(0, 8) + '...' : 'EMPTY');
+                
+                if (!currentApiKey) {
+                    console.error('No API key, redirecting to login');
+                    window.location.href = '/login/';
+                    return;
+                }
+                
                 const res = await fetch(`${API}/dashboard`, {
                     headers: { 'Authorization': `Bearer ${currentApiKey}` }
                 });
                 
                 console.log('Dashboard response status:', res.status);
                 if (!res.ok) {
-                    console.error('Dashboard load failed, logging out');
+                    console.error('Dashboard load failed:', res.status);
                     logout();
                     return;
                 }

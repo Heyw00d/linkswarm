@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — LinkSwarm</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #0f0f23 100%); min-height: 100vh; }
+        .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .glow { box-shadow: 0 0 30px rgba(251,191,36,0.1); }
+    </style>
+</head>
+<body class="text-white">
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="glass rounded-2xl p-8 max-w-md w-full glow">
+            <div class="text-center mb-8">
+                <a href="/" class="text-4xl mb-2 inline-block">🐝</a>
+                <h1 class="text-2xl font-bold">Welcome Back</h1>
+                <p class="text-gray-400 mt-2">Sign in to your LinkSwarm account</p>
+            </div>
+            
+            <!-- Tab Switcher -->
+            <div class="flex mb-6 bg-black/30 rounded-lg p-1">
+                <button id="tabPassword" onclick="showTab('password')" class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition bg-amber-500 text-black">
+                    Password
+                </button>
+                <button id="tabMagic" onclick="showTab('magic')" class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition text-gray-400 hover:text-white">
+                    Magic Link
+                </button>
+            </div>
+
+            <!-- Password Login -->
+            <div id="passwordForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Email Address</label>
+                    <input type="email" id="emailInput" placeholder="you@example.com" 
+                        class="w-full bg-black/30 border border-gray-700 rounded-lg px-4 py-3 focus:border-amber-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Password</label>
+                    <input type="password" id="passwordInput" placeholder="Enter your password" 
+                        class="w-full bg-black/30 border border-gray-700 rounded-lg px-4 py-3 focus:border-amber-500 focus:outline-none"
+                        onkeypress="if(event.key==='Enter')loginWithPassword()">
+                </div>
+                <button id="loginBtn" onclick="loginWithPassword()" class="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold py-3 rounded-lg transition disabled:opacity-50">
+                    Sign In
+                </button>
+                <div class="text-center">
+                    <a href="/forgot-password/" class="text-amber-400 hover:text-amber-300 text-sm">Forgot password?</a>
+                </div>
+            </div>
+
+            <!-- Magic Link Login -->
+            <div id="magicForm" class="space-y-4 hidden">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Email Address</label>
+                    <input type="email" id="magicEmailInput" placeholder="you@example.com" 
+                        class="w-full bg-black/30 border border-gray-700 rounded-lg px-4 py-3 focus:border-amber-500 focus:outline-none"
+                        onkeypress="if(event.key==='Enter')sendMagicLink()">
+                </div>
+                <button id="magicBtn" onclick="sendMagicLink()" class="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold py-3 rounded-lg transition disabled:opacity-50">
+                    Send Magic Link
+                </button>
+                <p id="magicSuccess" class="text-green-400 text-sm text-center hidden"></p>
+            </div>
+
+            <!-- Error/Success Messages -->
+            <p id="errorMsg" class="text-red-400 text-sm text-center mt-4 hidden"></p>
+            
+            <div class="mt-6 pt-6 border-t border-gray-700 text-center">
+                <p class="text-gray-500 text-sm">Don't have an account?</p>
+                <a href="/" class="text-amber-400 hover:text-amber-300 text-sm">Sign up for free →</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = 'https://api.linkswarm.ai';
+        
+        // Check if already logged in
+        const existingKey = localStorage.getItem('linkswarm_api_key');
+        if (existingKey) {
+            window.location.href = '/dashboard/';
+        }
+        
+        function showTab(tab) {
+            const tabPassword = document.getElementById('tabPassword');
+            const tabMagic = document.getElementById('tabMagic');
+            const passwordForm = document.getElementById('passwordForm');
+            const magicForm = document.getElementById('magicForm');
+            
+            if (tab === 'password') {
+                tabPassword.classList.add('bg-amber-500', 'text-black');
+                tabPassword.classList.remove('text-gray-400');
+                tabMagic.classList.remove('bg-amber-500', 'text-black');
+                tabMagic.classList.add('text-gray-400');
+                passwordForm.classList.remove('hidden');
+                magicForm.classList.add('hidden');
+            } else {
+                tabMagic.classList.add('bg-amber-500', 'text-black');
+                tabMagic.classList.remove('text-gray-400');
+                tabPassword.classList.remove('bg-amber-500', 'text-black');
+                tabPassword.classList.add('text-gray-400');
+                magicForm.classList.remove('hidden');
+                passwordForm.classList.add('hidden');
+            }
+            document.getElementById('errorMsg').classList.add('hidden');
+        }
+        
+        function showError(msg) {
+            const el = document.getElementById('errorMsg');
+            el.textContent = msg;
+            el.classList.remove('hidden');
+        }
+        
+        async function loginWithPassword() {
+            const btn = document.getElementById('loginBtn');
+            const email = document.getElementById('emailInput').value.trim();
+            const password = document.getElementById('passwordInput').value;
+            
+            document.getElementById('errorMsg').classList.add('hidden');
+            
+            if (!email || !email.includes('@')) {
+                showError('Please enter a valid email address');
+                return;
+            }
+            if (!password) {
+                showError('Please enter your password');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.textContent = 'Signing in...';
+            
+            try {
+                const res = await fetch(`${API}/v1/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await res.json();
+                console.log('Login response:', res.status, data);
+                
+                if (res.ok && data.success && data.api_key) {
+                    localStorage.setItem('linkswarm_api_key', data.api_key);
+                    localStorage.setItem('linkswarm_email', data.email);
+                    btn.textContent = 'Redirecting...';
+                    window.location.href = '/dashboard/';
+                } else {
+                    showError(data.error || 'Login failed');
+                    btn.disabled = false;
+                    btn.textContent = 'Sign In';
+                }
+            } catch (e) {
+                console.error('Login error:', e);
+                showError(`Connection error: ${e.message}`);
+                btn.disabled = false;
+                btn.textContent = 'Sign In';
+            }
+        }
+        
+        async function sendMagicLink() {
+            const btn = document.getElementById('magicBtn');
+            const email = document.getElementById('magicEmailInput').value.trim();
+            
+            document.getElementById('errorMsg').classList.add('hidden');
+            document.getElementById('magicSuccess').classList.add('hidden');
+            
+            if (!email || !email.includes('@')) {
+                showError('Please enter a valid email address');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+            
+            try {
+                const res = await fetch(`${API}/v1/auth/magic-link`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    document.getElementById('magicSuccess').textContent = '✓ Check your email for a login link!';
+                    document.getElementById('magicSuccess').classList.remove('hidden');
+                } else {
+                    showError(data.error || 'Failed to send magic link');
+                }
+            } catch (e) {
+                showError(`Connection error: ${e.message}`);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Send Magic Link';
+            }
+        }
+    </script>
+</body>
+</html>
