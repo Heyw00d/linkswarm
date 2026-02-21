@@ -206,6 +206,35 @@ client.once(Events.ClientReady, (c) => {
       return;
     }
     
+    // POST /channels/create - create a new channel
+    if (url.pathname === '/channels/create' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => body += chunk);
+      req.on('end', async () => {
+        try {
+          const { guildId, name, type, private: isPrivate } = JSON.parse(body);
+          const guild = client.guilds.cache.get(guildId);
+          if (!guild) {
+            res.statusCode = 404;
+            res.end(JSON.stringify({ error: 'Guild not found' }));
+            return;
+          }
+          const channel = await guild.channels.create({
+            name: name,
+            type: type === 'voice' ? 2 : 0, // 0 = text, 2 = voice
+            permissionOverwrites: isPrivate ? [
+              { id: guild.roles.everyone.id, deny: ['ViewChannel'] }
+            ] : []
+          });
+          res.end(JSON.stringify({ success: true, channelId: channel.id, name: channel.name }));
+        } catch (err) {
+          res.statusCode = 500;
+          res.end(JSON.stringify({ error: err.message }));
+        }
+      });
+      return;
+    }
+    
     // Health check
     if (url.pathname === '/health') {
       res.end(JSON.stringify({ status: 'ok', guilds: client.guilds.cache.size }));

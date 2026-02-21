@@ -1268,6 +1268,131 @@ app.post('/v1/sites/:domain/verify', requireAuth, async (c) => {
   });
 });
 
+// ============ SITE ANALYZE ============
+
+app.post('/v1/sites/analyze', requireAuth, async (c) => {
+  const userEmail = c.get('userEmail');
+  const body = await c.req.json();
+  const { domain } = body;
+  
+  if (!domain) {
+    return c.json({ error: 'Domain required' }, 400);
+  }
+  
+  const sql = getDb(c.env);
+  
+  // Check site ownership (unless external flag is set)
+  if (!body.external) {
+    const [site] = await sql`SELECT * FROM sites WHERE domain = ${domain} AND owner_email = ${userEmail}`;
+    if (!site) {
+      return c.json({ error: 'Site not found or not owned by you' }, 404);
+    }
+  }
+  
+  // Get domain authority/quality metrics
+  const authorityResult = await getDomainAuthority(domain, c.env);
+  
+  // Build quality response
+  const quality = {
+    score: authorityResult.score || 0,
+    keywords: authorityResult.keywords || 0,
+    topKeywords: authorityResult.topKeywords || 0,
+    top10: authorityResult.topKeywords || 0,
+    pos1Keywords: authorityResult.pos1Keywords || 0,
+    etv: authorityResult.etv || 0,
+    etvFormatted: authorityResult.etvFormatted || '$0',
+    notIndexed: authorityResult.notIndexed || false
+  };
+  
+  // Update site record with quality data if it's the user's site
+  if (!body.external) {
+    await sql`
+      UPDATE sites 
+      SET quality_score = ${quality.score},
+          keywords = ${quality.keywords},
+          etv = ${quality.etv},
+          analyzed = true,
+          analyzed_at = NOW()
+      WHERE domain = ${domain} AND owner_email = ${userEmail}
+    `;
+  }
+  
+  return c.json({
+    success: true,
+    domain,
+    quality,
+    message: quality.notIndexed 
+      ? 'Site not yet indexed in search engines' 
+      : `Quality score: ${quality.score}/100`
+  });
+});
+
+// Verify endpoint without auth (for quick checks)
+app.post('/v1/sites/verify', requireAuth, async (c) => {
+  const userEmail = c.get('userEmail');
+  const body = await c.req.json();
+  const { domain } = body;
+  
+  if (!domain) {
+    return c.json({ error: 'Domain required' }, 400);
+  }
+  
+  const sql = getDb(c.env);
+  
+  // Check site ownership
+  const [site] = await sql`SELECT * FROM sites WHERE domain = ${domain} AND owner_email = ${userEmail}`;
+  if (!site) {
+    return c.json({ error: 'Site not found or not owned by you' }, 404);
+  }
+  
+  // Scan site content for classification and spam detection
+  const scan = await scanSiteContent(domain, c.env);
+  
+  if (!scan.success) {
+    return c.json({ 
+      error: 'Could not verify site', 
+      details: scan.error,
+      tip: 'Make sure your site is accessible at https://' + domain
+    }, 400);
+  }
+  
+  // Block sites with prohibited content
+  if (scan.isBlocked) {
+    await sql`UPDATE sites SET verified = false, flagged = true, flag_reason = ${scan.blockedCategories.join(', ')} WHERE domain = ${domain}`;
+    
+    return c.json({ 
+      verified: false,
+      blocked: true,
+      reason: `Site contains prohibited content: ${scan.blockedCategories.join(', ')}`,
+      details: scan.reason || 'Sites in these categories are not allowed in the network.'
+    }, 403);
+  }
+  
+  // Auto-update categories if user didn't provide any
+  const existingCategories = site.categories || [];
+  const newCategories = existingCategories.length > 0 
+    ? existingCategories 
+    : scan.suggestedCategories;
+  
+  // Update site with verification and scanned data
+  await sql`
+    UPDATE sites 
+    SET verified = true, 
+        categories = ${newCategories},
+        description = COALESCE(NULLIF(description, ''), ${scan.description || ''}),
+        name = COALESCE(NULLIF(name, domain), ${scan.title || domain}),
+        scanned_at = NOW(),
+        scan_confidence = ${scan.confidence || 0}
+    WHERE domain = ${domain} AND owner_email = ${userEmail}
+  `;
+  
+  return c.json({ 
+    success: true, 
+    verified: true,
+    categories: newCategories
+  });
+});
+
 // ============ DISCOVER ============
 
 app.get('/v1/discover', requireAuth, async (c) => {
@@ -1938,7 +2063,7 @@ app.post('/v1/webhooks', requireAuth, async (c) => {
 
 // ============ STRIPE WEBHOOK ============
 
-app.post('/stripe/webhook', async (c) => {
+app.post('/webhook/stripe', async (c) => {
   const sql = getDb(c.env);
   const body = await c.req.text();
   const sig = c.req.header('stripe-signature');
@@ -2206,13 +2331,22 @@ app.get('/v1/gsc/performance', requireAuth, async (c) => {
   const siteUrl = c.req.query('site');
   const sql = getDb(c.env);
   
-  const snapshots = await sql`
-    SELECT * FROM gsc_snapshots 
-    WHERE user_email = ${userEmail} 
-    ${siteUrl ? sql`AND site_url = ${siteUrl}` : sql``}
-    ORDER BY date_end DESC 
-    LIMIT 30
-  `;
+  let snapshots;
+  if (siteUrl) {
+    snapshots = await sql`
+      SELECT * FROM gsc_snapshots 
+      WHERE user_email = ${userEmail} AND site_url = ${siteUrl}
+      ORDER BY date_end DESC 
+      LIMIT 30
+    `;
+  } else {
+    snapshots = await sql`
+      SELECT * FROM gsc_snapshots 
+      WHERE user_email = ${userEmail}
+      ORDER BY date_end DESC 
+      LIMIT 30
+    `;
+  }
   
   return c.json({ snapshots });
 });
