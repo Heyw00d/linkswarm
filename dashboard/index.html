@@ -100,24 +100,36 @@
                 </a>
                 <div class="flex items-center gap-4">
                     <span id="userEmail" class="text-gray-400 text-sm"></span>
-                    <button onclick="logout()" class="text-gray-400 hover:text-white text-sm">Logout</button>
+                    <div class="relative">
+                        <button onclick="toggleUserMenu()" id="userMenuBtn" class="flex items-center gap-2 text-gray-400 hover:text-white text-sm px-3 py-2 rounded-lg hover:bg-white/10 transition">
+                            <span id="planBadgeSmall" class="px-2 py-0.5 rounded text-xs font-semibold bg-gray-600"></span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div id="userMenu" class="hidden absolute right-0 mt-2 w-48 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50">
+                            <button onclick="showSettings()" class="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-white/10 hover:text-white flex items-center gap-2">
+                                ⚙️ Settings
+                            </button>
+                            <button onclick="showApiKey()" class="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-white/10 hover:text-white flex items-center gap-2">
+                                🔑 API Key
+                            </button>
+                            <button onclick="showPlans()" class="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-white/10 hover:text-white flex items-center gap-2">
+                                💎 Plans
+                            </button>
+                            <div class="border-t border-gray-700"></div>
+                            <button onclick="logout()" class="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-white/10 hover:text-red-300 flex items-center gap-2">
+                                🚪 Logout
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </header>
         
         <main class="max-w-6xl mx-auto px-4 py-8">
-            <!-- Plan Banner -->
-            <div id="planBanner" class="glass rounded-xl p-4 mb-8 flex items-center justify-between">
-                <div class="flex items-center gap-4">
-                    <span id="planBadge" class="px-3 py-1 rounded-full text-sm font-semibold"></span>
-                    <span id="planDesc" class="text-gray-400"></span>
-                </div>
-                <div id="upgradeSection" class="hidden">
-                    <a id="upgradeLink" href="#" class="bg-amber-500 hover:bg-amber-600 text-black px-4 py-2 rounded-lg text-sm font-semibold transition">
-                        Upgrade to Pro
-                    </a>
-                </div>
-            </div>
+            <!-- Hidden elements for plan data -->
+            <span id="planBadge" class="hidden"></span>
+            <span id="planDesc" class="hidden"></span>
+            <div id="upgradeSection" class="hidden"><a id="upgradeLink" href="#"></a></div>
             
             <!-- Network Seeding Notice -->
             <div id="seedingNotice" class="glass rounded-xl p-6 mb-8 border-l-4 border-amber-500">
@@ -190,24 +202,8 @@
                 </div>
             </div>
             
-            <!-- API Key Section -->
-            <div class="glass rounded-xl p-6 mb-8">
-                <h2 class="text-lg font-semibold mb-4">🔑 Your API Key</h2>
-                <div class="flex items-center gap-4">
-                    <code id="apiKeyDisplay" class="flex-1 bg-black/30 px-4 py-3 rounded-lg font-mono text-sm text-amber-400 select-all"></code>
-                    <input type="hidden" id="apiKeyHidden">
-                    <button id="toggleKeyBtn" onclick="toggleApiKey()" class="bg-gray-700 hover:bg-gray-600 px-4 py-3 rounded-lg transition">
-                        👁 Show
-                    </button>
-                    <button onclick="copyApiKey()" class="bg-gray-700 hover:bg-gray-600 px-4 py-3 rounded-lg transition">
-                        Copy
-                    </button>
-                    <button onclick="rotateKey()" class="bg-red-600/80 hover:bg-red-600 px-4 py-3 rounded-lg transition text-sm">
-                        🔄 Rotate
-                    </button>
-                </div>
-                <p class="text-gray-500 text-sm mt-2">Use this key in your API requests: <code class="text-gray-400">Authorization: Bearer YOUR_KEY</code></p>
-            </div>
+            <!-- Hidden API Key Storage -->
+            <input type="hidden" id="apiKeyHidden">
             
             <!-- Sites Section -->
             <div class="glass rounded-xl p-6 mb-8">
@@ -402,9 +398,164 @@
         </main>
     </div>
     
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div class="glass rounded-2xl p-6 max-w-md w-full glow">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold">⚙️ Settings</h2>
+                <button onclick="hideSettings()" class="text-gray-400 hover:text-white text-xl">&times;</button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Email</label>
+                    <input type="text" id="settingsEmail" readonly class="w-full bg-black/30 border border-gray-700 rounded-lg px-4 py-3 text-gray-400">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Notification Preferences</label>
+                    <label class="flex items-center gap-2 cursor-pointer mb-2">
+                        <input type="checkbox" id="settingsNotifyMatches" class="w-4 h-4 accent-amber-500">
+                        <span class="text-sm">Email me when I get matched</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="settingsNotifyNewSites" class="w-4 h-4 accent-amber-500">
+                        <span class="text-sm">Email me when new sites join</span>
+                    </label>
+                </div>
+                <button onclick="saveSettings()" class="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold py-3 rounded-lg transition">
+                    Save Settings
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- API Key Modal -->
+    <div id="apiKeyModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div class="glass rounded-2xl p-6 max-w-lg w-full glow">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold">🔑 API Key</h2>
+                <button onclick="hideApiKey()" class="text-gray-400 hover:text-white text-xl">&times;</button>
+            </div>
+            <div class="space-y-4">
+                <div class="flex items-center gap-2">
+                    <code id="apiKeyDisplay" class="flex-1 bg-black/30 px-4 py-3 rounded-lg font-mono text-sm text-amber-400 select-all break-all"></code>
+                </div>
+                <div class="flex gap-2">
+                    <button id="toggleKeyBtn" onclick="toggleApiKey()" class="flex-1 bg-gray-700 hover:bg-gray-600 py-3 rounded-lg transition">
+                        👁 Show
+                    </button>
+                    <button onclick="copyApiKey()" class="flex-1 bg-gray-700 hover:bg-gray-600 py-3 rounded-lg transition">
+                        📋 Copy
+                    </button>
+                </div>
+                <button onclick="rotateKey()" class="w-full bg-red-600/80 hover:bg-red-600 py-3 rounded-lg transition">
+                    🔄 Rotate Key
+                </button>
+                <p class="text-gray-500 text-sm">Use this key in your API requests: <code class="text-gray-400">Authorization: Bearer YOUR_KEY</code></p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Plans Modal -->
+    <div id="plansModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div class="glass rounded-2xl p-6 max-w-2xl w-full glow">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold">💎 Plans</h2>
+                <button onclick="hidePlans()" class="text-gray-400 hover:text-white text-xl">&times;</button>
+            </div>
+            <div class="mb-4">
+                <span class="text-gray-400">Current Plan:</span>
+                <span id="currentPlanDisplay" class="ml-2 px-3 py-1 rounded-full text-sm font-semibold bg-gray-600"></span>
+            </div>
+            <div class="grid md:grid-cols-3 gap-4">
+                <!-- Free -->
+                <div class="border border-gray-700 rounded-xl p-4">
+                    <h3 class="font-bold text-lg mb-2">Free</h3>
+                    <p class="text-2xl font-bold mb-4">$0<span class="text-sm text-gray-400">/mo</span></p>
+                    <ul class="text-sm text-gray-400 space-y-2 mb-4">
+                        <li>✓ 3 sites</li>
+                        <li>✓ 5 exchanges/month</li>
+                        <li>✓ Basic matching</li>
+                    </ul>
+                </div>
+                <!-- Pro -->
+                <div class="border border-purple-500 rounded-xl p-4 relative">
+                    <div class="absolute -top-2 right-4 bg-purple-500 text-xs px-2 py-0.5 rounded">POPULAR</div>
+                    <h3 class="font-bold text-lg mb-2 text-purple-400">Pro</h3>
+                    <p class="text-2xl font-bold mb-4">$29<span class="text-sm text-gray-400">/mo</span></p>
+                    <ul class="text-sm text-gray-400 space-y-2 mb-4">
+                        <li>✓ 25 sites</li>
+                        <li>✓ 50 exchanges/month</li>
+                        <li>✓ Priority matching</li>
+                        <li>✓ Analytics</li>
+                    </ul>
+                    <a href="https://linkswarm.ai/upgrade/pro" class="block text-center bg-purple-500 hover:bg-purple-600 text-white py-2 rounded-lg transition">Upgrade</a>
+                </div>
+                <!-- Agency -->
+                <div class="border border-amber-500 rounded-xl p-4">
+                    <h3 class="font-bold text-lg mb-2 text-amber-400">Agency</h3>
+                    <p class="text-2xl font-bold mb-4">$99<span class="text-sm text-gray-400">/mo</span></p>
+                    <ul class="text-sm text-gray-400 space-y-2 mb-4">
+                        <li>✓ Unlimited sites</li>
+                        <li>✓ Unlimited exchanges</li>
+                        <li>✓ White-label</li>
+                        <li>✓ API access</li>
+                    </ul>
+                    <a href="https://linkswarm.ai/upgrade/agency" class="block text-center bg-amber-500 hover:bg-amber-600 text-black py-2 rounded-lg transition">Upgrade</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <script>
         const API = 'https://api.linkswarm.ai';
         let currentApiKey = localStorage.getItem('linkswarm_api_key') || '';
+        
+        // User menu toggle
+        function toggleUserMenu() {
+            const menu = document.getElementById('userMenu');
+            menu.classList.toggle('hidden');
+        }
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('userMenu');
+            const btn = document.getElementById('userMenuBtn');
+            if (menu && btn && !menu.contains(e.target) && !btn.contains(e.target)) {
+                menu.classList.add('hidden');
+            }
+        });
+        
+        // Modal functions
+        function showSettings() {
+            document.getElementById('userMenu').classList.add('hidden');
+            document.getElementById('settingsEmail').value = localStorage.getItem('linkswarm_email') || '';
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+        function hideSettings() { document.getElementById('settingsModal').classList.add('hidden'); }
+        
+        function showApiKey() {
+            document.getElementById('userMenu').classList.add('hidden');
+            document.getElementById('apiKeyModal').classList.remove('hidden');
+        }
+        function hideApiKey() { document.getElementById('apiKeyModal').classList.add('hidden'); }
+        
+        function showPlans() {
+            document.getElementById('userMenu').classList.add('hidden');
+            const plan = document.getElementById('planBadge').textContent || 'FREE';
+            const display = document.getElementById('currentPlanDisplay');
+            display.textContent = plan;
+            display.className = 'ml-2 px-3 py-1 rounded-full text-sm font-semibold ' + 
+                (plan === 'AGENCY' ? 'bg-amber-500 text-black' : 
+                 plan === 'PRO' ? 'bg-purple-500 text-white' : 'bg-gray-600 text-white');
+            document.getElementById('plansModal').classList.remove('hidden');
+        }
+        function hidePlans() { document.getElementById('plansModal').classList.add('hidden'); }
+        
+        function saveSettings() {
+            // Save notification preferences via API
+            alert('Settings saved!');
+            hideSettings();
+        }
         
         // Check URL for magic link token
         const urlParams = new URLSearchParams(window.location.search);
@@ -648,7 +799,12 @@
                 const plan = data.user.plan || 'free';
                 const badge = document.getElementById('planBadge');
                 badge.textContent = plan.toUpperCase();
-                badge.className = `px-3 py-1 rounded-full text-sm font-semibold ${
+                badge.className = `hidden`;
+                
+                // Small plan badge in header dropdown
+                const smallBadge = document.getElementById('planBadgeSmall');
+                smallBadge.textContent = plan.toUpperCase();
+                smallBadge.className = `px-2 py-0.5 rounded text-xs font-semibold ${
                     plan === 'agency' ? 'bg-amber-500 text-black' :
                     plan === 'pro' ? 'bg-purple-500 text-white' :
                     'bg-gray-600 text-white'
