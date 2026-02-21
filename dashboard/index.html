@@ -383,9 +383,15 @@
         const tokenFromUrl = urlParams.get('token');
         const emailFromUrl = urlParams.get('email');
         if (tokenFromUrl && emailFromUrl) {
-            // Verify token and get API key
+            // Verify token and get API key - clear any old stored key first
+            localStorage.removeItem('linkswarm_api_key');
+            currentApiKey = '';
+            
             fetch(`${API}/v1/auth/verify-token?token=${tokenFromUrl}&email=${encodeURIComponent(emailFromUrl)}`)
-                .then(r => r.json())
+                .then(r => {
+                    if (!r.ok) throw new Error('Verification failed');
+                    return r.json();
+                })
                 .then(data => {
                     if (data.api_key) {
                         currentApiKey = data.api_key;
@@ -396,16 +402,18 @@
                         alert('Login link expired or invalid. Please request a new one.');
                     }
                 })
-                .catch(() => alert('Error verifying login link.'));
+                .catch((err) => {
+                    console.error('Verify error:', err);
+                    alert('Error verifying login link. It may have expired.');
+                });
         } else if (tokenFromUrl) {
             // Legacy: direct API key in URL
             currentApiKey = tokenFromUrl;
             localStorage.setItem('linkswarm_api_key', tokenFromUrl);
             window.history.replaceState({}, '', '/dashboard/');
-        }
-        
-        // Check if already logged in
-        if (currentApiKey) {
+            loadDashboard();
+        } else if (currentApiKey) {
+            // Check if already logged in (only if not processing a token)
             loadDashboard();
         }
         
