@@ -403,6 +403,7 @@ app.post('/v1/auth/set-password', async (c) => {
   await sql`
     UPDATE api_keys 
     SET password_hash = ${passwordHash}, 
+        email_verified = true,
         verification_code = NULL, 
         code_expires_at = NULL 
     WHERE email = ${email.toLowerCase()}
