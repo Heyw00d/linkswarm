@@ -1320,7 +1320,7 @@ app.post('/v1/pool/contribute', requireAuth, async (c) => {
   // Log transaction
   await sql`
     INSERT INTO credit_transactions (user_email, amount, type, reference_type, reference_id, description, balance_after)
-    VALUES (${userEmail}, 1, 'earn', 'contribution', ${contribution.id}, 'Link contribution', ${balance.balance})
+    VALUES (${userEmail}, 1, 'earned', 'contribution', ${contribution.id}, 'Link contribution', ${balance.balance})
   `;
   
   return c.json({
@@ -1400,7 +1400,7 @@ app.post('/v1/pool/request', requireAuth, async (c) => {
     
     await sql`
       INSERT INTO credit_transactions (user_email, amount, type, reference_type, reference_id, description, balance_after)
-      VALUES (${userEmail}, -1, 'spend', 'request', ${request.id}, 'Link request matched', ${newBalance.balance})
+      VALUES (${userEmail}, -1, 'spent', 'request', ${request.id}, 'Link request matched', ${newBalance.balance})
     `;
     
     match = {
@@ -1482,7 +1482,7 @@ app.post('/v1/pool/auto-match', requireAdmin, async (c) => {
     
     await sql`
       INSERT INTO credit_transactions (user_email, amount, type, reference_type, reference_id, description, balance_after)
-      VALUES (${request.owner_email}, -1, 'spend', 'request', ${request.id}, 'Auto-matched link request', ${newBalance.balance})
+      VALUES (${request.owner_email}, -1, 'spent', 'request', ${request.id}, 'Auto-matched link request', ${newBalance.balance})
     `;
     
     // Get site info for notification
