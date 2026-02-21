@@ -1235,6 +1235,27 @@ app.post('/v1/sites/:domain/verify', requireAuth, async (c) => {
     WHERE domain = ${domain} AND owner_email = ${userEmail}
   `;
   
+  // Discord notification - new site joined
+  if (c.env.DISCORD_WEBHOOK_URL) {
+    const siteName = scan.title || site.name || domain;
+    fetch(c.env.DISCORD_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        embeds: [{
+          title: '🌐 New Site Joined',
+          color: 0x10B981,
+          fields: [
+            { name: 'Domain', value: domain, inline: true },
+            { name: 'Name', value: siteName, inline: true },
+            { name: 'Categories', value: (newCategories || []).join(', ') || 'None', inline: false }
+          ],
+          timestamp: new Date().toISOString()
+        }]
+      })
+    }).catch(() => {});
+  }
+  
   return c.json({ 
     success: true, 
     verified: true,
