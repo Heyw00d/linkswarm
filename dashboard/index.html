@@ -886,11 +886,18 @@
                                         `<div class="text-gray-500 text-xs mt-1">${site.categories.join(', ')}</div>` : ''
                                     }
                                 </div>
-                                ${!site.analyzed && site.verified ? `
-                                    <button onclick="analyzeSite('${site.domain}')" class="bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded text-sm transition">
-                                        Analyze
-                                    </button>
-                                ` : ''}
+                                <div class="flex gap-2">
+                                    ${site.verified ? `
+                                        <button onclick="checkLLMReadiness('${site.domain}')" class="bg-purple-600 hover:bg-purple-500 px-3 py-1.5 rounded text-sm transition flex items-center gap-1">
+                                            <span>🤖</span> LLM Readiness
+                                        </button>
+                                    ` : ''}
+                                    ${!site.analyzed && site.verified ? `
+                                        <button onclick="analyzeSite('${site.domain}')" class="bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded text-sm transition">
+                                            Analyze
+                                        </button>
+                                    ` : ''}
+                                </div>
                             </div>
                             ${!site.verified && site.verification_token ? `
                             <div class="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 mb-3">
@@ -1446,6 +1453,167 @@
                 alert('Error: ' + e.message);
                 btn.disabled = false;
                 btn.textContent = 'Analyze';
+            }
+        }
+        
+        // Check LLM Readiness using /api/analyze endpoint
+        async function checkLLMReadiness(domain) {
+            // Show the modal immediately with loading state
+            document.getElementById('analyzeModal').classList.remove('hidden');
+            const content = document.getElementById('analyzeContent');
+            content.innerHTML = `
+                <div class="text-center py-8">
+                    <div class="text-4xl mb-4 animate-pulse">🤖</div>
+                    <p class="text-gray-400">Analyzing LLM readiness for <strong class="text-amber-400">${domain}</strong>...</p>
+                    <p class="text-gray-500 text-sm mt-2">Checking llms.txt, schema.org, ai.txt, and more...</p>
+                </div>
+            `;
+            
+            try {
+                const res = await fetch(`${API}/api/analyze`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ domain })
+                });
+                
+                const data = await res.json();
+                
+                if (!res.ok) {
+                    content.innerHTML = `
+                        <div class="text-center py-8">
+                            <div class="text-4xl mb-4">❌</div>
+                            <p class="text-red-400">Analysis failed: ${data.error || 'Unknown error'}</p>
+                            <button onclick="hideAnalyzeModal()" class="mt-4 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg">Close</button>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Build the results display
+                const gradeColors = {
+                    'A+': 'text-emerald-400', 'A': 'text-green-400', 'B+': 'text-lime-400',
+                    'B': 'text-yellow-400', 'C': 'text-orange-400', 'D': 'text-red-400', 'F': 'text-red-500'
+                };
+                const gradeColor = gradeColors[data.grade?.letter] || 'text-gray-400';
+                
+                content.innerHTML = `
+                    <div class="space-y-4">
+                        <!-- Grade Header -->
+                        <div class="text-center pb-4 border-b border-gray-700">
+                            <div class="text-6xl font-bold ${gradeColor} mb-2">${data.grade?.letter || '?'}</div>
+                            <div class="text-gray-400">${data.grade?.label || 'Unknown'}</div>
+                            <div class="text-amber-400 font-semibold mt-1">${domain}</div>
+                        </div>
+                        
+                        <!-- Score Breakdown -->
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="bg-black/30 rounded-lg p-3 text-center">
+                                <div class="text-2xl font-bold text-purple-400">${data.scores?.llm?.toFixed(1) || '?'}</div>
+                                <div class="text-gray-500 text-xs">LLM Score</div>
+                                <div class="text-gray-600 text-xs">/10</div>
+                            </div>
+                            <div class="bg-black/30 rounded-lg p-3 text-center">
+                                <div class="text-2xl font-bold text-blue-400">${data.scores?.agent?.toFixed(1) || '?'}</div>
+                                <div class="text-gray-500 text-xs">Agent Score</div>
+                                <div class="text-gray-600 text-xs">/10</div>
+                            </div>
+                            <div class="bg-black/30 rounded-lg p-3 text-center">
+                                <div class="text-2xl font-bold text-amber-400">${data.scores?.authority?.toFixed(1) || '?'}</div>
+                                <div class="text-gray-500 text-xs">Authority</div>
+                                <div class="text-gray-600 text-xs">/10</div>
+                            </div>
+                        </div>
+                        
+                        <!-- LLM Readiness Checklist -->
+                        <div class="bg-black/20 rounded-lg p-4">
+                            <h4 class="font-semibold text-purple-400 mb-3">🤖 LLM Readiness</h4>
+                            <div class="space-y-2 text-sm">
+                                ${Object.entries(data.breakdown?.llm?.items || {}).map(([name, item]) => `
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-gray-300">${name}</span>
+                                        <span class="${item.found ? 'text-green-400' : 'text-red-400'}">${item.found ? '✓' : '✗'}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        
+                        <!-- Agent Readiness Checklist -->
+                        <div class="bg-black/20 rounded-lg p-4">
+                            <h4 class="font-semibold text-blue-400 mb-3">🔌 Agent Readiness</h4>
+                            <div class="space-y-2 text-sm">
+                                ${Object.entries(data.breakdown?.agent?.items || {}).map(([name, item]) => `
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-gray-300">${name}</span>
+                                        <span class="${item.found ? 'text-green-400' : 'text-red-400'}">${item.found ? '✓' : '✗'}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        
+                        <!-- Authority Info -->
+                        ${data.breakdown?.authority ? `
+                        <div class="bg-black/20 rounded-lg p-4">
+                            <h4 class="font-semibold text-amber-400 mb-3">📊 Authority</h4>
+                            <div class="grid grid-cols-2 gap-3 text-sm">
+                                <div>
+                                    <span class="text-gray-500">Ranking Keywords:</span>
+                                    <span class="text-white ml-2">${(data.breakdown.authority.keywords || 0).toLocaleString()}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">Top 10 Keywords:</span>
+                                    <span class="text-white ml-2">${(data.breakdown.authority.topKeywords || 0).toLocaleString()}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">#1 Rankings:</span>
+                                    <span class="text-white ml-2">${(data.breakdown.authority.pos1Keywords || 0).toLocaleString()}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">Est. Traffic Value:</span>
+                                    <span class="text-green-400 ml-2">${data.breakdown.authority.etvFormatted || '$0'}</span>
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <!-- Recommendations -->
+                        ${data.recommendations?.length ? `
+                        <div class="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
+                            <h4 class="font-semibold text-amber-400 mb-3">💡 Recommendations</h4>
+                            <div class="space-y-3">
+                                ${data.recommendations.slice(0, 5).map(rec => `
+                                    <div class="text-sm">
+                                        <div class="flex items-center gap-2">
+                                            <span class="${rec.priority === 'high' ? 'text-red-400' : rec.priority === 'medium' ? 'text-yellow-400' : 'text-gray-400'}">●</span>
+                                            <span class="font-medium text-white">${rec.title}</span>
+                                        </div>
+                                        <p class="text-gray-400 ml-5">${rec.description}</p>
+                                        ${rec.link ? `<a href="${rec.link}" target="_blank" class="text-amber-400 hover:text-amber-300 text-xs ml-5">Learn more →</a>` : ''}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <!-- Actions -->
+                        <div class="flex gap-3 pt-2">
+                            <a href="https://linkswarm.ai/tools/llm-readiness?domain=${encodeURIComponent(domain)}" target="_blank" 
+                               class="flex-1 bg-purple-600 hover:bg-purple-500 py-2 rounded-lg text-center transition text-sm font-semibold">
+                                Full Report ↗
+                            </a>
+                            <button onclick="hideAnalyzeModal()" class="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded-lg transition text-sm">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } catch (e) {
+                content.innerHTML = `
+                    <div class="text-center py-8">
+                        <div class="text-4xl mb-4">❌</div>
+                        <p class="text-red-400">Error: ${e.message}</p>
+                        <button onclick="hideAnalyzeModal()" class="mt-4 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg">Close</button>
+                    </div>
+                `;
             }
         }
         
