@@ -661,24 +661,25 @@
                 }
                 
                 // Stats
-                document.getElementById('statSites').textContent = data.limits.sites_used;
-                document.getElementById('statSitesLimit').textContent = data.limits.sites;
-                document.getElementById('statRequests').textContent = data.user.requests_today;
-                document.getElementById('statRequestsLimit').textContent = data.limits.requests_per_day;
-                document.getElementById('statExchanges').textContent = data.limits.exchanges_used_this_month;
-                document.getElementById('statExchangesLimit').textContent = data.limits.exchanges_per_month;
-                document.getElementById('statTotalRequests').textContent = data.user.requests_total.toLocaleString();
+                document.getElementById('statSites').textContent = data.limits?.sites_used || 0;
+                document.getElementById('statSitesLimit').textContent = data.limits?.sites || 0;
+                document.getElementById('statRequests').textContent = data.user?.requests_today || 0;
+                document.getElementById('statRequestsLimit').textContent = data.limits?.requests || 100;
+                document.getElementById('statExchanges').textContent = data.limits?.exchanges_used || 0;
+                document.getElementById('statExchangesLimit').textContent = data.limits?.exchanges || 5;
+                document.getElementById('statTotalRequests').textContent = (data.user?.requests_total || 0).toLocaleString();
                 
                 // Credits
                 const credits = data.credits?.balance || 0;
                 document.getElementById('statCredits').textContent = credits;
                 
-                // Sites
+                // Sites - use recentSites from API
+                const sites = data.recentSites || data.sites || [];
                 const sitesList = document.getElementById('sitesList');
-                if (data.sites.length === 0) {
+                if (sites.length === 0) {
                     sitesList.innerHTML = '<p class="text-gray-500">No sites registered yet. Add your first site to start exchanging links!</p>';
                 } else {
-                    sitesList.innerHTML = data.sites.map(site => `
+                    sitesList.innerHTML = sites.map(site => `
                         <div class="bg-black/20 rounded-lg p-4">
                             <div class="flex items-center justify-between mb-3">
                                 <div>
@@ -748,11 +749,12 @@
                 
                 // Exchanges
                 const exchangesList = document.getElementById('exchangesList');
-                if (data.exchanges.length === 0) {
+                const exchanges = data.recentExchanges || data.exchanges || [];
+                if (exchanges.length === 0) {
                     exchangesList.innerHTML = '<p class="text-gray-500">No exchanges yet. Register a site and start discovering link partners!</p>';
                 } else {
-                    const userDomains = data.sites.map(s => s.domain);
-                    exchangesList.innerHTML = data.exchanges.map(ex => {
+                    const userDomains = sites.map(s => s.domain);
+                    exchangesList.innerHTML = exchanges.map(ex => {
                         const isIncoming = userDomains.includes(ex.to_domain) && !userDomains.includes(ex.from_domain);
                         const isOutgoing = userDomains.includes(ex.from_domain);
                         const directionLabel = isIncoming ? '← you add link' : '→ they add link';
@@ -810,7 +812,7 @@
                 }
                 
                 // Show discover section and populate dropdown if user has verified sites
-                const verifiedSites = data.sites.filter(s => s.verified);
+                const verifiedSites = sites.filter(s => s.verified);
                 const discoverSection = document.getElementById('discoverSection');
                 const discoverDropdown = document.getElementById('discoverFromSite');
                 
@@ -823,8 +825,13 @@
                 }
                 
             } catch (e) {
-                console.error(e);
-                logout();
+                console.error('Dashboard load error:', e);
+                // Don't immediately logout - show error
+                alert('Error loading dashboard: ' + (e.message || e));
+                // Only logout if it's an auth error
+                if (e.message?.includes('401') || e.message?.includes('Unauthorized')) {
+                    logout();
+                }
             }
         }
         
