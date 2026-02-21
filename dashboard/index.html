@@ -44,8 +44,9 @@
                     <input type="password" id="passwordInput" placeholder="Enter your password" 
                         class="w-full bg-black/30 border border-gray-700 rounded-lg px-4 py-3 focus:border-amber-500 focus:outline-none">
                 </div>
-                <button onclick="loginWithPassword()" class="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold py-3 rounded-lg transition">
-                    Sign In
+                <button id="passwordLoginBtn" onclick="loginWithPassword()" class="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold py-3 rounded-lg transition disabled:opacity-50">
+                    <span id="passwordLoginText">Sign In</span>
+                    <span id="passwordLoginSpinner" class="hidden">Signing in...</span>
                 </button>
                 <div class="text-center">
                     <a href="/forgot-password" class="text-amber-400 hover:text-amber-300 text-sm">Forgot password?</a>
@@ -498,8 +499,18 @@
         
         // Password login
         async function loginWithPassword() {
+            console.log('loginWithPassword() called');
+            
+            const btn = document.getElementById('passwordLoginBtn');
+            const btnText = document.getElementById('passwordLoginText');
+            const btnSpinner = document.getElementById('passwordLoginSpinner');
+            const errorEl = document.getElementById('passwordError');
+            
             const email = document.getElementById('passwordEmailInput').value.trim();
             const password = document.getElementById('passwordInput').value;
+            
+            // Clear previous errors
+            errorEl.classList.add('hidden');
             
             if (!email || !email.includes('@')) {
                 showError('passwordError', 'Please enter a valid email address');
@@ -510,6 +521,11 @@
                 showError('passwordError', 'Please enter your password');
                 return;
             }
+            
+            // Show loading state
+            btn.disabled = true;
+            btnText.classList.add('hidden');
+            btnSpinner.classList.remove('hidden');
             
             try {
                 console.log('Attempting login to:', `${API}/v1/auth/login`);
@@ -524,17 +540,24 @@
                 console.log('Login response data:', data);
                 
                 if (res.ok && data.success) {
-                    document.getElementById('passwordError').classList.add('hidden');
+                    errorEl.classList.add('hidden');
                     currentApiKey = data.api_key;
                     localStorage.setItem('linkswarm_api_key', data.api_key);
                     localStorage.setItem('linkswarm_email', data.email);
+                    btnSpinner.textContent = 'Loading dashboard...';
                     await loadDashboard();
                 } else {
-                    showError('passwordError', data.error || `Login failed (${res.status}). Please try again.`);
+                    showError('passwordError', data.error || `Login failed (${res.status})`);
                 }
             } catch (e) {
                 console.error('Login error:', e);
                 showError('passwordError', `Error: ${e.message || e}`);
+            } finally {
+                // Reset button state
+                btn.disabled = false;
+                btnText.classList.remove('hidden');
+                btnSpinner.classList.add('hidden');
+                btnSpinner.textContent = 'Signing in...';
             }
         }
         
