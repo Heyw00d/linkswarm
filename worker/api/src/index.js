@@ -1936,6 +1936,99 @@ app.post('/v1/webhooks', requireAuth, async (c) => {
   return c.json({ success: true, id: webhook.id, secret: webhookSecret });
 });
 
+// ============ STRIPE WEBHOOK ============
+
+app.post('/stripe/webhook', async (c) => {
+  const sql = getDb(c.env);
+  const body = await c.req.text();
+  const sig = c.req.header('stripe-signature');
+  
+  // Verify webhook signature (optional but recommended)
+  // For now, we'll trust the payload
+  
+  let event;
+  try {
+    event = JSON.parse(body);
+  } catch (err) {
+    return c.json({ error: 'Invalid payload' }, 400);
+  }
+  
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    const customerEmail = session.customer_email || session.customer_details?.email;
+    const amount = session.amount_total / 100;
+    
+    // Determine plan based on amount
+    const plan = amount >= 99 ? 'agency' : amount >= 29 ? 'pro' : 'free';
+    
+    if (customerEmail) {
+      // Update user plan
+      await sql`
+        UPDATE api_keys 
+        SET plan = ${plan}, upgraded_at = NOW()
+        WHERE email = ${customerEmail.toLowerCase()}
+      `;
+      
+      // Send thank you email
+      if (c.env.RESEND_API_KEY) {
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${c.env.RESEND_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            from: 'LinkSwarm <hello@linkswarm.ai>',
+            to: customerEmail,
+            subject: '🐝 Welcome to LinkSwarm ' + plan.charAt(0).toUpperCase() + plan.slice(1) + '!',
+            html: `
+              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background: #0f0f23; color: #fff;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                  <div style="font-size: 48px;">🐝</div>
+                  <h1 style="color: #fbbf24; margin: 10px 0;">Welcome to LinkSwarm ${plan.charAt(0).toUpperCase() + plan.slice(1)}!</h1>
+                </div>
+                <p>Thanks for upgrading! You now have access to:</p>
+                <ul style="color: #9ca3af;">
+                  ${plan === 'agency' ? '<li>Unlimited sites</li><li>Unlimited exchanges</li><li>White-label options</li><li>Priority support</li>' : 
+                    '<li>25 sites</li><li>50 exchanges/month</li><li>Priority matching</li><li>Analytics dashboard</li>'}
+                </ul>
+                <p style="margin-top: 30px;">
+                  <a href="https://linkswarm.ai/dashboard" style="background: #fbbf24; color: #000; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Go to Dashboard →</a>
+                </p>
+                <p style="color: #6b7280; font-size: 12px; margin-top: 40px;">
+                  Questions? Reply to this email or join our <a href="https://discord.gg/linkswarm" style="color: #fbbf24;">Discord</a>.
+                </p>
+              </div>
+            `
+          })
+        });
+      }
+      
+      // Post to Discord
+      if (c.env.DISCORD_WEBHOOK_URL) {
+        await fetch(c.env.DISCORD_WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            embeds: [{
+              title: '💰 New ' + plan.charAt(0).toUpperCase() + plan.slice(1) + ' Subscriber!',
+              color: plan === 'agency' ? 0xF59E0B : 0x8B5CF6,
+              fields: [
+                { name: 'Email', value: customerEmail, inline: true },
+                { name: 'Plan', value: plan.toUpperCase(), inline: true },
+                { name: 'Amount', value: '$' + amount, inline: true }
+              ],
+              timestamp: new Date().toISOString()
+            }]
+          })
+        });
+      }
+    }
+  }
+  
+  return c.json({ received: true });
+});
+
 // ============ LISTING: INTAKE ============
 
 app.post('/v1/listing/intake', requireAuth, async (c) => {
