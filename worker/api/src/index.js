@@ -1165,6 +1165,12 @@ app.post('/api/verify', async (c) => {
     // Increment referral count
     await sql`UPDATE api_keys SET referral_count = referral_count + 1 WHERE email = ${user.referred_by}`;
     
+    // Create dashboard notification
+    await sql`
+      INSERT INTO notifications (user_email, type, title, message, link)
+      VALUES (${user.referred_by}, 'referral', '🎉 You earned 3 credits!', ${'Someone signed up using your referral link: ' + email}, '/dashboard')
+    `;
+    
     // Send notification email to referrer
     if (c.env.RESEND_API_KEY) {
       fetch('https://api.resend.com/emails', {
@@ -2105,6 +2111,77 @@ app.get('/v1/referral', requireAuth, async (c) => {
     credits_per_referral: 3
   });
 });
+
+// ============ NOTIFICATIONS ============
+
+// Get user notifications
+app.get('/v1/notifications', requireAuth, async (c) => {
+  const userEmail = c.get('userEmail');
+  const sql = getDb(c.env);
+  const limit = parseInt(c.req.query('limit')) || 20;
+  const unreadOnly = c.req.query('unread') === 'true';
+  
+  let notifications;
+  if (unreadOnly) {
+    notifications = await sql`
+      SELECT * FROM notifications 
+      WHERE user_email = ${userEmail} AND read = false
+      ORDER BY created_at DESC 
+      LIMIT ${limit}
+    `;
+  } else {
+    notifications = await sql`
+      SELECT * FROM notifications 
+      WHERE user_email = ${userEmail}
+      ORDER BY created_at DESC 
+      LIMIT ${limit}
+    `;
+  }
+  
+  // Get unread count
+  const [unreadCount] = await sql`
+    SELECT COUNT(*) as count FROM notifications 
+    WHERE user_email = ${userEmail} AND read = false
+  `;
+  
+  return c.json({
+    notifications,
+    unread_count: parseInt(unreadCount?.count || 0)
+  });
+});
+
+// Mark notification as read
+app.patch('/v1/notifications/:id/read', requireAuth, async (c) => {
+  const userEmail = c.get('userEmail');
+  const notificationId = c.req.param('id');
+  const sql = getDb(c.env);
+  
+  await sql`
+    UPDATE notifications 
+    SET read = true 
+    WHERE id = ${parseInt(notificationId)} AND user_email = ${userEmail}
+  `;
+  
+  return c.json({ success: true });
+});
+
+// Mark all notifications as read
+app.post('/v1/notifications/read-all', requireAuth, async (c) => {
+  const userEmail = c.get('userEmail');
+  const sql = getDb(c.env);
+  
+  await sql`UPDATE notifications SET read = true WHERE user_email = ${userEmail}`;
+  
+  return c.json({ success: true });
+});
+
+// Helper function to create notification (used internally)
+async function createNotification(sql, userEmail, type, title, message, link = null) {
+  await sql`
+    INSERT INTO notifications (user_email, type, title, message, link)
+    VALUES (${userEmail}, ${type}, ${title}, ${message}, ${link})
+  `;
+}
 
 // ============ CREDITS ============
 
