@@ -3964,7 +3964,7 @@ app.post('/webhook/stripe', async (c) => {
         });
       }
       
-      // Post to Discord - general webhook
+      // Post to Discord - general webhook (no emails - public channel)
       if (c.env.DISCORD_WEBHOOK_URL) {
         await fetch(c.env.DISCORD_WEBHOOK_URL, {
           method: 'POST',
@@ -3974,7 +3974,6 @@ app.post('/webhook/stripe', async (c) => {
               title: '💰 New ' + plan.charAt(0).toUpperCase() + plan.slice(1) + ' Subscriber!',
               color: plan === 'agency' ? 0xF59E0B : 0x8B5CF6,
               fields: [
-                { name: 'Email', value: customerEmail, inline: true },
                 { name: 'Plan', value: plan.toUpperCase(), inline: true },
                 { name: 'Amount', value: '$' + amount, inline: true }
               ],
