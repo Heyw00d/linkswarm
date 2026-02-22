@@ -235,10 +235,6 @@
                     <div class="text-gray-400 text-sm">Total Requests</div>
                     <div class="text-2xl font-bold" id="statTotalRequests">0</div>
                 </div>
-                <div class="glass rounded-xl p-4 border border-amber-500/30">
-                    <div class="text-amber-400 text-sm">💰 Credits</div>
-                    <div class="text-2xl font-bold text-amber-400" id="statCredits">0</div>
-                </div>
             </div>
             
             <!-- Credit Balance & History -->
@@ -1078,7 +1074,6 @@
                 
                 // Credits - load from dedicated endpoint for full details
                 const credits = data.credits?.balance || 0;
-                document.getElementById('statCredits').textContent = credits;
                 document.getElementById('creditBalance').textContent = credits;
                 document.getElementById('lifetimeEarned').textContent = data.credits?.lifetime_earned || 0;
                 document.getElementById('lifetimeSpent').textContent = data.credits?.lifetime_spent || 0;
