@@ -4233,4 +4233,104 @@ app.get('/v1/gsc/backlink-impact', requireAuth, async (c) => {
   return c.json({ placements });
 });
 
+// ============ TWITTER POSTING ============
+
+// OAuth 1.0a signature generation
+function generateOAuthSignature(method, url, params, consumerSecret, tokenSecret) {
+  const sortedParams = Object.keys(params).sort().map(k => 
+    `${encodeURIComponent(k)}=${encodeURIComponent(params[k])}`
+  ).join('&');
+  const baseString = `${method}&${encodeURIComponent(url)}&${encodeURIComponent(sortedParams)}`;
+  const signingKey = `${encodeURIComponent(consumerSecret)}&${encodeURIComponent(tokenSecret)}`;
+  
+  // HMAC-SHA1 using Web Crypto API
+  const encoder = new TextEncoder();
+  return crypto.subtle.importKey(
+    'raw',
+    encoder.encode(signingKey),
+    { name: 'HMAC', hash: 'SHA-1' },
+    false,
+    ['sign']
+  ).then(key => crypto.subtle.sign('HMAC', key, encoder.encode(baseString)))
+    .then(sig => btoa(String.fromCharCode(...new Uint8Array(sig))));
+}
+
+// Post a tweet to specified account
+app.post('/v1/twitter/post', requireAdmin, async (c) => {
+  const { account, text } = await c.req.json();
+  
+  if (!account || !text) {
+    return c.json({ error: 'account and text required' }, 400);
+  }
+  
+  if (!['linkswarm', 'spendbase'].includes(account.toLowerCase())) {
+    return c.json({ error: 'account must be linkswarm or spendbase' }, 400);
+  }
+  
+  // Get credentials based on account
+  const prefix = account.toLowerCase() === 'linkswarm' ? 'LINKSWARM_X' : 'SPENDBASE_X';
+  const apiKey = c.env[`${prefix}_API_KEY`];
+  const apiSecret = c.env[`${prefix}_API_SECRET`];
+  const accessToken = c.env[`${prefix}_ACCESS_TOKEN`];
+  const accessSecret = c.env[`${prefix}_ACCESS_SECRET`];
+  
+  if (!apiKey || !apiSecret || !accessToken || !accessSecret) {
+    return c.json({ error: `${account} Twitter credentials not configured` }, 500);
+  }
+  
+  const url = 'https://api.twitter.com/2/tweets';
+  const oauthParams = {
+    oauth_consumer_key: apiKey,
+    oauth_token: accessToken,
+    oauth_signature_method: 'HMAC-SHA1',
+    oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
+    oauth_nonce: crypto.randomUUID().replace(/-/g, ''),
+    oauth_version: '1.0'
+  };
+  
+  try {
+    const signature = await generateOAuthSignature('POST', url, oauthParams, apiSecret, accessSecret);
+    oauthParams.oauth_signature = signature;
+    
+    const authHeader = 'OAuth ' + Object.keys(oauthParams).sort().map(k =>
+      `${encodeURIComponent(k)}="${encodeURIComponent(oauthParams[k])}"`
+    ).join(', ');
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ text })
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error('Twitter API error:', data);
+      return c.json({ 
+        error: 'Twitter API error', 
+        status: response.status,
+        details: data 
+      }, response.status);
+    }
+    
+    const tweetId = data.data?.id;
+    const tweetUrl = tweetId ? `https://twitter.com/${account === 'linkswarm' ? 'Link_Swarm' : 'spendbasecards'}/status/${tweetId}` : null;
+    
+    return c.json({ 
+      success: true, 
+      account,
+      tweet_id: tweetId,
+      tweet_url: tweetUrl,
+      data 
+    });
+    
+  } catch (err) {
+    console.error('Twitter post error:', err);
+    return c.json({ error: 'Failed to post tweet', details: err.message }, 500);
+  }
+});
+
 export default app;
