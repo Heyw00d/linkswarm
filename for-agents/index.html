@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkSwarm for AI Agents | The Backlink API for Autonomous Systems</title>
+    <meta name="description" content="Your AI agent builds the site. LinkSwarm builds the authority. Simple API for backlinks, verified placements, fair credit system.">
+    <meta property="og:title" content="LinkSwarm for AI Agents">
+    <meta property="og:description" content="The Backlink API for Autonomous Systems. Build authority for any site your agent creates.">
+    <meta name="twitter:card" content="summary_large_image">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        honey: { 400: '#fbbf24', 500: '#f59e0b' },
+                        swarm: { 900: '#0a0a0f', 800: '#12121a', 700: '#1a1a25' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        code, pre { font-family: 'JetBrains Mono', monospace; }
+        .swarm-bg {
+            background: radial-gradient(ellipse at 50% 0%, rgba(251, 191, 36, 0.15) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 50%, rgba(139, 92, 246, 0.1) 0%, transparent 40%);
+        }
+    </style>
+</head>
+<body class="bg-swarm-900 text-gray-100 swarm-bg min-h-screen">
+    <!-- Nav -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-swarm-900/90 backdrop-blur-md border-b border-honey-400/10">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="/" class="flex items-center gap-2 text-xl font-bold">
+                <span class="text-2xl">🐝</span>
+                <span class="text-honey-400">Link</span><span>Swarm</span>
+            </a>
+            <div class="flex items-center gap-6">
+                <a href="/docs/" class="text-gray-300 hover:text-honey-400">Docs</a>
+                <a href="/blog/" class="text-gray-300 hover:text-honey-400">Blog</a>
+                <a href="/register/" class="bg-honey-500 hover:bg-honey-400 text-swarm-900 font-semibold px-4 py-2 rounded-lg">
+                    Get API Key
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="pt-32 pb-20 px-6">
+        <div class="max-w-4xl mx-auto text-center">
+            <div class="inline-flex items-center gap-2 bg-purple-500/20 text-purple-400 px-4 py-2 rounded-full text-sm font-medium mb-8">
+                <span>🤖</span> Built for AI Agents
+            </div>
+            <h1 class="text-5xl md:text-6xl font-bold mb-6 leading-tight">
+                Your Agent's<br><span class="text-honey-400">Backlink API</span>
+            </h1>
+            <p class="text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
+                Your AI agent builds the site. LinkSwarm builds the authority.<br>
+                Simple API, verified placements, fair credit exchange.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="/register/" class="bg-honey-500 hover:bg-honey-400 text-swarm-900 font-bold px-8 py-4 rounded-xl text-lg">
+                    Get Free API Key →
+                </a>
+                <a href="/docs/api/" class="border border-gray-600 hover:border-honey-400 px-8 py-4 rounded-xl text-lg">
+                    View API Docs
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Code Example -->
+    <section class="py-16 px-6">
+        <div class="max-w-4xl mx-auto">
+            <div class="bg-swarm-800 rounded-2xl border border-gray-700 overflow-hidden">
+                <div class="flex items-center gap-2 px-4 py-3 bg-swarm-700 border-b border-gray-700">
+                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                    <span class="ml-4 text-gray-400 text-sm">agent.py</span>
+                </div>
+                <pre class="p-6 text-sm overflow-x-auto"><code class="text-gray-300"><span class="text-purple-400">import</span> requests
+
+<span class="text-gray-500"># Your agent just built a new site</span>
+API_KEY = <span class="text-green-400">"sk_linkswarm_..."</span>
+NEW_SITE = <span class="text-green-400">"mycoolsite.com"</span>
+
+<span class="text-gray-500"># 1. Register the domain</span>
+requests.post(<span class="text-green-400">"https://api.linkswarm.ai/v1/sites"</span>, 
+    headers={<span class="text-green-400">"Authorization"</span>: f<span class="text-green-400">"Bearer {API_KEY}"</span>},
+    json={<span class="text-green-400">"domain"</span>: NEW_SITE, <span class="text-green-400">"categories"</span>: [<span class="text-green-400">"tech"</span>, <span class="text-green-400">"ai"</span>]}
+)
+
+<span class="text-gray-500"># 2. Request backlinks (costs credits)</span>
+requests.post(<span class="text-green-400">"https://api.linkswarm.ai/v1/pool/request"</span>,
+    headers={<span class="text-green-400">"Authorization"</span>: f<span class="text-green-400">"Bearer {API_KEY}"</span>},
+    json={<span class="text-green-400">"target_domain"</span>: NEW_SITE, <span class="text-green-400">"anchor_text"</span>: <span class="text-green-400">"My Cool Site"</span>}
+)
+
+<span class="text-gray-500"># 3. Contribute pages to earn credits</span>
+requests.post(<span class="text-green-400">"https://api.linkswarm.ai/v1/pool/contribute"</span>,
+    headers={<span class="text-green-400">"Authorization"</span>: f<span class="text-green-400">"Bearer {API_KEY}"</span>},
+    json={<span class="text-green-400">"domain"</span>: NEW_SITE, <span class="text-green-400">"page_url"</span>: <span class="text-green-400">"/resources/"</span>}
+)
+
+<span class="text-honey-400">print</span>(<span class="text-green-400">"✅ Site registered, backlinks requested!"</span>)</code></pre>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section class="py-16 px-6">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12">Built for <span class="text-honey-400">Autonomous Operation</span></h2>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="bg-swarm-800/50 rounded-xl p-6 border border-gray-700/50">
+                    <div class="text-3xl mb-4">🤖</div>
+                    <h3 class="text-xl font-semibold mb-2">Agent-Native API</h3>
+                    <p class="text-gray-400">RESTful endpoints designed for autonomous systems. No human intervention required.</p>
+                </div>
+                <div class="bg-swarm-800/50 rounded-xl p-6 border border-gray-700/50">
+                    <div class="text-3xl mb-4">⚡</div>
+                    <h3 class="text-xl font-semibold mb-2">Instant Registration</h3>
+                    <p class="text-gray-400">Domain to backlinks in minutes. DNS verification or meta tag — your agent's choice.</p>
+                </div>
+                <div class="bg-swarm-800/50 rounded-xl p-6 border border-gray-700/50">
+                    <div class="text-3xl mb-4">🔔</div>
+                    <h3 class="text-xl font-semibold mb-2">Webhook Notifications</h3>
+                    <p class="text-gray-400">Get notified when links are matched, placed, and verified. Keep your agent in the loop.</p>
+                </div>
+                <div class="bg-swarm-800/50 rounded-xl p-6 border border-gray-700/50">
+                    <div class="text-3xl mb-4">💰</div>
+                    <h3 class="text-xl font-semibold mb-2">Credit System</h3>
+                    <p class="text-gray-400">Fair exchange: contribute links to earn credits, spend credits to receive links.</p>
+                </div>
+                <div class="bg-swarm-800/50 rounded-xl p-6 border border-gray-700/50">
+                    <div class="text-3xl mb-4">✅</div>
+                    <h3 class="text-xl font-semibold mb-2">Verified Placements</h3>
+                    <p class="text-gray-400">Our crawler confirms every backlink. No trust issues, no "did they actually place it?"</p>
+                </div>
+                <div class="bg-swarm-800/50 rounded-xl p-6 border border-gray-700/50">
+                    <div class="text-3xl mb-4">🌐</div>
+                    <h3 class="text-xl font-semibold mb-2">Growing Network</h3>
+                    <p class="text-gray-400">30+ quality sites and growing. Non-reciprocal matching keeps links natural.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Use Cases -->
+    <section class="py-16 px-6 bg-swarm-800/30">
+        <div class="max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12">Perfect for <span class="text-honey-400">Every Agent Type</span></h2>
+            <div class="space-y-6">
+                <div class="flex gap-6 items-start">
+                    <div class="text-4xl">🏗️</div>
+                    <div>
+                        <h3 class="text-xl font-semibold mb-2">Coding Agents</h3>
+                        <p class="text-gray-400">Devin, Cursor, Windsurf — when your agent ships a site, LinkSwarm handles the SEO authority automatically.</p>
+                    </div>
+                </div>
+                <div class="flex gap-6 items-start">
+                    <div class="text-4xl">📣</div>
+                    <div>
+                        <h3 class="text-xl font-semibold mb-2">Marketing Agents</h3>
+                        <p class="text-gray-400">Content agents need distribution. LinkSwarm provides the backlinks that drive AI citations and organic traffic.</p>
+                    </div>
+                </div>
+                <div class="flex gap-6 items-start">
+                    <div class="text-4xl">🚀</div>
+                    <div>
+                        <h3 class="text-xl font-semibold mb-2">Startup Agents</h3>
+                        <p class="text-gray-400">Building companies autonomously? LinkSwarm ensures your agent's creations get discovered by humans AND AI.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Integrations -->
+    <section class="py-16 px-6">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-3xl font-bold mb-8">Works With Your Stack</h2>
+            <div class="flex flex-wrap justify-center gap-4">
+                <span class="bg-swarm-800 px-4 py-2 rounded-lg border border-gray-700">Claude Code</span>
+                <span class="bg-swarm-800 px-4 py-2 rounded-lg border border-gray-700">Cursor</span>
+                <span class="bg-swarm-800 px-4 py-2 rounded-lg border border-gray-700">Windsurf</span>
+                <span class="bg-swarm-800 px-4 py-2 rounded-lg border border-gray-700">LangChain</span>
+                <span class="bg-swarm-800 px-4 py-2 rounded-lg border border-gray-700">CrewAI</span>
+                <span class="bg-swarm-800 px-4 py-2 rounded-lg border border-gray-700">AutoGPT</span>
+                <span class="bg-swarm-800 px-4 py-2 rounded-lg border border-gray-700">Clawdbot</span>
+            </div>
+            <p class="text-gray-500 mt-6">MCP Server coming soon for native Claude/GPT integration</p>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="py-20 px-6">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-4xl font-bold mb-6">Ready to Build Authority?</h2>
+            <p class="text-xl text-gray-400 mb-8">Get your API key and start building backlinks in minutes.</p>
+            <a href="/register/" class="inline-block bg-honey-500 hover:bg-honey-400 text-swarm-900 font-bold px-8 py-4 rounded-xl text-lg">
+                Get Free API Key →
+            </a>
+            <p class="text-gray-500 mt-4">Free tier: 3 credits to start • No credit card required</p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-800 py-12 px-6">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-2">
+                <span class="text-2xl">🐝</span>
+                <span class="font-bold"><span class="text-honey-400">Link</span>Swarm</span>
+            </div>
+            <div class="flex gap-6 text-gray-400">
+                <a href="/docs/" class="hover:text-honey-400">Docs</a>
+                <a href="/blog/" class="hover:text-honey-400">Blog</a>
+                <a href="https://discord.gg/6RzUpUbMFE" class="hover:text-honey-400">Discord</a>
+                <a href="https://twitter.com/Link_Swarm" class="hover:text-honey-400">Twitter</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
