@@ -4254,9 +4254,9 @@ function generateOAuthSignature(method, url, params, consumerSecret, tokenSecret
     .then(sig => btoa(String.fromCharCode(...new Uint8Array(sig))));
 }
 
-// Post a tweet to specified account
+// Post a tweet to specified account (supports replies and quote tweets)
 app.post('/v1/twitter/post', requireAdmin, async (c) => {
-  const { account, text } = await c.req.json();
+  const { account, text, reply_to, quote_tweet_id } = await c.req.json();
   
   if (!account || !text) {
     return c.json({ error: 'account and text required' }, 400);
@@ -4295,13 +4295,22 @@ app.post('/v1/twitter/post', requireAdmin, async (c) => {
       `${encodeURIComponent(k)}="${encodeURIComponent(oauthParams[k])}"`
     ).join(', ');
     
+    // Build tweet body
+    const tweetBody = { text };
+    if (reply_to) {
+      tweetBody.reply = { in_reply_to_tweet_id: reply_to };
+    }
+    if (quote_tweet_id) {
+      tweetBody.quote_tweet_id = quote_tweet_id;
+    }
+    
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Authorization': authHeader,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ text })
+      body: JSON.stringify(tweetBody)
     });
     
     const data = await response.json();
@@ -4329,6 +4338,104 @@ app.post('/v1/twitter/post', requireAdmin, async (c) => {
   } catch (err) {
     console.error('Twitter post error:', err);
     return c.json({ error: 'Failed to post tweet', details: err.message }, 500);
+  }
+});
+
+// Search tweets (for finding posts to reply to)
+app.get('/v1/twitter/search', requireAdmin, async (c) => {
+  const query = c.req.query('q');
+  const account = c.req.query('account') || 'linkswarm';
+  const maxResults = Math.max(10, Math.min(parseInt(c.req.query('max_results') || '10'), 100));
+  
+  if (!query) {
+    return c.json({ error: 'query (q) required' }, 400);
+  }
+  
+  const prefix = account.toLowerCase() === 'linkswarm' ? 'LINKSWARM_X' : 'SPENDBASE_X';
+  const apiKey = c.env[`${prefix}_API_KEY`];
+  const apiSecret = c.env[`${prefix}_API_SECRET`];
+  const accessToken = c.env[`${prefix}_ACCESS_TOKEN`];
+  const accessSecret = c.env[`${prefix}_ACCESS_SECRET`];
+  
+  if (!apiKey || !apiSecret || !accessToken || !accessSecret) {
+    return c.json({ error: `${account} Twitter credentials not configured` }, 500);
+  }
+  
+  // Search recent tweets
+  const searchUrl = new URL('https://api.twitter.com/2/tweets/search/recent');
+  searchUrl.searchParams.set('query', query + ' -is:retweet lang:en');
+  searchUrl.searchParams.set('max_results', maxResults.toString());
+  searchUrl.searchParams.set('tweet.fields', 'public_metrics,created_at,author_id');
+  searchUrl.searchParams.set('expansions', 'author_id');
+  searchUrl.searchParams.set('user.fields', 'username,name,public_metrics');
+  
+  const oauthParams = {
+    oauth_consumer_key: apiKey,
+    oauth_token: accessToken,
+    oauth_signature_method: 'HMAC-SHA1',
+    oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
+    oauth_nonce: crypto.randomUUID().replace(/-/g, ''),
+    oauth_version: '1.0'
+  };
+  
+  // For GET requests, include query params in signature
+  const allParams = { ...oauthParams };
+  searchUrl.searchParams.forEach((v, k) => allParams[k] = v);
+  
+  try {
+    const signature = await generateOAuthSignature('GET', 'https://api.twitter.com/2/tweets/search/recent', allParams, apiSecret, accessSecret);
+    oauthParams.oauth_signature = signature;
+    
+    const authHeader = 'OAuth ' + Object.keys(oauthParams).sort().map(k =>
+      `${encodeURIComponent(k)}="${encodeURIComponent(oauthParams[k])}"`
+    ).join(', ');
+    
+    const response = await fetch(searchUrl.toString(), {
+      method: 'GET',
+      headers: {
+        'Authorization': authHeader
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      return c.json({ error: 'Twitter search error', status: response.status, details: data }, response.status);
+    }
+    
+    // Enrich tweets with author info and engagement
+    const users = {};
+    if (data.includes?.users) {
+      data.includes.users.forEach(u => users[u.id] = u);
+    }
+    
+    const tweets = (data.data || []).map(t => ({
+      id: t.id,
+      text: t.text,
+      created_at: t.created_at,
+      likes: t.public_metrics?.like_count || 0,
+      retweets: t.public_metrics?.retweet_count || 0,
+      replies: t.public_metrics?.reply_count || 0,
+      author: users[t.author_id] ? {
+        username: users[t.author_id].username,
+        name: users[t.author_id].name,
+        followers: users[t.author_id].public_metrics?.followers_count || 0
+      } : null,
+      url: `https://twitter.com/${users[t.author_id]?.username || 'i'}/status/${t.id}`
+    }));
+    
+    // Sort by engagement
+    tweets.sort((a, b) => (b.likes + b.retweets) - (a.likes + a.retweets));
+    
+    return c.json({ 
+      success: true,
+      count: tweets.length,
+      tweets
+    });
+    
+  } catch (err) {
+    console.error('Twitter search error:', err);
+    return c.json({ error: 'Search failed', details: err.message }, 500);
   }
 });
 
