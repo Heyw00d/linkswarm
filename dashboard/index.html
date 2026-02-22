@@ -13,9 +13,34 @@
         .plan-free { border-color: #6b7280; }
         .plan-pro { border-color: #8b5cf6; }
         .plan-agency { border-color: #f59e0b; }
+        
+        /* Credit Toast Animations */
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+        .credit-toast {
+            animation: slideIn 0.3s ease-out;
+        }
+        .credit-toast.hiding {
+            animation: slideOut 0.3s ease-in forwards;
+        }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(251,191,36,0.3); }
+            50% { box-shadow: 0 0 40px rgba(251,191,36,0.6); }
+        }
+        .credit-glow {
+            animation: pulse-glow 0.5s ease-in-out;
+        }
     </style>
 </head>
 <body class="text-white">
+    <!-- Credit Toast Container -->
+    <div id="creditToastContainer" class="fixed top-20 right-4 z-50 space-y-2"></div>
     <!-- Login Screen -->
     <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
         <div class="glass rounded-2xl p-8 max-w-md w-full glow">
@@ -213,6 +238,37 @@
                 <div class="glass rounded-xl p-4 border border-amber-500/30">
                     <div class="text-amber-400 text-sm">💰 Credits</div>
                     <div class="text-2xl font-bold text-amber-400" id="statCredits">0</div>
+                </div>
+            </div>
+            
+            <!-- Credit Balance & History -->
+            <div class="glass rounded-xl p-6 mb-8 border border-amber-500/30">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold">💰 Credit Balance</h2>
+                    <div class="flex items-center gap-4">
+                        <div class="text-right">
+                            <div class="text-3xl font-bold text-amber-400" id="creditBalance">0</div>
+                            <div class="text-gray-500 text-xs">Available Credits</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-green-500/10 rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-green-400" id="lifetimeEarned">0</div>
+                        <div class="text-gray-500 text-sm">Lifetime Earned</div>
+                    </div>
+                    <div class="bg-orange-500/10 rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-orange-400" id="lifetimeSpent">0</div>
+                        <div class="text-gray-500 text-sm">Lifetime Spent</div>
+                    </div>
+                </div>
+                
+                <div class="border-t border-gray-700 pt-4">
+                    <h3 class="text-sm font-medium text-gray-400 mb-3">Recent Transactions</h3>
+                    <div id="creditTransactions" class="space-y-2 max-h-64 overflow-y-auto">
+                        <p class="text-gray-500 text-sm">No transactions yet.</p>
+                    </div>
                 </div>
             </div>
             
@@ -605,6 +661,93 @@
         const API = 'https://api.linkswarm.ai';
         let currentApiKey = localStorage.getItem('linkswarm_api_key') || '';
         
+        // Credit Toast Notification System
+        function showCreditToast(amount, description, type = 'earned') {
+            const container = document.getElementById('creditToastContainer');
+            const isEarned = amount > 0;
+            const icon = isEarned ? '📥' : '📤';
+            const bgColor = isEarned ? 'bg-green-500/20 border-green-500/50' : 'bg-orange-500/20 border-orange-500/50';
+            const textColor = isEarned ? 'text-green-400' : 'text-orange-400';
+            const sign = isEarned ? '+' : '';
+            
+            const toast = document.createElement('div');
+            toast.className = `credit-toast glass ${bgColor} border rounded-xl p-4 min-w-72 shadow-lg`;
+            toast.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <div class="text-3xl">${icon}</div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between">
+                            <span class="font-semibold">${isEarned ? 'Credits Earned!' : 'Credits Spent'}</span>
+                            <span class="${textColor} font-bold text-xl">${sign}${amount}</span>
+                        </div>
+                        <p class="text-gray-400 text-sm">${description}</p>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Update balance display with glow effect
+            const balanceEl = document.getElementById('creditBalance');
+            if (balanceEl) {
+                balanceEl.classList.add('credit-glow');
+                setTimeout(() => balanceEl.classList.remove('credit-glow'), 500);
+            }
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                toast.classList.add('hiding');
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+        
+        // Credit Confirmation Modal
+        function showCreditConfirmModal(action, cost, description, onConfirm) {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4';
+            modal.id = 'creditConfirmModal';
+            modal.innerHTML = `
+                <div class="glass rounded-xl p-6 max-w-md w-full border border-amber-500/30">
+                    <div class="text-center mb-6">
+                        <div class="text-4xl mb-2">💰</div>
+                        <h3 class="text-xl font-bold">Confirm Credit Spend</h3>
+                    </div>
+                    <div class="bg-black/30 rounded-lg p-4 mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-gray-400">Action:</span>
+                            <span class="font-medium">${action}</span>
+                        </div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-gray-400">Cost:</span>
+                            <span class="text-orange-400 font-bold">${cost} credit${cost > 1 ? 's' : ''}</span>
+                        </div>
+                        <p class="text-gray-500 text-sm mt-3">${description}</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="document.getElementById('creditConfirmModal').remove()" 
+                            class="flex-1 border border-gray-600 hover:border-gray-500 py-3 rounded-lg transition">
+                            Cancel
+                        </button>
+                        <button id="confirmCreditSpendBtn" 
+                            class="flex-1 bg-amber-500 hover:bg-amber-600 text-black font-semibold py-3 rounded-lg transition">
+                            Spend ${cost} Credit${cost > 1 ? 's' : ''}
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            document.getElementById('confirmCreditSpendBtn').onclick = () => {
+                modal.remove();
+                onConfirm();
+            };
+            
+            // Close on backdrop click
+            modal.onclick = (e) => {
+                if (e.target === modal) modal.remove();
+            };
+        }
+        
         // User menu toggle
         function toggleUserMenu() {
             const menu = document.getElementById('userMenu');
@@ -933,9 +1076,15 @@
                 document.getElementById('statExchangesLimit').textContent = data.limits?.exchanges || 5;
                 document.getElementById('statTotalRequests').textContent = (data.user?.requests_total || 0).toLocaleString();
                 
-                // Credits
+                // Credits - load from dedicated endpoint for full details
                 const credits = data.credits?.balance || 0;
                 document.getElementById('statCredits').textContent = credits;
+                document.getElementById('creditBalance').textContent = credits;
+                document.getElementById('lifetimeEarned').textContent = data.credits?.lifetime_earned || 0;
+                document.getElementById('lifetimeSpent').textContent = data.credits?.lifetime_spent || 0;
+                
+                // Load credit transactions
+                loadCreditTransactions();
                 
                 // Sites - use recentSites from API
                 const sites = data.recentSites || data.sites || [];
@@ -1502,39 +1651,66 @@
         
         async function analyzeSite(domain) {
             const btn = event.target;
-            btn.disabled = true;
-            btn.textContent = 'Analyzing...';
             
-            try {
-                const res = await fetch(`${API}/v1/sites/analyze`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${currentApiKey}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ domain })
-                });
-                
-                const data = await res.json();
-                
-                if (!res.ok) {
-                    alert('Analysis failed: ' + (data.error || 'Unknown error'));
-                    btn.disabled = false;
-                    btn.textContent = 'Analyze';
-                    return;
+            // Check if this costs credits (first analysis is free)
+            const creditBalance = parseInt(document.getElementById('creditBalance')?.textContent || '0');
+            
+            // Show confirmation modal
+            showCreditConfirmModal(
+                'Site Analysis (DataForSEO)',
+                1,
+                `Analyze ${domain} to get quality score, traffic value, and keyword rankings.`,
+                async () => {
+                    btn.disabled = true;
+                    btn.textContent = 'Analyzing...';
+                    
+                    try {
+                        const res = await fetch(`${API}/v1/sites/analyze`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${currentApiKey}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ domain, spend_credit: true })
+                        });
+                        
+                        const data = await res.json();
+                        
+                        if (!res.ok) {
+                            alert('Analysis failed: ' + (data.error || 'Unknown error'));
+                            btn.disabled = false;
+                            btn.textContent = 'Analyze';
+                            return;
+                        }
+                        
+                        // Show credit spent toast
+                        if (data.credit_spent) {
+                            showCreditToast(-1, `Site analysis: ${domain}`, 'spent');
+                        }
+                        
+                        alert(`✅ Site analyzed!\n\nQuality Score: ${data.quality.score}/100\nEst. Traffic Value: $${data.quality.etv.toLocaleString()}\nKeywords: ${data.quality.keywords.toLocaleString()}\nTop 10 Rankings: ${data.quality.top10}`);
+                        loadDashboard();
+                    } catch (e) {
+                        alert('Error: ' + e.message);
+                        btn.disabled = false;
+                        btn.textContent = 'Analyze';
+                    }
                 }
-                
-                alert(`✅ Site analyzed!\n\nQuality Score: ${data.quality.score}/100\nEst. Traffic Value: $${data.quality.etv.toLocaleString()}\nKeywords: ${data.quality.keywords.toLocaleString()}\nTop 10 Rankings: ${data.quality.top10}`);
-                loadDashboard();
-            } catch (e) {
-                alert('Error: ' + e.message);
-                btn.disabled = false;
-                btn.textContent = 'Analyze';
-            }
+            );
         }
         
         // Check LLM Readiness using /api/analyze endpoint
         async function checkLLMReadiness(domain) {
+            // Show confirmation modal for spending credit
+            showCreditConfirmModal(
+                'LLM Readiness Analysis',
+                1,
+                `Full analysis of ${domain} including llms.txt, schema.org, ai.txt, agent.json, and authority score.`,
+                () => performLLMReadinessCheck(domain)
+            );
+        }
+        
+        async function performLLMReadinessCheck(domain) {
             // Show the modal immediately with loading state
             document.getElementById('analyzeModal').classList.remove('hidden');
             const content = document.getElementById('analyzeContent');
@@ -1549,8 +1725,11 @@
             try {
                 const res = await fetch(`${API}/api/analyze`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ domain })
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentApiKey}`
+                    },
+                    body: JSON.stringify({ domain, spend_credit: true })
                 });
                 
                 const data = await res.json();
@@ -1564,6 +1743,12 @@
                         </div>
                     `;
                     return;
+                }
+                
+                // Show credit spent toast if credit was spent
+                if (data.isFullAnalysis) {
+                    showCreditToast(-1, `LLM analysis: ${domain}`, 'spent');
+                    loadCreditTransactions(); // Refresh credit display
                 }
                 
                 // Build the results display
@@ -1753,6 +1938,56 @@
         }
         
         // ============ Notification Functions ============
+        
+        // Load credit transaction history
+        async function loadCreditTransactions() {
+            try {
+                const res = await fetch(`${API}/v1/credits`, {
+                    headers: { 'Authorization': `Bearer ${currentApiKey}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    const container = document.getElementById('creditTransactions');
+                    
+                    // Update balance displays
+                    document.getElementById('creditBalance').textContent = data.balance?.balance || 0;
+                    document.getElementById('lifetimeEarned').textContent = data.balance?.lifetime_earned || 0;
+                    document.getElementById('lifetimeSpent').textContent = data.balance?.lifetime_spent || 0;
+                    
+                    const transactions = data.transactions || [];
+                    if (transactions.length === 0) {
+                        container.innerHTML = '<p class="text-gray-500 text-sm">No transactions yet. Earn credits by adding backlinks or referring users!</p>';
+                        return;
+                    }
+                    
+                    container.innerHTML = transactions.map(tx => {
+                        const isEarned = tx.amount > 0;
+                        const icon = isEarned ? '📥' : '📤';
+                        const color = isEarned ? 'text-green-400' : 'text-orange-400';
+                        const sign = isEarned ? '+' : '';
+                        const date = new Date(tx.created_at).toLocaleDateString();
+                        
+                        return `
+                            <div class="flex items-center justify-between bg-black/20 rounded-lg px-3 py-2">
+                                <div class="flex items-center gap-2">
+                                    <span>${icon}</span>
+                                    <div>
+                                        <div class="text-sm">${tx.description || tx.reference_type}</div>
+                                        <div class="text-gray-500 text-xs">${date}</div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="${color} font-semibold">${sign}${tx.amount}</div>
+                                    <div class="text-gray-500 text-xs">Bal: ${tx.balance_after}</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            } catch (err) {
+                console.error('Failed to load credit transactions:', err);
+            }
+        }
         
         let notificationsData = [];
         

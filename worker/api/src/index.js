@@ -629,11 +629,47 @@ app.post('/admin/migrate-passwords', requireAdmin, async (c) => {
   }
 });
 
+// Migration for listing purchases table
+app.post('/admin/migrate-listing-purchases', requireAdmin, async (c) => {
+  const sql = neon(c.env.DATABASE_URL);
+  
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS listing_purchases (
+        id SERIAL PRIMARY KEY,
+        email TEXT NOT NULL,
+        product_id TEXT NOT NULL,
+        product_name TEXT NOT NULL,
+        amount DECIMAL(10,2) NOT NULL,
+        stripe_session_id TEXT,
+        status TEXT DEFAULT 'paid',
+        fulfilled_at TIMESTAMP,
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `;
+    
+    await sql`CREATE INDEX IF NOT EXISTS idx_listing_purchases_email ON listing_purchases(email)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_listing_purchases_product ON listing_purchases(product_id)`;
+    
+    return c.json({ 
+      success: true, 
+      message: 'listing_purchases table created'
+    });
+  } catch (err) {
+    console.error('Migration error:', err);
+    return c.json({ 
+      error: 'Migration failed', 
+      details: err.message 
+    }, 500);
+  }
+});
+
 // ============ LLM READINESS ANALYZER ============
 
 app.post('/api/analyze', async (c) => {
   const body = await c.req.json();
-  const { domain } = body;
+  const { domain, spend_credit } = body;
   
   if (!domain) {
     return c.json({ error: 'Domain required' }, 400);
@@ -641,52 +677,63 @@ app.post('/api/analyze', async (c) => {
   
   const sql = getDb(c.env);
   
-  // Check for authenticated user (optional but enables higher limits)
+  // Check for authenticated user
   const authHeader = c.req.header('Authorization');
   const apiKey = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
   
   let userEmail = null;
   let userPlan = 'free';
+  let userCredits = 0;
+  let isFullAnalysis = false;
   
   if (apiKey) {
     const [user] = await sql`SELECT email, plan FROM api_keys WHERE api_key = ${apiKey} AND email_verified = true`;
     if (user) {
       userEmail = user.email;
       userPlan = user.plan || 'free';
+      
+      // Check credit balance
+      const [balance] = await sql`SELECT balance FROM credit_balances WHERE user_email = ${userEmail}`;
+      userCredits = balance?.balance || 0;
+      
+      // If user wants full analysis and has credits, spend one
+      if (spend_credit && userCredits >= 1) {
+        await sql`UPDATE credit_balances SET balance = balance - 1, lifetime_spent = lifetime_spent + 1 WHERE user_email = ${userEmail}`;
+        const [newBalance] = await sql`SELECT balance FROM credit_balances WHERE user_email = ${userEmail}`;
+        await sql`
+          INSERT INTO credit_transactions (user_email, amount, type, reference_type, description, balance_after)
+          VALUES (${userEmail}, -1, 'spent', 'llm_check', ${'LLM analysis: ' + domain}, ${newBalance?.balance || 0})
+        `;
+        isFullAnalysis = true;
+        userCredits = newBalance?.balance || 0;
+      }
     }
   }
   
-  // Plan limits for LLM checks per month
-  const llmLimits = { free: 1, basic: 5, pro: 20 };
-  const limit = llmLimits[userPlan] || 1;
-  
-  // Check usage this month
-  const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+  // Track usage for rate limiting (prevent abuse even for preview)
+  const currentMonth = new Date().toISOString().slice(0, 7);
   const trackingKey = userEmail || c.req.header('CF-Connecting-IP') || 'anonymous';
   
   const [usage] = await sql`
     SELECT count FROM usage_tracking 
-    WHERE user_email = ${trackingKey} AND feature = 'llm_check' AND month = ${currentMonth}
+    WHERE user_email = ${trackingKey} AND feature = 'llm_check_preview' AND month = ${currentMonth}
   `;
   
+  const previewLimit = 10; // 10 free previews per IP per month
   const currentUsage = usage?.count || 0;
   
-  if (currentUsage >= limit) {
+  if (!userEmail && currentUsage >= previewLimit) {
     return c.json({ 
-      error: 'Monthly limit reached',
-      usage: currentUsage,
-      limit: limit,
-      plan: userPlan,
-      upgrade_url: userPlan === 'free' ? 'https://linkswarm.ai/upgrade/basic' : 
-                   userPlan === 'basic' ? 'https://linkswarm.ai/upgrade/pro' : null,
-      message: `You've used ${currentUsage}/${limit} LLM checks this month. ${userPlan === 'pro' ? 'Contact us for higher limits.' : 'Upgrade for more checks.'}`
+      error: 'Preview limit reached',
+      message: 'Sign up for free to get 3 credits and continue analyzing sites.',
+      signup_url: 'https://linkswarm.ai/#early-access'
     }, 429);
   }
   
-  // Increment usage
+  // Track preview usage
   await sql`
     INSERT INTO usage_tracking (user_email, feature, month, count)
-    VALUES (${trackingKey}, 'llm_check', ${currentMonth}, 1)
+    VALUES (${trackingKey}, 'llm_check_preview', ${currentMonth}, 1)
     ON CONFLICT (user_email, feature, month) 
     DO UPDATE SET count = usage_tracking.count + 1
   `;
@@ -727,15 +774,54 @@ app.post('/api/analyze', async (c) => {
       fetch(`https://${cleanDomain}/sitemap.xml`, { headers: { 'User-Agent': 'LinkSwarm-Analyzer/1.0' } })
     ]);
     
+    // Helper to validate file content (not just 200 OK)
+    const isValidTextFile = (res, content) => {
+      if (!res || !res.ok) return false;
+      const contentType = res.headers.get('content-type') || '';
+      // Reject if content-type is HTML or if content starts with HTML
+      if (contentType.includes('text/html')) return false;
+      if (content.trim().startsWith('<!DOCTYPE') || content.trim().startsWith('<html')) return false;
+      return content.trim().length > 0;
+    };
+    
+    const isValidJsonFile = (res, content) => {
+      if (!res || !res.ok) return false;
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('text/html')) return false;
+      if (content.trim().startsWith('<!DOCTYPE') || content.trim().startsWith('<html')) return false;
+      try {
+        JSON.parse(content);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    
+    const isValidXmlFile = (res, content) => {
+      if (!res || !res.ok) return false;
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('text/html') && !content.includes('<urlset') && !content.includes('<sitemapindex')) return false;
+      // Must contain sitemap XML markers
+      return content.includes('<urlset') || content.includes('<sitemapindex');
+    };
+    
     // LLM Scoring
     // 1. llms.txt (2 points)
-    const hasLlmsTxt = llmsTxtRes.status === 'fulfilled' && llmsTxtRes.value.ok;
+    let llmsTxtContent = '';
+    if (llmsTxtRes.status === 'fulfilled' && llmsTxtRes.value.ok) {
+      llmsTxtContent = await llmsTxtRes.value.text();
+    }
+    const hasLlmsTxt = llmsTxtRes.status === 'fulfilled' && isValidTextFile(llmsTxtRes.value, llmsTxtContent);
     breakdown.llm.items['llms.txt'] = { score: hasLlmsTxt ? 2 : 0, max: 2, found: hasLlmsTxt };
     scores.llm += hasLlmsTxt ? 2 : 0;
     if (!hasLlmsTxt) breakdown.llm.suggestions.push('Add /llms.txt with context about your site for LLMs');
     
     // 2. ai.txt (1 point)
-    const hasAiTxt = aiTxtRes.status === 'fulfilled' && aiTxtRes.value.ok;
+    let aiTxtContent = '';
+    if (aiTxtRes.status === 'fulfilled' && aiTxtRes.value.ok) {
+      aiTxtContent = await aiTxtRes.value.text();
+    }
+    const hasAiTxt = aiTxtRes.status === 'fulfilled' && isValidTextFile(aiTxtRes.value, aiTxtContent);
     breakdown.llm.items['ai.txt'] = { score: hasAiTxt ? 1 : 0, max: 1, found: hasAiTxt };
     scores.llm += hasAiTxt ? 1 : 0;
     if (!hasAiTxt) breakdown.llm.suggestions.push('Add /ai.txt with AI-specific instructions');
@@ -743,17 +829,21 @@ app.post('/api/analyze', async (c) => {
     // 3. robots.txt (1 point, check for AI bot allowance)
     let robotsScore = 0;
     let robotsContent = '';
+    let hasRobotsTxt = false;
     if (robotsRes.status === 'fulfilled' && robotsRes.value.ok) {
       robotsContent = await robotsRes.value.text();
-      const allowsAI = !robotsContent.toLowerCase().includes('user-agent: gptbot') || 
-                       !robotsContent.toLowerCase().includes('disallow: /');
-      robotsScore = 1;
-      if (robotsContent.toLowerCase().includes('gptbot') && robotsContent.toLowerCase().includes('disallow')) {
-        robotsScore = 0.5;
-        breakdown.llm.suggestions.push('Consider allowing GPTBot and other AI crawlers in robots.txt');
+      // Validate it's actually a robots.txt file (not HTML)
+      hasRobotsTxt = isValidTextFile(robotsRes.value, robotsContent) && 
+                     (robotsContent.toLowerCase().includes('user-agent') || robotsContent.toLowerCase().includes('sitemap'));
+      if (hasRobotsTxt) {
+        robotsScore = 1;
+        if (robotsContent.toLowerCase().includes('gptbot') && robotsContent.toLowerCase().includes('disallow')) {
+          robotsScore = 0.5;
+          breakdown.llm.suggestions.push('Consider allowing GPTBot and other AI crawlers in robots.txt');
+        }
       }
     }
-    breakdown.llm.items['robots.txt'] = { score: robotsScore, max: 1, found: robotsRes.status === 'fulfilled' && robotsRes.value.ok };
+    breakdown.llm.items['robots.txt'] = { score: robotsScore, max: 1, found: hasRobotsTxt };
     scores.llm += robotsScore;
     
     // 4. Schema.org markup (2 points)
@@ -780,14 +870,22 @@ app.post('/api/analyze', async (c) => {
     if (!hasSchema) breakdown.llm.suggestions.push('Add Schema.org JSON-LD structured data');
     
     // 5. Sitemap (1 point)
-    const hasSitemap = sitemapRes.status === 'fulfilled' && sitemapRes.value.ok;
+    let sitemapContent = '';
+    if (sitemapRes.status === 'fulfilled' && sitemapRes.value.ok) {
+      sitemapContent = await sitemapRes.value.text();
+    }
+    const hasSitemap = sitemapRes.status === 'fulfilled' && isValidXmlFile(sitemapRes.value, sitemapContent);
     breakdown.llm.items['Sitemap'] = { score: hasSitemap ? 1 : 0, max: 1, found: hasSitemap };
     scores.llm += hasSitemap ? 1 : 0;
     if (!hasSitemap) breakdown.llm.suggestions.push('Add /sitemap.xml for better crawlability');
     
     // Agent Scoring
     // 1. .well-known/agent.json (2 points)
-    const hasAgentJson = wellKnownAgentRes.status === 'fulfilled' && wellKnownAgentRes.value.ok;
+    let agentJsonContent = '';
+    if (wellKnownAgentRes.status === 'fulfilled' && wellKnownAgentRes.value.ok) {
+      agentJsonContent = await wellKnownAgentRes.value.text();
+    }
+    const hasAgentJson = wellKnownAgentRes.status === 'fulfilled' && isValidJsonFile(wellKnownAgentRes.value, agentJsonContent);
     breakdown.agent.items['agent.json'] = { score: hasAgentJson ? 2 : 0, max: 2, found: hasAgentJson };
     scores.agent += hasAgentJson ? 2 : 0;
     if (!hasAgentJson) breakdown.agent.suggestions.push('Add /.well-known/agent.json for agent discovery');
@@ -1007,14 +1105,46 @@ app.post('/api/analyze', async (c) => {
       });
     }
     
-    return c.json({
+    // For preview mode, limit the data returned
+    const response = {
       domain: cleanDomain,
       scores,
       grade,
-      breakdown,
-      recommendations,
-      howToImprove
-    });
+      isFullAnalysis,
+      userCredits: userEmail ? userCredits : null,
+      userEmail: userEmail || null
+    };
+    
+    if (isFullAnalysis) {
+      // Full analysis - include everything
+      response.breakdown = breakdown;
+      response.recommendations = recommendations;
+      response.howToImprove = howToImprove;
+    } else {
+      // Preview mode - limited breakdown, teaser recommendations
+      response.breakdown = {
+        llm: { 
+          items: Object.fromEntries(
+            Object.entries(breakdown.llm.items).slice(0, 3)
+          ),
+          hiddenCount: Math.max(0, Object.keys(breakdown.llm.items).length - 3)
+        },
+        agent: {
+          items: Object.fromEntries(
+            Object.entries(breakdown.agent.items).slice(0, 2)
+          ),
+          hiddenCount: Math.max(0, Object.keys(breakdown.agent.items).length - 2)
+        }
+      };
+      response.recommendations = recommendations.slice(0, 2);
+      response.hiddenRecommendations = Math.max(0, recommendations.length - 2);
+      response.previewMessage = userEmail 
+        ? 'Spend 1 credit to see full breakdown and all recommendations'
+        : 'Sign up free to get 3 credits and unlock full analysis';
+      response.signupUrl = 'https://linkswarm.ai/#early-access';
+    }
+    
+    return c.json(response);
     
   } catch (err) {
     console.error('Analyze error:', err);
@@ -1041,6 +1171,193 @@ app.get('/waitlist', requireAdmin, async (c) => {
   const sql = getDb(c.env);
   const entries = await sql`SELECT * FROM waitlist ORDER BY created_at DESC`;
   return c.json(entries);
+});
+
+// Audit network activity and issue missing credits
+app.post('/admin/audit-credits', requireAdmin, async (c) => {
+  const sql = getDb(c.env);
+  const results = { credited: [], skipped: [], errors: [] };
+  
+  try {
+    // 1. Find all verified users who don't have any credits yet (signup bonus)
+    const usersWithoutCredits = await sql`
+      SELECT ak.email 
+      FROM api_keys ak
+      LEFT JOIN credit_balances cb ON ak.email = cb.user_email
+      WHERE ak.email_verified = true AND cb.user_email IS NULL
+    `;
+    
+    for (const user of usersWithoutCredits) {
+      try {
+        await sql`
+          INSERT INTO credit_balances (user_email, balance, lifetime_earned)
+          VALUES (${user.email}, 3, 3)
+          ON CONFLICT (user_email) DO NOTHING
+        `;
+        await sql`
+          INSERT INTO credit_transactions (user_email, amount, type, reference_type, description, balance_after)
+          VALUES (${user.email}, 3, 'earned', 'signup', 'Welcome bonus: 3 free credits (audit)', 3)
+        `;
+        results.credited.push({ email: user.email, type: 'signup', amount: 3 });
+      } catch (e) {
+        results.errors.push({ email: user.email, error: e.message });
+      }
+    }
+    
+    // 2. Find referrals that weren't credited
+    const referrers = await sql`
+      SELECT referred_by, COUNT(*) as count
+      FROM api_keys
+      WHERE referred_by IS NOT NULL AND email_verified = true
+      GROUP BY referred_by
+    `;
+    
+    for (const ref of referrers) {
+      const expectedCredits = parseInt(ref.count) * 3;
+      
+      // Check how many referral credits they've received
+      const [credited] = await sql`
+        SELECT COALESCE(SUM(amount), 0) as total
+        FROM credit_transactions
+        WHERE user_email = ${ref.referred_by} AND reference_type = 'referral'
+      `;
+      
+      const alreadyCredited = parseInt(credited?.total || 0);
+      const missing = expectedCredits - alreadyCredited;
+      
+      if (missing > 0) {
+        try {
+          await sql`
+            INSERT INTO credit_balances (user_email, balance, lifetime_earned)
+            VALUES (${ref.referred_by}, ${missing}, ${missing})
+            ON CONFLICT (user_email) DO UPDATE 
+            SET balance = credit_balances.balance + ${missing}, lifetime_earned = credit_balances.lifetime_earned + ${missing}
+          `;
+          
+          const [newBalance] = await sql`SELECT balance FROM credit_balances WHERE user_email = ${ref.referred_by}`;
+          await sql`
+            INSERT INTO credit_transactions (user_email, amount, type, reference_type, description, balance_after)
+            VALUES (${ref.referred_by}, ${missing}, 'earned', 'referral', ${'Referral credits audit: ' + (missing/3) + ' referrals'}, ${newBalance?.balance || missing})
+          `;
+          results.credited.push({ email: ref.referred_by, type: 'referral', amount: missing });
+        } catch (e) {
+          results.errors.push({ email: ref.referred_by, error: e.message });
+        }
+      } else {
+        results.skipped.push({ email: ref.referred_by, type: 'referral', reason: 'already credited' });
+      }
+    }
+    
+    // 3. Credit for link submissions (from link_submissions table if exists)
+    try {
+      const submissions = await sql`
+        SELECT ls.*, s.owner_email
+        FROM link_submissions ls
+        JOIN sites s ON ls.from_domain = s.domain
+        WHERE ls.status = 'verified'
+      `;
+      
+      for (const sub of submissions) {
+        const [existing] = await sql`
+          SELECT id FROM credit_transactions 
+          WHERE user_email = ${sub.owner_email} 
+          AND reference_type = 'link_submission' 
+          AND reference_id = ${sub.id.toString()}
+        `;
+        
+        if (!existing) {
+          await sql`
+            INSERT INTO credit_balances (user_email, balance, lifetime_earned)
+            VALUES (${sub.owner_email}, 1, 1)
+            ON CONFLICT (user_email) DO UPDATE 
+            SET balance = credit_balances.balance + 1, lifetime_earned = credit_balances.lifetime_earned + 1
+          `;
+          
+          const [newBalance] = await sql`SELECT balance FROM credit_balances WHERE user_email = ${sub.owner_email}`;
+          await sql`
+            INSERT INTO credit_transactions (user_email, amount, type, reference_type, reference_id, description, balance_after)
+            VALUES (${sub.owner_email}, 1, 'earned', 'link_submission', ${sub.id.toString()}, ${'Link added: ' + sub.to_domain}, ${newBalance?.balance || 1})
+          `;
+          results.credited.push({ email: sub.owner_email, type: 'link_submission', amount: 1 });
+        }
+      }
+    } catch (e) {
+      // Table might not exist, skip
+      results.skipped.push({ type: 'link_submissions', reason: 'table not found or error: ' + e.message });
+    }
+    
+    return c.json({
+      success: true,
+      summary: {
+        credited: results.credited.length,
+        skipped: results.skipped.length,
+        errors: results.errors.length
+      },
+      details: results
+    });
+    
+  } catch (err) {
+    return c.json({ error: 'Audit failed', details: err.message }, 500);
+  }
+});
+
+// Look up a specific user's credits
+app.get('/admin/user-credits', requireAdmin, async (c) => {
+  const email = c.req.query('email');
+  if (!email) return c.json({ error: 'Email required' }, 400);
+  
+  const sql = getDb(c.env);
+  const [user] = await sql`SELECT email, plan, upgraded_at FROM api_keys WHERE email ILIKE ${email + '%'} AND email_verified = true`;
+  const [balance] = await sql`SELECT * FROM credit_balances WHERE user_email ILIKE ${email + '%'}`;
+  const transactions = await sql`SELECT * FROM credit_transactions WHERE user_email ILIKE ${email + '%'} ORDER BY created_at DESC LIMIT 20`;
+  
+  return c.json({ user, balance, transactions });
+});
+
+// Manually add credits to a user (admin)
+app.post('/admin/add-credits', requireAdmin, async (c) => {
+  const { email, amount, reason } = await c.req.json();
+  if (!email || !amount) return c.json({ error: 'Email and amount required' }, 400);
+  
+  const sql = getDb(c.env);
+  
+  await sql`
+    INSERT INTO credit_balances (user_email, balance, lifetime_earned)
+    VALUES (${email.toLowerCase()}, ${amount}, ${amount})
+    ON CONFLICT (user_email) DO UPDATE 
+    SET balance = credit_balances.balance + ${amount}, lifetime_earned = credit_balances.lifetime_earned + ${amount}
+  `;
+  
+  const [newBalance] = await sql`SELECT balance FROM credit_balances WHERE user_email = ${email.toLowerCase()}`;
+  await sql`
+    INSERT INTO credit_transactions (user_email, amount, type, reference_type, description, balance_after)
+    VALUES (${email.toLowerCase()}, ${amount}, 'earned', 'admin', ${reason || 'Admin credit adjustment'}, ${newBalance?.balance || amount})
+  `;
+  
+  return c.json({ success: true, email, amount, new_balance: newBalance?.balance });
+});
+
+// Get network stats for admin
+app.get('/admin/stats', requireAdmin, async (c) => {
+  const sql = getDb(c.env);
+  
+  try {
+    const [users] = await sql`SELECT COUNT(*) as count FROM api_keys WHERE email_verified = true`;
+    const [sites] = await sql`SELECT COUNT(*) as count FROM sites WHERE verified = true`;
+    const [credits] = await sql`SELECT SUM(balance) as total, SUM(lifetime_earned) as earned, SUM(lifetime_spent) as spent FROM credit_balances`;
+    
+    return c.json({
+      users: parseInt(users?.count || 0),
+      sites: parseInt(sites?.count || 0),
+      credits: {
+        total_balance: parseInt(credits?.total || 0),
+        total_earned: parseInt(credits?.earned || 0),
+        total_spent: parseInt(credits?.spent || 0)
+      }
+    });
+  } catch (err) {
+    return c.json({ error: 'Stats failed', details: err.message }, 500);
+  }
 });
 
 app.post('/waitlist', async (c) => {
@@ -1084,12 +1401,15 @@ app.get('/dashboard', requireAuth, async (c) => {
   // Get user's sites count
   const [userSites] = await sql`SELECT COUNT(*) as count FROM sites WHERE owner_email = ${user.email}`;
   
-  // Plan limits
-  // Plan limits: Pro = 4X Basic
+  // Plan limits - Credit-based model
+  // Free: 3 credits one-time, unlimited sites
+  // Basic: 10 credits/month, unlimited sites
+  // Premium: 30 credits/month, unlimited sites
   const planLimits = {
-    free: { sites: 1, llm_checks: 1, exchanges: 3, requests: 10 },
-    basic: { sites: 5, llm_checks: 5, exchanges: 20, requests: 50 },
-    pro: { sites: 20, llm_checks: 20, exchanges: 80, requests: 200 }
+    free: { sites: 999, credits_monthly: 0, initial_credits: 3 },
+    basic: { sites: 999, credits_monthly: 10, initial_credits: 0 },
+    pro: { sites: 999, credits_monthly: 30, initial_credits: 0 },
+    premium: { sites: 999, credits_monthly: 30, initial_credits: 0 }
   };
   const plan = user.plan || 'free';
   const limits = planLimits[plan] || planLimits.free;
@@ -1197,6 +1517,19 @@ app.post('/api/verify', async (c) => {
   }
   
   await sql`UPDATE api_keys SET email_verified = true, verification_code = NULL WHERE email = ${email}`;
+  
+  // Give new user 3 starter credits
+  await sql`
+    INSERT INTO credit_balances (user_email, balance, lifetime_earned)
+    VALUES (${email.toLowerCase()}, 3, 3)
+    ON CONFLICT (user_email) DO UPDATE 
+    SET balance = credit_balances.balance + 3, lifetime_earned = credit_balances.lifetime_earned + 3
+  `;
+  
+  await sql`
+    INSERT INTO credit_transactions (user_email, amount, type, reference_type, description, balance_after)
+    VALUES (${email.toLowerCase()}, 3, 'earned', 'signup', 'Welcome bonus: 3 free credits', 3)
+  `;
   
   // Credit referrer if this user was referred
   if (user.referred_by) {
@@ -1394,7 +1727,7 @@ app.post('/v1/sites/:domain/verify', requireAuth, async (c) => {
 app.post('/v1/sites/analyze', requireAuth, async (c) => {
   const userEmail = c.get('userEmail');
   const body = await c.req.json();
-  const { domain } = body;
+  const { domain, spend_credit } = body;
   
   if (!domain) {
     return c.json({ error: 'Domain required' }, 400);
@@ -1403,11 +1736,40 @@ app.post('/v1/sites/analyze', requireAuth, async (c) => {
   const sql = getDb(c.env);
   
   // Check site ownership (unless external flag is set)
+  let site = null;
   if (!body.external) {
-    const [site] = await sql`SELECT * FROM sites WHERE domain = ${domain} AND owner_email = ${userEmail}`;
+    [site] = await sql`SELECT * FROM sites WHERE domain = ${domain} AND owner_email = ${userEmail}`;
     if (!site) {
       return c.json({ error: 'Site not found or not owned by you' }, 404);
     }
+  }
+  
+  // Check if this site has been analyzed before (first analysis is free)
+  const isFirstAnalysis = site && !site.analyzed;
+  let creditSpent = false;
+  
+  // If not first analysis and spend_credit is true, charge 1 credit
+  if (!isFirstAnalysis && spend_credit) {
+    const [balance] = await sql`SELECT balance FROM credit_balances WHERE user_email = ${userEmail}`;
+    if (!balance || balance.balance < 1) {
+      return c.json({ error: 'Insufficient credits', balance: balance?.balance || 0 }, 402);
+    }
+    
+    // Deduct credit
+    await sql`UPDATE credit_balances SET balance = balance - 1, lifetime_spent = lifetime_spent + 1 WHERE user_email = ${userEmail}`;
+    const [newBalance] = await sql`SELECT balance FROM credit_balances WHERE user_email = ${userEmail}`;
+    await sql`
+      INSERT INTO credit_transactions (user_email, amount, type, reference_type, description, balance_after)
+      VALUES (${userEmail}, -1, 'spent', 'site_analysis', ${'Site analysis: ' + domain}, ${newBalance?.balance || 0})
+    `;
+    creditSpent = true;
+  } else if (!isFirstAnalysis && !spend_credit) {
+    // Return that credit is required
+    return c.json({ 
+      error: 'Credit required for re-analysis',
+      requires_credit: true,
+      message: 'This site has been analyzed before. Spend 1 credit to re-analyze.'
+    }, 402);
   }
   
   // Get domain authority/quality metrics
@@ -1442,6 +1804,8 @@ app.post('/v1/sites/analyze', requireAuth, async (c) => {
     success: true,
     domain,
     quality,
+    credit_spent: creditSpent,
+    first_analysis: isFirstAnalysis,
     message: quality.notIndexed 
       ? 'Site not yet indexed in search engines' 
       : `Quality score: ${quality.score}/100`
@@ -1575,25 +1939,32 @@ app.post('/v1/pool/contribute', requireAuth, async (c) => {
     RETURNING id
   `;
   
+  // Calculate credits based on site DA (2x for DA 50+)
+  const siteDA = site.quality_score || 0;
+  const creditsToAward = siteDA >= 50 ? 2 : 1;
+  const bonusNote = siteDA >= 50 ? ' (DA 50+ bonus!)' : '';
+  
   // Award credit
   const [balance] = await sql`
     INSERT INTO credit_balances (user_email, balance, lifetime_earned)
-    VALUES (${userEmail}, 1, 1)
+    VALUES (${userEmail}, ${creditsToAward}, ${creditsToAward})
     ON CONFLICT (user_email) DO UPDATE 
-    SET balance = credit_balances.balance + 1, lifetime_earned = credit_balances.lifetime_earned + 1
+    SET balance = credit_balances.balance + ${creditsToAward}, lifetime_earned = credit_balances.lifetime_earned + ${creditsToAward}
     RETURNING balance
   `;
   
   // Log transaction
   await sql`
     INSERT INTO credit_transactions (user_email, amount, type, reference_type, reference_id, description, balance_after)
-    VALUES (${userEmail}, 1, 'earned', 'contribution', ${contribution.id}, 'Link contribution', ${balance.balance})
+    VALUES (${userEmail}, ${creditsToAward}, 'earned', 'contribution', ${contribution.id}, ${'Link contribution' + bonusNote}, ${balance.balance})
   `;
   
   return c.json({
     success: true,
     contribution_id: contribution.id,
-    credits_earned: 1,
+    credits_earned: creditsToAward,
+    da_bonus: siteDA >= 50,
+    site_da: siteDA,
     new_balance: balance.balance
   });
 });
@@ -2287,6 +2658,257 @@ app.post('/v1/webhooks', requireAuth, async (c) => {
   return c.json({ success: true, id: webhook.id, secret: webhookSecret });
 });
 
+// ============ STRIPE CHECKOUT ============
+
+// Price IDs for plans (set these after creating products in Stripe)
+const STRIPE_PRICES = {
+  basic: null,  // Will be fetched dynamically
+  pro: null
+};
+
+// One-time products (listing services)
+const LISTING_PRODUCTS = {
+  listing_swarm: { name: 'Listing Swarm', amount: 19900, description: 'Submit to 100+ startup directories' },
+  premium_placement: { name: 'Premium Placement', amount: 50000, description: 'Guaranteed backlink from DA70+ site' },
+  ai_content_10: { name: 'AI Content Pack (10)', amount: 2000, description: '10 AI-generated articles with backlinks' },
+  ai_content_50: { name: 'AI Content Pack (50)', amount: 7500, description: '50 AI-generated articles with backlinks' }
+};
+
+// Helper to make Stripe API calls
+async function stripeAPI(env, method, endpoint, body = null) {
+  const options = {
+    method,
+    headers: {
+      'Authorization': `Bearer ${env.STRIPE_SK_LIVE}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    }
+  };
+  
+  if (body) {
+    options.body = new URLSearchParams(body).toString();
+  }
+  
+  const res = await fetch(`https://api.stripe.com/v1${endpoint}`, options);
+  return res.json();
+}
+
+// Get or cache price IDs
+async function getStripePriceId(env, plan) {
+  // Fetch all active prices and find the one matching our plan
+  const prices = await stripeAPI(env, 'GET', '/prices?active=true&limit=100');
+  
+  if (!prices.data) {
+    console.error('Failed to fetch Stripe prices:', prices);
+    return null;
+  }
+  
+  // Match by amount: $10 = 1000 cents (basic), $29 = 2900 cents (pro)
+  const targetAmount = plan === 'basic' ? 1000 : plan === 'pro' ? 2900 : null;
+  
+  if (!targetAmount) return null;
+  
+  const price = prices.data.find(p => 
+    p.unit_amount === targetAmount && 
+    p.recurring?.interval === 'month'
+  );
+  
+  return price?.id || null;
+}
+
+// Create checkout session
+app.post('/v1/checkout/create', async (c) => {
+  const body = await c.req.json();
+  const { plan, email, success_url, cancel_url } = body;
+  
+  if (!plan || !['basic', 'pro'].includes(plan)) {
+    return c.json({ error: 'Invalid plan. Must be "basic" or "pro"' }, 400);
+  }
+  
+  if (!c.env.STRIPE_SK_LIVE) {
+    return c.json({ error: 'Stripe not configured' }, 500);
+  }
+  
+  // Get price ID for plan
+  const priceId = await getStripePriceId(c.env, plan);
+  
+  if (!priceId) {
+    return c.json({ error: `No Stripe price found for ${plan} plan` }, 404);
+  }
+  
+  // Create checkout session
+  const sessionParams = {
+    'mode': 'subscription',
+    'line_items[0][price]': priceId,
+    'line_items[0][quantity]': '1',
+    'success_url': success_url || 'https://linkswarm.ai/dashboard?upgraded=true',
+    'cancel_url': cancel_url || 'https://linkswarm.ai/pricing',
+    'allow_promotion_codes': 'true',
+  };
+  
+  if (email) {
+    sessionParams['customer_email'] = email;
+  }
+  
+  const session = await stripeAPI(c.env, 'POST', '/checkout/sessions', sessionParams);
+  
+  if (session.error) {
+    console.error('Stripe checkout error:', session.error);
+    return c.json({ error: session.error.message }, 400);
+  }
+  
+  return c.json({ 
+    url: session.url,
+    session_id: session.id
+  });
+});
+
+// Redirect endpoint for simple upgrade links
+app.get('/checkout/:plan', async (c) => {
+  const plan = c.req.param('plan');
+  
+  if (!['basic', 'pro'].includes(plan)) {
+    return c.redirect('https://linkswarm.ai/#pricing');
+  }
+  
+  if (!c.env.STRIPE_SK_LIVE) {
+    return c.redirect('https://linkswarm.ai/#pricing');
+  }
+  
+  const priceId = await getStripePriceId(c.env, plan);
+  
+  if (!priceId) {
+    return c.redirect('https://linkswarm.ai/#pricing');
+  }
+  
+  const session = await stripeAPI(c.env, 'POST', '/checkout/sessions', {
+    'mode': 'subscription',
+    'line_items[0][price]': priceId,
+    'line_items[0][quantity]': '1',
+    'success_url': 'https://linkswarm.ai/dashboard?upgraded=true',
+    'cancel_url': 'https://linkswarm.ai/#pricing',
+    'allow_promotion_codes': 'true',
+  });
+  
+  if (session.url) {
+    return c.redirect(session.url);
+  }
+  
+  return c.redirect('https://linkswarm.ai/#pricing');
+});
+
+// ============ ONE-TIME PAYMENTS (LISTING SERVICES) ============
+
+// Create one-time checkout session for listing products
+app.post('/v1/checkout/listing', async (c) => {
+  const body = await c.req.json();
+  const { product, email, success_url, cancel_url, metadata } = body;
+  
+  if (!product || !LISTING_PRODUCTS[product]) {
+    return c.json({ 
+      error: 'Invalid product', 
+      available: Object.keys(LISTING_PRODUCTS) 
+    }, 400);
+  }
+  
+  if (!c.env.STRIPE_SK_LIVE) {
+    return c.json({ error: 'Stripe not configured' }, 500);
+  }
+  
+  const productInfo = LISTING_PRODUCTS[product];
+  
+  const sessionParams = {
+    'mode': 'payment',
+    'line_items[0][price_data][currency]': 'usd',
+    'line_items[0][price_data][product_data][name]': productInfo.name,
+    'line_items[0][price_data][product_data][description]': productInfo.description,
+    'line_items[0][price_data][unit_amount]': productInfo.amount.toString(),
+    'line_items[0][quantity]': '1',
+    'success_url': success_url || `https://linkswarm.ai/dashboard?purchased=${product}`,
+    'cancel_url': cancel_url || 'https://linkswarm.ai/#pricing',
+    'allow_promotion_codes': 'true',
+    'metadata[product]': product,
+  };
+  
+  if (email) {
+    sessionParams['customer_email'] = email;
+  }
+  
+  // Add any custom metadata
+  if (metadata) {
+    for (const [key, value] of Object.entries(metadata)) {
+      sessionParams[`metadata[${key}]`] = value;
+    }
+  }
+  
+  const session = await stripeAPI(c.env, 'POST', '/checkout/sessions', sessionParams);
+  
+  if (session.error) {
+    console.error('Stripe checkout error:', session.error);
+    return c.json({ error: session.error.message }, 400);
+  }
+  
+  return c.json({ 
+    url: session.url,
+    session_id: session.id,
+    product: productInfo.name,
+    amount: productInfo.amount / 100
+  });
+});
+
+// Simple redirect for listing product checkout
+app.get('/checkout/listing/:product', async (c) => {
+  const product = c.req.param('product');
+  const email = c.req.query('email');
+  
+  if (!LISTING_PRODUCTS[product]) {
+    return c.redirect('https://linkswarm.ai/#pricing');
+  }
+  
+  if (!c.env.STRIPE_SK_LIVE) {
+    return c.redirect('https://linkswarm.ai/#pricing');
+  }
+  
+  const productInfo = LISTING_PRODUCTS[product];
+  
+  const sessionParams = {
+    'mode': 'payment',
+    'line_items[0][price_data][currency]': 'usd',
+    'line_items[0][price_data][product_data][name]': productInfo.name,
+    'line_items[0][price_data][product_data][description]': productInfo.description,
+    'line_items[0][price_data][unit_amount]': productInfo.amount.toString(),
+    'line_items[0][quantity]': '1',
+    'success_url': `https://linkswarm.ai/dashboard?purchased=${product}`,
+    'cancel_url': 'https://linkswarm.ai/#pricing',
+    'allow_promotion_codes': 'true',
+    'metadata[product]': product,
+  };
+  
+  if (email) {
+    sessionParams['customer_email'] = email;
+  }
+  
+  const session = await stripeAPI(c.env, 'POST', '/checkout/sessions', sessionParams);
+  
+  if (session.url) {
+    return c.redirect(session.url);
+  }
+  
+  return c.redirect('https://linkswarm.ai/#pricing');
+});
+
+// Get available listing products
+app.get('/v1/listing/products', (c) => {
+  const products = Object.entries(LISTING_PRODUCTS).map(([id, info]) => ({
+    id,
+    name: info.name,
+    price: info.amount / 100,
+    description: info.description,
+    checkout_url: `https://api.linkswarm.ai/checkout/listing/${id}`
+  }));
+  
+  return c.json({ products });
+});
+
 // ============ STRIPE WEBHOOK ============
 
 app.post('/webhook/stripe', async (c) => {
@@ -2308,9 +2930,86 @@ app.post('/webhook/stripe', async (c) => {
     const session = event.data.object;
     const customerEmail = session.customer_email || session.customer_details?.email;
     const amount = session.amount_total / 100;
+    const productId = session.metadata?.product;
     
-    // Determine plan based on amount ($10 = basic, $29 = pro)
-    const plan = amount >= 29 ? 'pro' : amount >= 10 ? 'basic' : 'free';
+    // Handle one-time listing product purchases
+    if (productId && LISTING_PRODUCTS[productId]) {
+      const productInfo = LISTING_PRODUCTS[productId];
+      
+      if (customerEmail) {
+        // Record the purchase
+        await sql`
+          INSERT INTO listing_purchases (email, product_id, product_name, amount, stripe_session_id, status)
+          VALUES (${customerEmail.toLowerCase()}, ${productId}, ${productInfo.name}, ${amount}, ${session.id}, 'paid')
+        `;
+        
+        // Send confirmation email
+        if (c.env.RESEND_API_KEY) {
+          await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${c.env.RESEND_API_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              from: 'LinkSwarm <hello@linkswarm.ai>',
+              to: customerEmail,
+              subject: `🐝 ${productInfo.name} - Order Confirmed!`,
+              html: `
+                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background: #0f0f23; color: #fff;">
+                  <div style="text-align: center; margin-bottom: 30px;">
+                    <div style="font-size: 48px;">🐝</div>
+                    <h1 style="color: #fbbf24; margin: 10px 0;">Order Confirmed!</h1>
+                  </div>
+                  <p>Thanks for your purchase! Here's your order:</p>
+                  <div style="background: #1a1a2e; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <p style="margin: 0;"><strong style="color: #fbbf24;">${productInfo.name}</strong></p>
+                    <p style="margin: 5px 0 0 0; color: #9ca3af;">${productInfo.description}</p>
+                    <p style="margin: 10px 0 0 0; font-size: 24px; color: #10b981;">$${amount}</p>
+                  </div>
+                  <p style="color: #9ca3af;">What's next? We'll be in touch within 24 hours to get started on your ${productInfo.name.toLowerCase()}.</p>
+                  <p style="margin-top: 30px;">
+                    <a href="https://linkswarm.ai/dashboard" style="background: #fbbf24; color: #000; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">View Dashboard →</a>
+                  </p>
+                  <p style="color: #6b7280; font-size: 12px; margin-top: 40px;">
+                    Questions? Reply to this email or join our <a href="https://discord.gg/6RzUpUbMFE" style="color: #fbbf24;">Discord</a>.
+                  </p>
+                </div>
+              `
+            })
+          });
+        }
+        
+        // Discord notification
+        if (c.env.DISCORD_CUSTOMERS_WEBHOOK) {
+          await fetch(c.env.DISCORD_CUSTOMERS_WEBHOOK, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              content: `🎉 **New ${productInfo.name} purchase!**`,
+              embeds: [{
+                title: `💰 ${productInfo.name} - $${amount}`,
+                color: 0x10B981,
+                fields: [
+                  { name: '📧 Email', value: `\`${customerEmail}\``, inline: true },
+                  { name: '📦 Product', value: productId, inline: true },
+                  { name: '💰 Amount', value: `$${amount}`, inline: true }
+                ],
+                footer: { text: 'LinkSwarm 🐝' },
+                timestamp: new Date().toISOString()
+              }]
+            })
+          }).catch(() => {});
+        }
+      }
+      
+      return c.json({ received: true, type: 'listing_purchase', product: productId });
+    }
+    
+    // Handle subscription purchases (existing logic)
+    // Determine plan based on amount ($10 = basic, $29 = pro/premium)
+    const plan = amount >= 29 ? 'premium' : amount >= 10 ? 'basic' : 'free';
+    const creditsToAdd = plan === 'premium' ? 30 : plan === 'basic' ? 10 : 0;
     
     if (customerEmail) {
       // Update user plan
@@ -2319,6 +3018,23 @@ app.post('/webhook/stripe', async (c) => {
         SET plan = ${plan}, upgraded_at = NOW()
         WHERE email = ${customerEmail.toLowerCase()}
       `;
+      
+      // Add monthly credits
+      if (creditsToAdd > 0) {
+        await sql`
+          INSERT INTO credit_balances (user_email, balance, lifetime_earned)
+          VALUES (${customerEmail.toLowerCase()}, ${creditsToAdd}, ${creditsToAdd})
+          ON CONFLICT (user_email) DO UPDATE 
+          SET balance = credit_balances.balance + ${creditsToAdd}, 
+              lifetime_earned = credit_balances.lifetime_earned + ${creditsToAdd}
+        `;
+        
+        const [newBalance] = await sql`SELECT balance FROM credit_balances WHERE user_email = ${customerEmail.toLowerCase()}`;
+        await sql`
+          INSERT INTO credit_transactions (user_email, amount, type, reference_type, description, balance_after)
+          VALUES (${customerEmail.toLowerCase()}, ${creditsToAdd}, 'earned', 'subscription', ${'Monthly credits: ' + plan + ' plan'}, ${newBalance?.balance || creditsToAdd})
+        `;
+      }
       
       // Send thank you email
       if (c.env.RESEND_API_KEY) {
@@ -2338,16 +3054,20 @@ app.post('/webhook/stripe', async (c) => {
                   <div style="font-size: 48px;">🐝</div>
                   <h1 style="color: #fbbf24; margin: 10px 0;">Welcome to LinkSwarm ${plan.charAt(0).toUpperCase() + plan.slice(1)}!</h1>
                 </div>
-                <p>Thanks for upgrading! You now have access to:</p>
+                <p>Thanks for subscribing! We've added <strong style="color: #fbbf24;">${creditsToAdd} credits</strong> to your account.</p>
+                <p>Your ${plan} plan includes:</p>
                 <ul style="color: #9ca3af;">
-                  ${plan === 'agency' ? '<li>Unlimited sites</li><li>Unlimited exchanges</li><li>White-label options</li><li>Priority support</li>' : 
-                    '<li>25 sites</li><li>50 exchanges/month</li><li>Priority matching</li><li>Analytics dashboard</li>'}
+                  <li>${creditsToAdd} credits every month</li>
+                  <li>Unlimited sites</li>
+                  <li>Full network access</li>
+                  <li>Priority matching</li>
+                  ${plan === 'premium' ? '<li>Full API access</li><li>Advanced analytics</li>' : ''}
                 </ul>
                 <p style="margin-top: 30px;">
                   <a href="https://linkswarm.ai/dashboard" style="background: #fbbf24; color: #000; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Go to Dashboard →</a>
                 </p>
                 <p style="color: #6b7280; font-size: 12px; margin-top: 40px;">
-                  Questions? Reply to this email or join our <a href="https://discord.gg/linkswarm" style="color: #fbbf24;">Discord</a>.
+                  Questions? Reply to this email or join our <a href="https://discord.gg/6RzUpUbMFE" style="color: #fbbf24;">Discord</a>.
                 </p>
               </div>
             `

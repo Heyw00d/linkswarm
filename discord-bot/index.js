@@ -54,13 +54,29 @@ const LINKSWARM_INFO = {
 
 No manual outreach. No shady deals. Just fair link exchanges between verified sites.`,
 
-  pricing: `**LinkSwarm Pricing:**
-• **Free** — 1 site, 1 LLM check/month, 3 exchanges/month
-• **Basic ($10/mo)** — 5 sites, 5 LLM checks/month, 20 exchanges/month
-• **Pro ($29/mo)** — 20 sites, 20 LLM checks/month, 80 exchanges/month
+  pricing: `**LinkSwarm Credit-Based Pricing:**
 
-All plans include verification, matching algorithm, and placement tracking.
-👉 Upgrade at https://linkswarm.ai/dashboard`,
+🆓 **Free** — $0
+• 3 credits to start (one-time)
+• Unlimited sites
+• Earn more by sharing links
+
+💙 **Basic** — $10/month
+• 10 credits every month
+• Full network access
+• Priority matching
+
+⭐ **Premium** — $29/month
+• 30 credits every month
+• Full API access
+• Advanced analytics
+
+**What can you do with credits?**
+• Receive a backlink = 1 credit
+• LLM readiness analysis = 1 credit
+• Site analysis (DataForSEO) = 1 credit
+
+👉 https://linkswarm.ai/#pricing`,
 
   register: `**To register your site:**
 1. Go to https://linkswarm.ai/register
@@ -90,13 +106,21 @@ Better than manual outreach, safer than PBNs! 🐝`,
 Join at https://linkswarm.ai/register`,
 
   credits: `**How Credits Work:**
-• **Earn credits** by adding links to other sites
-• **Spend credits** to request links to your site
-• **1 credit = 1 link exchange**
-• Start with 0 credits — contribute first to earn!
 
-💡 **Tip:** You also get **3 free credits** for each person you refer!
-Share your referral link from the dashboard.`,
+📥 **Earn Credits:**
+• Join & verify email → +3 credits
+• Share a link on your site → +1 credit
+• Share link from DA 50+ site → +2 credits
+• Refer someone who verifies → +3 credits
+• Subscribe Basic ($10/mo) → +10 credits/month
+• Subscribe Premium ($29/mo) → +30 credits/month
+
+📤 **Spend Credits:**
+• Receive a backlink → 1 credit
+• Analyze a site (DataForSEO) → 1 credit
+• LLM readiness analysis → 1 credit
+
+💡 High-authority sites (DA 50+) earn double credits when sharing links!`,
 
   verification: `**How to Verify Your Site:**
 
@@ -492,20 +516,15 @@ client.on(Events.MessageCreate, async (message) => {
     recentMessages.shift();
   }
   
-  // Log all messages to MC for visibility
-  await logToMC(`[#${message.channel.name}] ${message.author.tag}: ${content.substring(0, 200)}`);
-  
-  // Check if bot is mentioned or message contains a question
+  // Only respond when explicitly mentioned
   const isMentioned = message.mentions.has(client.user);
-  const isQuestion = content.includes('?');
   
-  if (isMentioned || isQuestion) {
+  if (isMentioned) {
     const answer = detectQuestion(content);
     
     if (answer) {
       try {
         await message.reply(answer);
-        await logToMC(`💬 Answered question from ${message.author.tag}: "${content.substring(0, 50)}..."`);
       } catch (err) {
         console.error('Failed to reply:', err.message);
       }

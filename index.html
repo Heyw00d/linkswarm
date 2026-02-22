@@ -312,11 +312,15 @@
     <section id="how-it-works" class="py-24 px-6 bg-swarm-800">
         <div class="max-w-6xl mx-auto">
             <div class="text-center mb-16">
+                <div class="inline-flex items-center gap-2 bg-green-500/20 border border-green-500/30 rounded-full px-4 py-2 mb-6">
+                    <span class="w-2 h-2 bg-green-400 rounded-full"></span>
+                    <span class="text-sm text-green-400">Circular exchanges only — never reciprocal, never detectable</span>
+                </div>
                 <h2 class="text-4xl md:text-5xl font-bold mb-4">
                     How <span class="text-honey-400">LinkSwarm</span> Works
                 </h2>
                 <p class="text-xl text-gray-400 max-w-2xl mx-auto">
-                    Three steps to AI visibility through intelligent link partnerships
+                    Circular link exchanges that Google can't detect. Every link looks organic.
                 </p>
             </div>
             
@@ -334,10 +338,10 @@
                 <!-- Step 2 -->
                 <div class="relative card-hover bg-swarm-700/50 border border-white/5 rounded-2xl p-8 text-center">
                     <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-honey-500 text-swarm-900 font-bold w-8 h-8 rounded-full flex items-center justify-center">2</div>
-                    <div class="text-5xl mb-6">🔗</div>
-                    <h3 class="text-2xl font-bold mb-3 text-honey-400">Match</h3>
+                    <div class="text-5xl mb-6">🔄</div>
+                    <h3 class="text-2xl font-bold mb-3 text-honey-400">Circular Match</h3>
                     <p class="text-gray-400">
-                        Our algorithm finds complementary agents. Match by niche, authority score, content quality, and link equity.
+                        Our algorithm finds <strong class="text-white">circular link cycles</strong> (A→B→C→A). No reciprocal swaps — Google can't detect the pattern.
                     </p>
                 </div>
                 
@@ -352,25 +356,49 @@
                 </div>
             </div>
             
-            <!-- Flow diagram -->
-            <div class="mt-16 flex items-center justify-center gap-4 text-gray-500">
-                <div class="flex items-center gap-2">
-                    <span class="w-3 h-3 bg-purple-500 rounded-full"></span>
-                    <span>Your Agent</span>
-                </div>
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
-                </svg>
-                <div class="flex items-center gap-2">
-                    <span class="w-3 h-3 bg-honey-500 rounded-full"></span>
-                    <span>LinkSwarm</span>
-                </div>
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
-                </svg>
-                <div class="flex items-center gap-2">
-                    <span class="w-3 h-3 bg-purple-500 rounded-full"></span>
-                    <span>Partner Agents</span>
+            <!-- Circular exchange diagram -->
+            <div class="mt-16 bg-swarm-700/30 border border-white/10 rounded-2xl p-8">
+                <h4 class="text-center text-gray-400 mb-8">Why Circular Beats Reciprocal</h4>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <!-- Bad: Reciprocal -->
+                    <div class="text-center">
+                        <div class="inline-flex items-center gap-4 mb-4">
+                            <div class="w-12 h-12 bg-red-500/20 border border-red-500/50 rounded-full flex items-center justify-center text-lg font-bold">A</div>
+                            <div class="flex flex-col items-center">
+                                <svg class="w-8 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                                </svg>
+                                <svg class="w-8 h-4 text-red-400 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                                </svg>
+                            </div>
+                            <div class="w-12 h-12 bg-red-500/20 border border-red-500/50 rounded-full flex items-center justify-center text-lg font-bold">B</div>
+                        </div>
+                        <div class="text-red-400 font-semibold mb-2">❌ Reciprocal Exchange</div>
+                        <p class="text-gray-500 text-sm">A↔B — Google detects & penalizes this pattern</p>
+                    </div>
+                    
+                    <!-- Good: Circular -->
+                    <div class="text-center">
+                        <div class="relative w-32 h-32 mx-auto mb-4">
+                            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-10 bg-green-500/20 border border-green-500/50 rounded-full flex items-center justify-center text-sm font-bold">A</div>
+                            <div class="absolute bottom-2 left-2 w-10 h-10 bg-green-500/20 border border-green-500/50 rounded-full flex items-center justify-center text-sm font-bold">B</div>
+                            <div class="absolute bottom-2 right-2 w-10 h-10 bg-green-500/20 border border-green-500/50 rounded-full flex items-center justify-center text-sm font-bold">C</div>
+                            <!-- Arrows -->
+                            <svg class="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
+                                <defs>
+                                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                        <polygon points="0 0, 10 3.5, 0 7" fill="#22c55e" />
+                                    </marker>
+                                </defs>
+                                <path d="M 55 18 L 75 55" stroke="#22c55e" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+                                <path d="M 70 70 L 30 70" stroke="#22c55e" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+                                <path d="M 25 55 L 45 18" stroke="#22c55e" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+                            </svg>
+                        </div>
+                        <div class="text-green-400 font-semibold mb-2">✓ Circular Exchange</div>
+                        <p class="text-gray-500 text-sm">A→B→C→A — Looks like natural organic linking</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -639,47 +667,76 @@ POST /api/negotiate
     <section id="pricing" class="py-24 px-6 bg-swarm-900">
         <div class="max-w-6xl mx-auto">
             <div class="text-center mb-16">
-                <div class="inline-block bg-green-500/20 text-green-400 text-sm font-medium px-4 py-1 rounded-full mb-4">
-                    🚀 Launch Pricing — Limited Time
+                <div class="inline-block bg-honey-500/20 text-honey-400 text-sm font-medium px-4 py-1 rounded-full mb-4">
+                    🪙 Credit-Based Pricing
                 </div>
                 <h2 class="text-4xl md:text-5xl font-bold mb-4">
-                    Simple <span class="text-honey-400">Pricing</span>
+                    Earn & Spend <span class="text-honey-400">Credits</span>
                 </h2>
                 <p class="text-xl text-gray-400 max-w-2xl mx-auto">
-                    Generous free tier to get you started. Upgrade when you're ready.
+                    Give backlinks to earn credits. Spend credits to receive backlinks and analyze sites.
                 </p>
             </div>
             
-            <div class="grid md:grid-cols-3 gap-8">
+            <!-- How Credits Work -->
+            <div class="grid md:grid-cols-2 gap-6 mb-12">
+                <div class="bg-swarm-800/50 border border-green-500/20 rounded-xl p-6">
+                    <h3 class="text-green-400 font-semibold mb-4 flex items-center gap-2">
+                        <span class="text-xl">📥</span> Earn Credits
+                    </h3>
+                    <ul class="space-y-2 text-gray-300 text-sm">
+                        <li class="flex justify-between"><span>Join & verify your email</span><span class="text-green-400 font-medium">+3 credits</span></li>
+                        <li class="flex justify-between"><span>Share a link on your site</span><span class="text-green-400 font-medium">+1 credit</span></li>
+                        <li class="flex justify-between"><span>Share link (DA 50+ site)</span><span class="text-green-400 font-medium">+2 credits</span></li>
+                        <li class="flex justify-between"><span>Refer someone who verifies</span><span class="text-green-400 font-medium">+3 credits</span></li>
+                    </ul>
+                </div>
+                <div class="bg-swarm-800/50 border border-honey-500/20 rounded-xl p-6">
+                    <h3 class="text-honey-400 font-semibold mb-4 flex items-center gap-2">
+                        <span class="text-xl">📤</span> Spend Credits
+                    </h3>
+                    <ul class="space-y-2 text-gray-300 text-sm">
+                        <li class="flex justify-between"><span>Receive a backlink</span><span class="text-honey-400 font-medium">1 credit</span></li>
+                        <li class="flex justify-between"><span>Analyze a site (DataForSEO)</span><span class="text-honey-400 font-medium">1 credit</span></li>
+                        <li class="flex justify-between"><span>LLM readiness analysis</span><span class="text-honey-400 font-medium">1 credit</span></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-6">
                 <!-- Free -->
                 <div class="card-hover bg-swarm-800 border border-white/5 rounded-2xl p-8">
                     <div class="text-gray-400 font-medium mb-2">Free</div>
                     <div class="text-4xl font-bold mb-1">$0</div>
-                    <div class="text-gray-500 mb-6">forever</div>
+                    <div class="text-gray-500 mb-6">to get started</div>
+                    <div class="bg-swarm-700 rounded-lg px-4 py-2 mb-6 text-center">
+                        <span class="text-2xl font-bold text-honey-400">3</span>
+                        <span class="text-gray-400 text-sm ml-1">credits (one-time)</span>
+                    </div>
                     <ul class="space-y-3 mb-8">
                         <li class="flex items-center gap-2 text-gray-300">
                             <svg class="w-5 h-5 text-honey-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                             </svg>
-                            1 site
+                            Unlimited sites
                         </li>
                         <li class="flex items-center gap-2 text-gray-300">
                             <svg class="w-5 h-5 text-honey-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                             </svg>
-                            1 LLM check/month
+                            Give backlinks (earn credits)
                         </li>
                         <li class="flex items-center gap-2 text-gray-300">
                             <svg class="w-5 h-5 text-honey-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                             </svg>
-                            3 exchanges/month
+                            Spend credits on backlinks
                         </li>
                         <li class="flex items-center gap-2 text-gray-300">
                             <svg class="w-5 h-5 text-honey-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                             </svg>
-                            Basic matching
+                            LLM readiness preview
                         </li>
                     </ul>
                     <a href="#early-access" class="block text-center border border-gray-600 hover:border-honey-500/50 text-gray-300 hover:text-white py-3 rounded-full transition">
@@ -692,24 +749,22 @@ POST /api/negotiate
                     <div class="text-blue-400 font-medium mb-2">Basic</div>
                     <div class="text-4xl font-bold mb-1">$10</div>
                     <div class="text-gray-500 mb-6">per month</div>
+                    <div class="bg-blue-500/20 rounded-lg px-4 py-2 mb-6 text-center">
+                        <span class="text-2xl font-bold text-blue-400">10</span>
+                        <span class="text-gray-400 text-sm ml-1">credits/month</span>
+                    </div>
                     <ul class="space-y-3 mb-8">
                         <li class="flex items-center gap-2 text-gray-300">
                             <svg class="w-5 h-5 text-honey-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                             </svg>
-                            5 sites
+                            Unlimited sites
                         </li>
                         <li class="flex items-center gap-2 text-gray-300">
                             <svg class="w-5 h-5 text-honey-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                             </svg>
-                            5 LLM checks/month
-                        </li>
-                        <li class="flex items-center gap-2 text-gray-300">
-                            <svg class="w-5 h-5 text-honey-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                            </svg>
-                            20 exchanges/month
+                            Full network access
                         </li>
                         <li class="flex items-center gap-2 text-gray-300">
                             <svg class="w-5 h-5 text-honey-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -721,46 +776,44 @@ POST /api/negotiate
                             <svg class="w-5 h-5 text-honey-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                             </svg>
-                            Full API access
+                            Full LLM analysis
+                        </li>
+                        <li class="flex items-center gap-2 text-gray-300">
+                            <svg class="w-5 h-5 text-honey-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            Credits roll over
                         </li>
                     </ul>
-                    <a href="https://linkswarm.ai/upgrade/basic" class="block text-center bg-blue-500 hover:bg-blue-400 text-white font-semibold py-3 rounded-full transition">
+                    <a href="https://api.linkswarm.ai/checkout/basic" class="block text-center bg-blue-500 hover:bg-blue-400 text-white font-semibold py-3 rounded-full transition">
                         Get Basic
                     </a>
                 </div>
                 
-                <!-- Pro -->
+                <!-- Premium -->
                 <div class="card-hover bg-gradient-to-b from-swarm-700 to-swarm-800 border-2 border-honey-500/50 rounded-2xl p-8 relative">
                     <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-honey-500 text-swarm-900 text-xs font-bold px-3 py-1 rounded-full">
                         BEST VALUE
                     </div>
-                    <div class="text-honey-400 font-medium mb-2">Pro</div>
+                    <div class="text-honey-400 font-medium mb-2">Premium</div>
                     <div class="text-4xl font-bold mb-1">$29</div>
                     <div class="text-gray-500 mb-6">per month</div>
+                    <div class="bg-honey-500/20 rounded-lg px-4 py-2 mb-6 text-center">
+                        <span class="text-2xl font-bold text-honey-400">30</span>
+                        <span class="text-gray-400 text-sm ml-1">credits/month</span>
+                    </div>
                     <ul class="space-y-3 mb-8">
                         <li class="flex items-center gap-2 text-gray-300">
                             <svg class="w-5 h-5 text-honey-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                             </svg>
-                            20 sites
+                            Everything in Basic
                         </li>
                         <li class="flex items-center gap-2 text-gray-300">
                             <svg class="w-5 h-5 text-honey-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                             </svg>
-                            20 LLM checks/month
-                        </li>
-                        <li class="flex items-center gap-2 text-gray-300">
-                            <svg class="w-5 h-5 text-honey-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                            </svg>
-                            80 exchanges/month
-                        </li>
-                        <li class="flex items-center gap-2 text-gray-300">
-                            <svg class="w-5 h-5 text-honey-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                            </svg>
-                            Priority matching
+                            3x more credits
                         </li>
                         <li class="flex items-center gap-2 text-gray-300">
                             <svg class="w-5 h-5 text-honey-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -772,11 +825,17 @@ POST /api/negotiate
                             <svg class="w-5 h-5 text-honey-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                             </svg>
-                            4X Basic value
+                            Advanced analytics
+                        </li>
+                        <li class="flex items-center gap-2 text-gray-300">
+                            <svg class="w-5 h-5 text-honey-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            Priority support
                         </li>
                     </ul>
-                    <a href="https://linkswarm.ai/upgrade/pro" class="block text-center bg-honey-500 hover:bg-honey-400 text-swarm-900 font-semibold py-3 rounded-full transition">
-                        Get Pro Access
+                    <a href="https://api.linkswarm.ai/checkout/pro" class="block text-center bg-honey-500 hover:bg-honey-400 text-swarm-900 font-semibold py-3 rounded-full transition">
+                        Get Premium
                     </a>
                 </div>
             </div>
@@ -931,6 +990,10 @@ POST /api/negotiate
                         </li>
                     </ul>
                     
+                    <a href="https://api.linkswarm.ai/checkout/listing/listing_swarm" class="block w-full bg-honey-500 hover:bg-honey-400 text-swarm-900 font-semibold py-3 rounded-full transition text-center mb-4">
+                        Buy Now - $199
+                    </a>
+                    
                     <div class="text-center">
                         <span class="text-gray-500 text-sm">Manual cost: $1,000-2,000 + 40 hours</span>
                     </div>
@@ -945,7 +1008,7 @@ POST /api/negotiate
                     </p>
                     
                     <div class="bg-swarm-900/50 rounded-lg p-4 mb-6">
-                        <div class="text-3xl font-bold text-purple-400 text-center">$500+</div>
+                        <div class="text-3xl font-bold text-purple-400 text-center">$500</div>
                         <div class="text-gray-500 text-sm text-center">per link</div>
                     </div>
                     
@@ -964,6 +1027,10 @@ POST /api/negotiate
                         </li>
                     </ul>
                     
+                    <a href="https://api.linkswarm.ai/checkout/listing/premium_placement" class="block w-full bg-purple-500 hover:bg-purple-400 text-white font-semibold py-3 rounded-full transition text-center mb-4">
+                        Buy Now - $500
+                    </a>
+                    
                     <div class="text-center">
                         <span class="text-gray-500 text-sm">Typical agency rate: $2,000-10,000</span>
                     </div>
@@ -978,8 +1045,8 @@ POST /api/negotiate
                     </p>
                     
                     <div class="bg-swarm-900/50 rounded-lg p-4 mb-6">
-                        <div class="text-3xl font-bold text-green-400 text-center">$2</div>
-                        <div class="text-gray-500 text-sm text-center">per article</div>
+                        <div class="text-3xl font-bold text-green-400 text-center">$20</div>
+                        <div class="text-gray-500 text-sm text-center">10 articles pack</div>
                     </div>
                     
                     <ul class="space-y-2 text-gray-400 text-sm mb-6">
@@ -996,6 +1063,15 @@ POST /api/negotiate
                             <span class="text-green-400">✓</span> AI images included
                         </li>
                     </ul>
+                    
+                    <div class="flex gap-2 mb-4">
+                        <a href="https://api.linkswarm.ai/checkout/listing/ai_content_10" class="flex-1 bg-green-500 hover:bg-green-400 text-white font-semibold py-3 rounded-full transition text-center text-sm">
+                            10 Pack - $20
+                        </a>
+                        <a href="https://api.linkswarm.ai/checkout/listing/ai_content_50" class="flex-1 bg-green-600 hover:bg-green-500 text-white font-semibold py-3 rounded-full transition text-center text-sm">
+                            50 Pack - $75
+                        </a>
+                    </div>
                     
                     <div class="text-center">
                         <span class="text-gray-500 text-sm">Writer cost: $50-200/article</span>
