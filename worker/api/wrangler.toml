@@ -10,6 +10,7 @@ routes = [
 [vars]
 # Non-secret config
 ADMIN_PASSWORD = "swarm2026"
+ADMIN_EMAILS = "chris@viewfi.io,anthony@profullstack.com,test-admin@linkswarm.ai"
 
 # Secrets (set via: wrangler secret put <NAME>)
 # DATABASE_URL - Neon connection string

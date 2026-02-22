@@ -665,6 +665,59 @@ app.post('/admin/migrate-listing-purchases', requireAdmin, async (c) => {
   }
 });
 
+// Migration for cycle_id in link_placements
+app.post('/admin/migrate-cycles', requireAdmin, async (c) => {
+  const sql = neon(c.env.DATABASE_URL);
+  
+  try {
+    await sql`ALTER TABLE link_placements ADD COLUMN IF NOT EXISTS cycle_id TEXT`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_link_placements_cycle ON link_placements(cycle_id)`;
+    
+    return c.json({ 
+      success: true, 
+      message: 'cycle_id column added to link_placements'
+    });
+  } catch (err) {
+    console.error('Migration error:', err);
+    return c.json({ 
+      error: 'Migration failed', 
+      details: err.message 
+    }, 500);
+  }
+});
+
+// Migration for editorial approval flow
+app.post('/admin/migrate-approval', requireAdmin, async (c) => {
+  const sql = neon(c.env.DATABASE_URL);
+  
+  try {
+    await sql`
+      ALTER TABLE link_placements 
+      ADD COLUMN IF NOT EXISTS approved BOOLEAN,
+      ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS approved_by TEXT,
+      ADD COLUMN IF NOT EXISTS approval_notes TEXT,
+      ADD COLUMN IF NOT EXISTS verification_error TEXT,
+      ADD COLUMN IF NOT EXISTS verification_error_type TEXT,
+      ADD COLUMN IF NOT EXISTS last_verification_attempt TIMESTAMP
+    `;
+    
+    await sql`CREATE INDEX IF NOT EXISTS idx_link_placements_approved ON link_placements(approved)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_link_placements_status_approved ON link_placements(status, approved)`;
+    
+    return c.json({ 
+      success: true, 
+      message: 'Editorial approval columns added to link_placements'
+    });
+  } catch (err) {
+    console.error('Migration error:', err);
+    return c.json({ 
+      error: 'Migration failed', 
+      details: err.message 
+    }, 500);
+  }
+});
+
 // ============ LLM READINESS ANALYZER ============
 
 app.post('/api/analyze', async (c) => {
@@ -1360,6 +1413,229 @@ app.get('/admin/stats', requireAdmin, async (c) => {
   }
 });
 
+// Admin: View link pool status
+app.get('/admin/pool', requireAdmin, async (c) => {
+  const sql = getDb(c.env);
+  
+  const contributions = await sql`
+    SELECT lc.*, s.name as site_name 
+    FROM link_contributions lc 
+    JOIN sites s ON lc.site_domain = s.domain 
+    ORDER BY lc.created_at DESC LIMIT 50
+  `;
+  
+  const requests = await sql`
+    SELECT lr.*, s.name as site_name 
+    FROM link_requests lr 
+    JOIN sites s ON lr.site_domain = s.domain 
+    ORDER BY lr.created_at DESC LIMIT 50
+  `;
+  
+  const placements = await sql`
+    SELECT * FROM link_placements 
+    ORDER BY created_at DESC LIMIT 50
+  `;
+  
+  return c.json({
+    contributions: { total: contributions.length, items: contributions },
+    requests: { total: requests.length, items: requests },
+    placements: { total: placements.length, items: placements }
+  });
+});
+
+// Admin: Create circular exchange (A→B→C→A)
+app.post('/admin/create-cycle', requireAdmin, async (c) => {
+  const sql = getDb(c.env);
+  const { sites: cycleSites } = await c.req.json();
+  
+  if (!cycleSites || cycleSites.length < 3) {
+    return c.json({ error: 'Need at least 3 sites for a circular exchange' }, 400);
+  }
+  
+  const results = [];
+  const cycleId = crypto.randomUUID().slice(0, 8);
+  
+  try {
+    // Verify all sites exist
+    for (const domain of cycleSites) {
+      const [site] = await sql`SELECT * FROM sites WHERE domain = ${domain} AND verified = true`;
+      if (!site) {
+        return c.json({ error: `Site not found or not verified: ${domain}` }, 404);
+      }
+    }
+    
+    // Create circular placements: A→B, B→C, C→A
+    for (let i = 0; i < cycleSites.length; i++) {
+      const fromDomain = cycleSites[i];
+      const toDomain = cycleSites[(i + 1) % cycleSites.length];
+      
+      const [fromSite] = await sql`SELECT * FROM sites WHERE domain = ${fromDomain}`;
+      const [toSite] = await sql`SELECT * FROM sites WHERE domain = ${toDomain}`;
+      
+      // Create contribution
+      const [contribution] = await sql`
+        INSERT INTO link_contributions (site_domain, owner_email, page_url, max_links, categories, context, status)
+        VALUES (${fromDomain}, ${fromSite.owner_email}, '/partners/', 1, ${fromSite.categories}, ${'Cycle ' + cycleId}, 'matched')
+        RETURNING id
+      `;
+      
+      // Create request
+      const [request] = await sql`
+        INSERT INTO link_requests (site_domain, owner_email, target_page, preferred_anchor, categories, status)
+        VALUES (${toDomain}, ${toSite.owner_email}, '/', ${toSite.name}, ${toSite.categories}, 'matched')
+        RETURNING id
+      `;
+      
+      // Create placement (admin cycles are auto-approved)
+      const [placement] = await sql`
+        INSERT INTO link_placements (
+          contribution_id, request_id, from_domain, from_page, to_domain, to_page, 
+          anchor_text, relevance_score, status, cycle_id, approved, approved_at, approved_by
+        ) VALUES (
+          ${contribution.id}, ${request.id}, ${fromDomain}, '/partners/', 
+          ${toDomain}, '/', ${toSite.name}, 0.85, 'assigned', ${cycleId}, true, NOW(), 'admin-cycle'
+        )
+        RETURNING id
+      `;
+      
+      // Award credit to contributor
+      await sql`
+        INSERT INTO credit_balances (user_email, balance, lifetime_earned)
+        VALUES (${fromSite.owner_email}, 1, 1)
+        ON CONFLICT (user_email) DO UPDATE 
+        SET balance = credit_balances.balance + 1, lifetime_earned = credit_balances.lifetime_earned + 1
+      `;
+      const [contribBalance] = await sql`SELECT balance FROM credit_balances WHERE user_email = ${fromSite.owner_email}`;
+      await sql`
+        INSERT INTO credit_transactions (user_email, amount, type, reference_type, reference_id, description, balance_after)
+        VALUES (${fromSite.owner_email}, 1, 'earned', 'contribution', ${contribution.id}, ${'Cycle ' + cycleId + ': link to ' + toDomain}, ${contribBalance.balance})
+      `;
+      
+      // Deduct credit from requester
+      await sql`
+        UPDATE credit_balances SET balance = balance - 1, lifetime_spent = lifetime_spent + 1 
+        WHERE user_email = ${toSite.owner_email}
+      `;
+      const [reqBalance] = await sql`SELECT balance FROM credit_balances WHERE user_email = ${toSite.owner_email}`;
+      await sql`
+        INSERT INTO credit_transactions (user_email, amount, type, reference_type, reference_id, description, balance_after)
+        VALUES (${toSite.owner_email}, -1, 'spent', 'request', ${request.id}, ${'Cycle ' + cycleId + ': link from ' + fromDomain}, ${reqBalance?.balance || 0})
+      `;
+      
+      results.push({
+        from: fromDomain,
+        to: toDomain,
+        placement_id: placement.id,
+        contributor_email: fromSite.owner_email,
+        requester_email: toSite.owner_email
+      });
+    }
+    
+    // Send Discord notification
+    if (c.env.DISCORD_WEBHOOK_URL) {
+      await fetch(c.env.DISCORD_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          embeds: [{
+            title: '🔄 Circular Exchange Created!',
+            color: 0x22C55E,
+            description: `Cycle ID: \`${cycleId}\``,
+            fields: results.map((r, i) => ({
+              name: `Link ${i + 1}`,
+              value: `${r.from} → ${r.to}`,
+              inline: true
+            })),
+            footer: { text: `${cycleSites.length}-way circular exchange` },
+            timestamp: new Date().toISOString()
+          }]
+        })
+      }).catch(() => {});
+    }
+    
+    // Send emails to participants
+    if (c.env.RESEND_API_KEY) {
+      const uniqueEmails = [...new Set(results.map(r => r.contributor_email))];
+      for (const email of uniqueEmails) {
+        const userLinks = results.filter(r => r.contributor_email === email);
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${c.env.RESEND_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            from: 'LinkSwarm <hello@linkswarm.ai>',
+            to: email,
+            subject: '🔄 You\'re in a Circular Exchange!',
+            html: `
+              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background: #0f0f23; color: #fff;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                  <div style="font-size: 48px;">🔄</div>
+                  <h1 style="color: #22c55e; margin: 10px 0;">Circular Exchange Active!</h1>
+                </div>
+                <p>Great news! Your site is now part of a ${cycleSites.length}-way circular exchange.</p>
+                <div style="background: #1a1a2e; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                  <p style="color: #9ca3af; margin: 0 0 10px 0;">Your site links to:</p>
+                  ${userLinks.map(l => `<p style="margin: 5px 0; color: #22c55e;">→ ${l.to}</p>`).join('')}
+                </div>
+                <p style="color: #9ca3af;">The exchange is circular — every participant gives and receives one link. This creates natural-looking backlinks that search engines can't detect as reciprocal swaps.</p>
+                <p style="margin-top: 30px;">
+                  <a href="https://linkswarm.ai/dashboard" style="background: #fbbf24; color: #000; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">View Dashboard →</a>
+                </p>
+              </div>
+            `
+          })
+        }).catch(() => {});
+      }
+    }
+    
+    return c.json({
+      success: true,
+      cycle_id: cycleId,
+      sites: cycleSites,
+      placements: results
+    });
+    
+  } catch (err) {
+    console.error('Cycle creation error:', err);
+    return c.json({ error: 'Failed to create cycle', details: err.message }, 500);
+  }
+});
+
+// Admin: List all users with balances
+app.get('/admin/users', requireAdmin, async (c) => {
+  const sql = getDb(c.env);
+  
+  const users = await sql`
+    SELECT ak.email, ak.plan, cb.balance, cb.lifetime_earned, cb.lifetime_spent,
+           COUNT(DISTINCT s.domain) as sites_count
+    FROM api_keys ak
+    LEFT JOIN credit_balances cb ON ak.email = cb.user_email
+    LEFT JOIN sites s ON ak.email = s.owner_email AND s.verified = true
+    WHERE ak.email_verified = true
+    GROUP BY ak.email, ak.plan, cb.balance, cb.lifetime_earned, cb.lifetime_spent
+    ORDER BY cb.balance DESC NULLS LAST
+  `;
+  
+  return c.json({ users });
+});
+
+// Admin: Get sites by owner
+app.get('/admin/sites', requireAdmin, async (c) => {
+  const email = c.req.query('email');
+  const sql = getDb(c.env);
+  
+  let sites;
+  if (email) {
+    sites = await sql`SELECT * FROM sites WHERE owner_email ILIKE ${email + '%'} ORDER BY created_at DESC`;
+  } else {
+    sites = await sql`SELECT * FROM sites WHERE verified = true ORDER BY created_at DESC`;
+  }
+  
+  return c.json({ sites });
+});
+
 app.post('/waitlist', async (c) => {
   const { email, source = 'website' } = await c.req.json();
   
@@ -1429,6 +1705,26 @@ app.get('/dashboard', requireAuth, async (c) => {
     ORDER BY created_at DESC LIMIT 10
   `;
   
+  // Get user's domains for stats queries
+  const userDomains = userSitesList.map(s => s.domain);
+  
+  // Links placed (from user's sites, verified)
+  const [linksPlaced] = userDomains.length > 0 ? await sql`
+    SELECT COUNT(*) as count FROM link_placements 
+    WHERE from_domain = ANY(${userDomains}) AND status = 'verified'
+  ` : [{ count: 0 }];
+  
+  // Links received (to user's sites, verified)
+  const [linksReceived] = userDomains.length > 0 ? await sql`
+    SELECT COUNT(*) as count FROM link_placements 
+    WHERE to_domain = ANY(${userDomains}) AND status = 'verified'
+  ` : [{ count: 0 }];
+  
+  // Referrals
+  const [referrals] = await sql`
+    SELECT referral_count FROM api_keys WHERE email = ${user.email}
+  `;
+  
   return c.json({
     user: {
       email: user.email,
@@ -1444,6 +1740,11 @@ app.get('/dashboard', requireAuth, async (c) => {
       pro: 'https://linkswarm.ai/upgrade/pro',
       agency: 'https://linkswarm.ai/upgrade/agency'
     } : null,
+    stats: {
+      links_placed: parseInt(linksPlaced?.count || 0),
+      links_received: parseInt(linksReceived?.count || 0),
+      referrals: parseInt(referrals?.referral_count || 0)
+    },
     recentSites: userSitesList,
     recentExchanges: userExchanges
   });
@@ -2011,17 +2312,17 @@ app.post('/v1/pool/request', requireAuth, async (c) => {
   
   let match = null;
   if (contribution) {
-    // Create placement
-    const relevanceScore = 0.8; // Simplified - would calculate based on embeddings
+    // Create placement (requires approval)
+    const relevanceScore = 0.8; // Simplified - would calculate based on embedings
     
     const [placement] = await sql`
       INSERT INTO link_placements (
         contribution_id, request_id, from_domain, from_page, to_domain, to_page, 
-        anchor_text, relevance_score, status
+        anchor_text, relevance_score, status, approved
       ) VALUES (
         ${contribution.id}, ${request.id}, ${contribution.site_domain}, ${contribution.page_url},
         ${domain}, ${target_page || '/'}, ${preferred_anchor || site.name || domain}, 
-        ${relevanceScore}, 'assigned'
+        ${relevanceScore}, 'assigned', NULL
       )
       RETURNING id
     `;
@@ -2095,17 +2396,17 @@ app.post('/v1/pool/auto-match', requireAdmin, async (c) => {
     const [balance] = await sql`SELECT balance FROM credit_balances WHERE user_email = ${request.owner_email}`;
     if (!balance || balance.balance < 1) continue;
     
-    // Create placement
+    // Create placement (requires approval)
     const relevanceScore = 0.8;
     const [placement] = await sql`
       INSERT INTO link_placements (
         contribution_id, request_id, from_domain, from_page, to_domain, to_page, 
-        anchor_text, relevance_score, status
+        anchor_text, relevance_score, status, approved
       ) VALUES (
         ${contribution.id}, ${request.id}, ${contribution.site_domain}, ${contribution.page_url},
         ${request.site_domain}, ${request.target_page || '/'}, 
         ${request.preferred_anchor || request.site_name || request.site_domain}, 
-        ${relevanceScore}, 'assigned'
+        ${relevanceScore}, 'assigned', NULL
       )
       RETURNING id
     `;
@@ -2447,6 +2748,179 @@ app.post('/v1/pool/confirm', requireAuth, async (c) => {
   });
 });
 
+// ============ BACKLINK VERIFICATION CRAWLER ============
+
+// Helper function to verify a backlink exists on a page
+async function verifyBacklink(fromPageUrl, toDomain, anchorText) {
+  try {
+    // Fetch the page content
+    const response = await fetch(fromPageUrl, {
+      headers: {
+        'User-Agent': 'LinkSwarm-Crawler/1.0 (backlink-verification)',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1'
+      },
+      redirect: 'follow',
+      timeout: 30000
+    });
+
+    if (!response.ok) {
+      return { 
+        verified: false, 
+        error: `HTTP ${response.status}: ${response.statusText}`,
+        error_type: 'http_error'
+      };
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('text/html')) {
+      return {
+        verified: false,
+        error: `Invalid content type: ${contentType}`,
+        error_type: 'invalid_content_type'
+      };
+    }
+
+    const html = await response.text();
+    
+    // Parse HTML and look for links to the target domain
+    const linkRegex = /<a[^>]+href=["']([^"']+)["'][^>]*>([^<]+)<\/a>/gi;
+    const links = [];
+    let match;
+    
+    while ((match = linkRegex.exec(html)) !== null) {
+      const href = match[1];
+      const linkText = match[2].trim();
+      
+      // Check if this link points to our target domain
+      if (href.includes(toDomain)) {
+        links.push({
+          href: href,
+          text: linkText,
+          anchor_match: anchorText ? calculateAnchorMatch(linkText, anchorText) : 0
+        });
+      }
+    }
+    
+    if (links.length === 0) {
+      return {
+        verified: false,
+        error: `No links to ${toDomain} found on page`,
+        error_type: 'link_not_found'
+      };
+    }
+    
+    // If anchor text specified, find the best match
+    if (anchorText) {
+      const bestMatch = links.reduce((best, current) => 
+        current.anchor_match > best.anchor_match ? current : best
+      );
+      
+      if (bestMatch.anchor_match < 0.6) {
+        return {
+          verified: false,
+          error: `Link found but anchor text doesn't match. Expected: "${anchorText}", Found: "${bestMatch.text}"`,
+          error_type: 'anchor_mismatch',
+          found_links: links
+        };
+      }
+      
+      return {
+        verified: true,
+        found_link: bestMatch,
+        all_links: links,
+        anchor_match_score: bestMatch.anchor_match
+      };
+    } else {
+      // No anchor text requirement, just need any link to the domain
+      return {
+        verified: true,
+        found_links: links
+      };
+    }
+    
+  } catch (error) {
+    return {
+      verified: false,
+      error: error.message,
+      error_type: error.name === 'AbortError' ? 'timeout' : 'network_error'
+    };
+  }
+}
+
+// Helper function to calculate anchor text similarity (fuzzy matching)
+function calculateAnchorMatch(foundText, expectedText) {
+  if (!foundText || !expectedText) return 0;
+  
+  const found = foundText.toLowerCase().trim();
+  const expected = expectedText.toLowerCase().trim();
+  
+  // Exact match
+  if (found === expected) return 1;
+  
+  // Substring match
+  if (found.includes(expected) || expected.includes(found)) return 0.8;
+  
+  // Fuzzy match using Levenshtein-like similarity
+  const maxLen = Math.max(found.length, expected.length);
+  const minLen = Math.min(found.length, expected.length);
+  
+  // Character overlap
+  let overlap = 0;
+  for (let i = 0; i < minLen; i++) {
+    if (found[i] === expected[i]) overlap++;
+  }
+  
+  const similarity = overlap / maxLen;
+  
+  // Also check for word matches
+  const foundWords = found.split(/\s+/);
+  const expectedWords = expected.split(/\s+/);
+  const wordMatches = foundWords.filter(word => expectedWords.includes(word));
+  const wordSimilarity = wordMatches.length / Math.max(foundWords.length, expectedWords.length);
+  
+  // Return the higher of character or word similarity
+  return Math.max(similarity, wordSimilarity);
+}
+
+// Admin check middleware
+async function requireAdminAuth(c, next) {
+  const adminEmails = (c.env.ADMIN_EMAILS || '').split(',').map(email => email.trim().toLowerCase());
+  
+  if (adminEmails.length === 0) {
+    return c.json({ error: 'Admin emails not configured' }, 500);
+  }
+  
+  // Check if user is authenticated
+  const authHeader = c.req.header('Authorization');
+  const apiKey = authHeader?.startsWith('Bearer ') 
+    ? authHeader.slice(7) 
+    : c.req.header('X-API-Key');
+    
+  if (!apiKey) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+  
+  const sql = getDb(c.env);
+  const [user] = await sql`SELECT * FROM api_keys WHERE api_key = ${apiKey} AND email_verified = true`;
+  
+  if (!user) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+  
+  // Check if user is admin
+  if (!adminEmails.includes(user.email.toLowerCase())) {
+    return c.json({ error: 'Admin access required' }, 403);
+  }
+  
+  c.set('user', user);
+  c.set('userEmail', user.email);
+  return next();
+}
+
 // ============ PLACEMENTS ============
 
 app.get('/v1/placements/pending', requireAuth, async (c) => {
@@ -2457,11 +2931,13 @@ app.get('/v1/placements/pending', requireAuth, async (c) => {
     SELECT 
       p.id as placement_id,
       p.from_domain, p.from_page, p.to_domain, p.to_page,
-      p.anchor_text, p.relevance_score, p.status, p.assigned_at,
+      p.anchor_text, p.relevance_score, p.status, p.assigned_at, p.approved,
       lc.owner_email as contributor_email
     FROM link_placements p
     JOIN link_contributions lc ON p.contribution_id = lc.id
-    WHERE lc.owner_email = ${userEmail} AND p.status = 'assigned'
+    WHERE lc.owner_email = ${userEmail} 
+    AND p.status IN ('assigned', 'placed')
+    AND (p.approved IS NULL OR p.approved = true)
     ORDER BY p.assigned_at ASC
   `;
   
@@ -2472,12 +2948,15 @@ app.get('/v1/placements/pending', requireAuth, async (c) => {
     anchor_text: p.anchor_text,
     html_snippet: `<a href="https://${p.to_domain}${p.to_page}">${p.anchor_text}</a>`,
     relevance_score: p.relevance_score,
+    status: p.status,
+    approved: p.approved,
     confirm_endpoint: `/v1/pool/confirm`
   }));
   
   return c.json({ count: placements.length, placements: formattedPlacements });
 });
 
+// Verify a single backlink placement
 app.post('/v1/placements/:id/verify', requireAuth, async (c) => {
   const placementId = c.req.param('id');
   const sql = getDb(c.env);
@@ -2487,19 +2966,429 @@ app.post('/v1/placements/:id/verify', requireAuth, async (c) => {
     return c.json({ error: 'Placement not found' }, 404);
   }
   
-  // In production, would fetch the page and check for the link
-  // For now, mark as verified if status is 'placed'
+  // Check if placement can be verified
   if (placement.status !== 'placed') {
     return c.json({ 
       verified: false, 
       status: placement.status,
-      message: 'Placement not yet confirmed as placed'
+      message: 'Placement must be in "placed" status before verification'
     });
   }
   
-  await sql`UPDATE link_placements SET status = 'verified', verified_at = NOW() WHERE id = ${parseInt(placementId)}`;
+  // Check approval if required
+  if (placement.approved === false) {
+    return c.json({
+      verified: false,
+      status: placement.status,
+      message: 'Placement has been rejected and cannot be verified'
+    });
+  }
   
-  return c.json({ verified: true, status: 'verified' });
+  // Construct the full URL to check
+  const fromPageUrl = `https://${placement.from_domain}${placement.from_page}`;
+  
+  // Perform the actual backlink verification
+  const verificationResult = await verifyBacklink(
+    fromPageUrl,
+    placement.to_domain,
+    placement.anchor_text
+  );
+  
+  if (verificationResult.verified) {
+    // Update placement to verified status
+    await sql`
+      UPDATE link_placements 
+      SET status = 'verified', verified_at = NOW() 
+      WHERE id = ${parseInt(placementId)}
+    `;
+    
+    return c.json({ 
+      verified: true, 
+      status: 'verified',
+      verification_details: {
+        found_link: verificationResult.found_link || verificationResult.found_links?.[0],
+        anchor_match_score: verificationResult.anchor_match_score,
+        page_url: fromPageUrl
+      }
+    });
+  } else {
+    // Log the verification failure but don't change status
+    await sql`
+      UPDATE link_placements 
+      SET verification_error = ${verificationResult.error},
+          verification_error_type = ${verificationResult.error_type},
+          last_verification_attempt = NOW()
+      WHERE id = ${parseInt(placementId)}
+    `;
+    
+    return c.json({
+      verified: false,
+      status: placement.status,
+      error: verificationResult.error,
+      error_type: verificationResult.error_type,
+      page_url: fromPageUrl,
+      found_links: verificationResult.found_links
+    });
+  }
+});
+
+// Batch verify multiple placements
+app.post('/v1/placements/crawl-verify', requireAuth, async (c) => {
+  const { placement_ids, max_concurrent = 5 } = await c.req.json();
+  
+  if (!placement_ids || !Array.isArray(placement_ids)) {
+    return c.json({ error: 'placement_ids array required' }, 400);
+  }
+  
+  if (placement_ids.length > 100) {
+    return c.json({ error: 'Maximum 100 placements per batch' }, 400);
+  }
+  
+  const sql = getDb(c.env);
+  const results = [];
+  
+  // Get all placements to verify
+  const placements = await sql`
+    SELECT * FROM link_placements 
+    WHERE id = ANY(${placement_ids}) AND status = 'placed'
+    AND (approved IS NULL OR approved = true)
+  `;
+  
+  if (placements.length === 0) {
+    return c.json({ error: 'No valid placements found to verify' }, 400);
+  }
+  
+  // Process placements in batches to avoid overwhelming target servers
+  const batches = [];
+  for (let i = 0; i < placements.length; i += max_concurrent) {
+    batches.push(placements.slice(i, i + max_concurrent));
+  }
+  
+  for (const batch of batches) {
+    const batchPromises = batch.map(async (placement) => {
+      const fromPageUrl = `https://${placement.from_domain}${placement.from_page}`;
+      
+      try {
+        const verificationResult = await verifyBacklink(
+          fromPageUrl,
+          placement.to_domain,
+          placement.anchor_text
+        );
+        
+        if (verificationResult.verified) {
+          // Update to verified
+          await sql`
+            UPDATE link_placements 
+            SET status = 'verified', verified_at = NOW() 
+            WHERE id = ${placement.id}
+          `;
+          
+          results.push({
+            placement_id: placement.id,
+            verified: true,
+            from_page: fromPageUrl,
+            to_domain: placement.to_domain,
+            anchor_match_score: verificationResult.anchor_match_score
+          });
+        } else {
+          // Log error but keep as 'placed'
+          await sql`
+            UPDATE link_placements 
+            SET verification_error = ${verificationResult.error},
+                verification_error_type = ${verificationResult.error_type},
+                last_verification_attempt = NOW()
+            WHERE id = ${placement.id}
+          `;
+          
+          results.push({
+            placement_id: placement.id,
+            verified: false,
+            error: verificationResult.error,
+            error_type: verificationResult.error_type,
+            from_page: fromPageUrl,
+            to_domain: placement.to_domain
+          });
+        }
+      } catch (error) {
+        results.push({
+          placement_id: placement.id,
+          verified: false,
+          error: `Verification failed: ${error.message}`,
+          error_type: 'system_error'
+        });
+      }
+    });
+    
+    // Wait for this batch to complete before starting the next
+    await Promise.all(batchPromises);
+    
+    // Brief delay between batches to be respectful
+    if (batches.indexOf(batch) < batches.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
+  
+  const verified = results.filter(r => r.verified).length;
+  const failed = results.length - verified;
+  
+  return c.json({
+    success: true,
+    total_checked: results.length,
+    verified,
+    failed,
+    results
+  });
+});
+
+// ============ EDITORIAL APPROVAL FLOW ============
+
+// Get placements pending approval (admin only)
+app.get('/v1/placements/pending-approval', requireAdminAuth, async (c) => {
+  const sql = getDb(c.env);
+  
+  const placements = await sql`
+    SELECT 
+      p.*,
+      lc.owner_email as contributor_email,
+      lr.owner_email as requester_email,
+      s1.name as from_site_name,
+      s2.name as to_site_name
+    FROM link_placements p
+    JOIN link_contributions lc ON p.contribution_id = lc.id
+    JOIN link_requests lr ON p.request_id = lr.id
+    LEFT JOIN sites s1 ON p.from_domain = s1.domain
+    LEFT JOIN sites s2 ON p.to_domain = s2.domain
+    WHERE p.approved IS NULL
+    ORDER BY p.assigned_at ASC
+  `;
+  
+  return c.json({ 
+    count: placements.length, 
+    placements: placements.map(p => ({
+      id: p.id,
+      from_domain: p.from_domain,
+      from_page: p.from_page,
+      from_site_name: p.from_site_name,
+      to_domain: p.to_domain,
+      to_page: p.to_page,
+      to_site_name: p.to_site_name,
+      anchor_text: p.anchor_text,
+      status: p.status,
+      contributor_email: p.contributor_email,
+      requester_email: p.requester_email,
+      created_at: p.assigned_at,
+      relevance_score: p.relevance_score
+    }))
+  });
+});
+
+// Approve a placement (admin only)
+app.post('/v1/placements/:id/approve', requireAdminAuth, async (c) => {
+  const placementId = c.req.param('id');
+  const { notes } = await c.req.json();
+  const adminEmail = c.get('userEmail');
+  const sql = getDb(c.env);
+  
+  const [placement] = await sql`SELECT * FROM link_placements WHERE id = ${parseInt(placementId)}`;
+  if (!placement) {
+    return c.json({ error: 'Placement not found' }, 404);
+  }
+  
+  if (placement.approved !== null) {
+    return c.json({ 
+      error: 'Placement already ' + (placement.approved ? 'approved' : 'rejected') 
+    }, 400);
+  }
+  
+  // Approve the placement
+  await sql`
+    UPDATE link_placements 
+    SET approved = true, 
+        approved_at = NOW(),
+        approved_by = ${adminEmail},
+        approval_notes = ${notes || null}
+    WHERE id = ${parseInt(placementId)}
+  `;
+  
+  // Get contributor and requester emails for notifications
+  const [placementDetails] = await sql`
+    SELECT 
+      lc.owner_email as contributor_email,
+      lr.owner_email as requester_email,
+      p.from_domain, p.to_domain, p.anchor_text
+    FROM link_placements p
+    JOIN link_contributions lc ON p.contribution_id = lc.id
+    JOIN link_requests lr ON p.request_id = lr.id
+    WHERE p.id = ${parseInt(placementId)}
+  `;
+  
+  // Notify contributor
+  if (c.env.RESEND_API_KEY) {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${c.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'LinkSwarm <noreply@linkswarm.ai>',
+        to: placementDetails.contributor_email,
+        subject: '✅ Link placement approved',
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #10b981;">✅ Placement Approved</h1>
+            <p>Your link placement has been approved by our editorial team!</p>
+            <div style="background: #f0f9f4; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <p><strong>From:</strong> ${placementDetails.from_domain}</p>
+              <p><strong>To:</strong> ${placementDetails.to_domain}</p>
+              <p><strong>Anchor:</strong> ${placementDetails.anchor_text}</p>
+            </div>
+            ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ''}
+            <p>You can now place this link on your page.</p>
+            <a href="https://linkswarm.ai/dashboard" style="background: #10b981; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Dashboard</a>
+          </div>
+        `
+      })
+    }).catch(console.error);
+  }
+  
+  // Discord notification for approved placements
+  if (c.env.DISCORD_CUSTOMERS_WEBHOOK) {
+    await fetch(c.env.DISCORD_CUSTOMERS_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        embeds: [{
+          title: '✅ Placement Approved',
+          color: 0x10b981,
+          fields: [
+            { name: 'From', value: placementDetails.from_domain, inline: true },
+            { name: 'To', value: placementDetails.to_domain, inline: true },
+            { name: 'Anchor', value: placementDetails.anchor_text || '(none)', inline: false },
+            { name: 'Approved By', value: adminEmail, inline: true }
+          ],
+          footer: { text: `Placement #${placementId}` },
+          timestamp: new Date().toISOString()
+        }]
+      })
+    }).catch(console.error);
+  }
+  
+  return c.json({ success: true, approved: true, notes });
+});
+
+// Reject a placement (admin only)
+app.post('/v1/placements/:id/reject', requireAdminAuth, async (c) => {
+  const placementId = c.req.param('id');
+  const { reason } = await c.req.json();
+  const adminEmail = c.get('userEmail');
+  const sql = getDb(c.env);
+  
+  const [placement] = await sql`SELECT * FROM link_placements WHERE id = ${parseInt(placementId)}`;
+  if (!placement) {
+    return c.json({ error: 'Placement not found' }, 404);
+  }
+  
+  if (placement.approved !== null) {
+    return c.json({ 
+      error: 'Placement already ' + (placement.approved ? 'approved' : 'rejected') 
+    }, 400);
+  }
+  
+  // Reject the placement
+  await sql`
+    UPDATE link_placements 
+    SET approved = false, 
+        approved_at = NOW(),
+        approved_by = ${adminEmail},
+        approval_notes = ${reason || 'Rejected'}
+    WHERE id = ${parseInt(placementId)}
+  `;
+  
+  // Get placement details for notifications
+  const [placementDetails] = await sql`
+    SELECT 
+      lc.owner_email as contributor_email,
+      lr.owner_email as requester_email,
+      p.from_domain, p.to_domain, p.anchor_text
+    FROM link_placements p
+    JOIN link_contributions lc ON p.contribution_id = lc.id
+    JOIN link_requests lr ON p.request_id = lr.id
+    WHERE p.id = ${parseInt(placementId)}
+  `;
+  
+  // Refund credit to requester since placement was rejected
+  await sql`
+    INSERT INTO credit_balances (user_email, balance, lifetime_earned)
+    VALUES (${placementDetails.requester_email}, 1, 0)
+    ON CONFLICT (user_email) DO UPDATE 
+    SET balance = credit_balances.balance + 1
+  `;
+  
+  const [newBalance] = await sql`SELECT balance FROM credit_balances WHERE user_email = ${placementDetails.requester_email}`;
+  await sql`
+    INSERT INTO credit_transactions (user_email, amount, type, reference_type, reference_id, description, balance_after)
+    VALUES (${placementDetails.requester_email}, 1, 'refund', 'placement_rejected', ${parseInt(placementId)}, 'Placement rejected - credit refunded', ${newBalance?.balance || 1})
+  `;
+  
+  // Notify both parties
+  if (c.env.RESEND_API_KEY) {
+    // Notify requester
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${c.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'LinkSwarm <noreply@linkswarm.ai>',
+        to: placementDetails.requester_email,
+        subject: '🔄 Link placement rejected - credit refunded',
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #f59e0b;">🔄 Placement Rejected</h1>
+            <p>We've rejected a link placement and refunded your credit.</p>
+            <div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <p><strong>From:</strong> ${placementDetails.from_domain}</p>
+              <p><strong>To:</strong> ${placementDetails.to_domain}</p>
+              <p><strong>Reason:</strong> ${reason || 'Quality standards not met'}</p>
+            </div>
+            <p><strong>Good news:</strong> We've refunded 1 credit to your account.</p>
+            <a href="https://linkswarm.ai/dashboard" style="background: #f59e0b; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Dashboard</a>
+          </div>
+        `
+      })
+    }).catch(console.error);
+    
+    // Notify contributor
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${c.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'LinkSwarm <noreply@linkswarm.ai>',
+        to: placementDetails.contributor_email,
+        subject: '❌ Link placement rejected',
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #ef4444;">❌ Placement Rejected</h1>
+            <p>A link placement from your site has been rejected by our editorial team.</p>
+            <div style="background: #fee2e2; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <p><strong>From:</strong> ${placementDetails.from_domain}</p>
+              <p><strong>To:</strong> ${placementDetails.to_domain}</p>
+              <p><strong>Reason:</strong> ${reason || 'Quality standards not met'}</p>
+            </div>
+            <p>Please ensure your future placements meet our quality guidelines.</p>
+            <a href="https://linkswarm.ai/dashboard" style="background: #ef4444; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Dashboard</a>
+          </div>
+        `
+      })
+    }).catch(console.error);
+  }
+  
+  return c.json({ success: true, approved: false, reason });
 });
 
 // ============ REFERRAL ============

@@ -220,20 +220,20 @@
             <!-- Stats Grid -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 <div class="glass rounded-xl p-4">
-                    <div class="text-gray-400 text-sm">Sites</div>
-                    <div class="text-2xl font-bold"><span id="statSites">0</span> / <span id="statSitesLimit">1</span></div>
+                    <div class="text-gray-400 text-sm">Total Domains</div>
+                    <div class="text-2xl font-bold" id="statSites">0</div>
                 </div>
                 <div class="glass rounded-xl p-4">
-                    <div class="text-gray-400 text-sm">API Requests Today</div>
-                    <div class="text-2xl font-bold"><span id="statRequests">0</span> / <span id="statRequestsLimit">100</span></div>
+                    <div class="text-gray-400 text-sm">Links Placed</div>
+                    <div class="text-2xl font-bold text-green-400" id="statLinksPlaced">0</div>
                 </div>
                 <div class="glass rounded-xl p-4">
-                    <div class="text-gray-400 text-sm">Exchanges This Month</div>
-                    <div class="text-2xl font-bold"><span id="statExchanges">0</span> / <span id="statExchangesLimit">5</span></div>
+                    <div class="text-gray-400 text-sm">Links Received</div>
+                    <div class="text-2xl font-bold text-blue-400" id="statLinksReceived">0</div>
                 </div>
                 <div class="glass rounded-xl p-4">
-                    <div class="text-gray-400 text-sm">Total Requests</div>
-                    <div class="text-2xl font-bold" id="statTotalRequests">0</div>
+                    <div class="text-gray-400 text-sm">Referrals</div>
+                    <div class="text-2xl font-bold text-purple-400" id="statReferrals">0</div>
                 </div>
             </div>
             
@@ -1065,12 +1065,9 @@
                 
                 // Stats
                 document.getElementById('statSites').textContent = data.limits?.sites_used || 0;
-                document.getElementById('statSitesLimit').textContent = data.limits?.sites || 0;
-                document.getElementById('statRequests').textContent = data.user?.requests_today || 0;
-                document.getElementById('statRequestsLimit').textContent = data.limits?.requests || 100;
-                document.getElementById('statExchanges').textContent = data.limits?.exchanges_used || 0;
-                document.getElementById('statExchangesLimit').textContent = data.limits?.exchanges || 5;
-                document.getElementById('statTotalRequests').textContent = (data.user?.requests_total || 0).toLocaleString();
+                document.getElementById('statLinksPlaced').textContent = data.stats?.links_placed || 0;
+                document.getElementById('statLinksReceived').textContent = data.stats?.links_received || 0;
+                document.getElementById('statReferrals').textContent = data.stats?.referrals || 0;
                 
                 // Credits - load from dedicated endpoint for full details
                 const credits = data.credits?.balance || 0;
