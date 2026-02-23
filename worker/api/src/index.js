@@ -1390,6 +1390,73 @@ app.post('/admin/add-credits', requireAdmin, async (c) => {
   return c.json({ success: true, email, amount, new_balance: newBalance?.balance });
 });
 
+// Change user plan (admin)
+app.post('/admin/change-plan', requireAdmin, async (c) => {
+  const { email, plan, reason } = await c.req.json();
+  if (!email || !plan) return c.json({ error: 'Email and plan required' }, 400);
+  
+  const validPlans = ['free', 'basic', 'pro', 'premium', 'agency'];
+  if (!validPlans.includes(plan.toLowerCase())) {
+    return c.json({ error: `Invalid plan. Must be one of: ${validPlans.join(', ')}` }, 400);
+  }
+  
+  const sql = getDb(c.env);
+  
+  // Check user exists
+  const [user] = await sql`SELECT email, plan FROM api_keys WHERE email ILIKE ${email.toLowerCase() + '%'} AND email_verified = true`;
+  if (!user) {
+    return c.json({ error: 'User not found' }, 404);
+  }
+  
+  const oldPlan = user.plan || 'free';
+  const newPlan = plan.toLowerCase();
+  
+  // Update plan
+  await sql`
+    UPDATE api_keys 
+    SET plan = ${newPlan}, upgraded_at = NOW()
+    WHERE email = ${user.email}
+  `;
+  
+  // Log the change
+  await sql`
+    INSERT INTO credit_transactions (user_email, amount, type, reference_type, description, balance_after)
+    VALUES (${user.email}, 0, 'admin', 'plan_change', ${reason || `Plan changed: ${oldPlan} → ${newPlan}`}, 
+      COALESCE((SELECT balance FROM credit_balances WHERE user_email = ${user.email}), 0))
+  `;
+  
+  return c.json({ 
+    success: true, 
+    email: user.email, 
+    old_plan: oldPlan, 
+    new_plan: newPlan,
+    message: `Plan changed from ${oldPlan} to ${newPlan}`
+  });
+});
+
+// Get user details (admin)
+app.get('/admin/user', requireAdmin, async (c) => {
+  const email = c.req.query('email');
+  if (!email) return c.json({ error: 'Email required' }, 400);
+  
+  const sql = getDb(c.env);
+  
+  const [user] = await sql`
+    SELECT email, plan, upgraded_at, created_at, email_verified 
+    FROM api_keys 
+    WHERE email ILIKE ${email.toLowerCase() + '%'} AND email_verified = true
+  `;
+  
+  if (!user) {
+    return c.json({ error: 'User not found' }, 404);
+  }
+  
+  const [balance] = await sql`SELECT * FROM credit_balances WHERE user_email = ${user.email}`;
+  const sites = await sql`SELECT domain, verified, quality_score FROM sites WHERE owner_email = ${user.email}`;
+  
+  return c.json({ user, balance, sites });
+});
+
 // Get network stats for admin
 app.get('/admin/stats', requireAdmin, async (c) => {
   const sql = getDb(c.env);
