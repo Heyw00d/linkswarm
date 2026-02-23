@@ -1,0 +1,24 @@
+# Cloudflare Pages redirects
+# Handle common missing pages and old URLs
+
+# Trailing slash normalization (Cloudflare handles this, but explicit is safer)
+/docs/roadmap.html /docs/roadmap/ 301
+/docs/changelog.html /docs/changelog/ 301
+
+# Common 404 patterns - redirect to relevant pages
+/api /docs/api/ 301
+/api/* /docs/api/ 301
+/pricing /register/ 301
+/signup /register/ 301
+/sign-up /register/ 301
+/login /dashboard/ 301
+/signin /dashboard/ 301
+
+# Old blog URL patterns (if any were changed)
+/blog/ai-visibility /blog/backlinks-ai-visibility/ 301
+
+# Catch WordPress scanner garbage (return 410 Gone)
+/wp-admin/* /404.html 410
+/wp-login.php /404.html 410
+/wp-content/* /404.html 410
+/.env /404.html 410
