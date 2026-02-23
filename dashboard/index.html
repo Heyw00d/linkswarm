@@ -602,54 +602,86 @@
     
     <!-- Plans Modal -->
     <div id="plansModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-        <div class="glass rounded-2xl p-6 max-w-2xl w-full glow">
+        <div class="glass rounded-2xl p-6 max-w-3xl w-full glow max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold">💎 Plans</h2>
+                <h2 class="text-xl font-bold">💎 Plans & Billing</h2>
                 <button onclick="hidePlans()" class="text-gray-400 hover:text-white text-xl">&times;</button>
             </div>
-            <div class="mb-4">
-                <span class="text-gray-400">Current Plan:</span>
-                <span id="currentPlanDisplay" class="ml-2 px-3 py-1 rounded-full text-sm font-semibold bg-gray-600"></span>
+            <div class="mb-6 p-4 bg-black/30 rounded-xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-gray-400">Current Plan:</span>
+                        <span id="currentPlanDisplay" class="ml-2 px-3 py-1 rounded-full text-sm font-semibold bg-gray-600"></span>
+                    </div>
+                    <div id="manageSubscriptionLink" class="hidden">
+                        <a href="#" onclick="openCustomerPortal()" class="text-amber-400 hover:text-amber-300 text-sm">Manage Subscription →</a>
+                    </div>
+                </div>
+                <p id="planStatusText" class="text-gray-500 text-sm mt-2"></p>
             </div>
             <div class="grid md:grid-cols-3 gap-4">
                 <!-- Free -->
-                <div class="border border-gray-700 rounded-xl p-4">
+                <div id="planCardFree" class="border border-gray-700 rounded-xl p-4 transition-all">
                     <h3 class="font-bold text-lg mb-2">Free</h3>
                     <p class="text-2xl font-bold mb-4">$0<span class="text-sm text-gray-400">/mo</span></p>
                     <ul class="text-sm text-gray-400 space-y-2 mb-4">
-                        <li>✓ 1 site</li>
-                        <li>✓ 1 LLM check/month</li>
-                        <li>✓ 3 exchanges/month</li>
+                        <li>✓ 3 sites</li>
+                        <li>✓ 3 LLM checks/month</li>
+                        <li>✓ 10 exchanges/month</li>
                         <li>✓ Basic matching</li>
                     </ul>
+                    <button id="btnFree" onclick="selectPlan('free')" class="hidden w-full text-center border border-gray-500 text-gray-400 py-2 rounded-lg transition hover:border-gray-400">Current Plan</button>
                 </div>
                 <!-- Basic -->
-                <div class="border border-blue-500 rounded-xl p-4 relative">
+                <div id="planCardBasic" class="border border-blue-500 rounded-xl p-4 relative transition-all">
                     <h3 class="font-bold text-lg mb-2 text-blue-400">Basic</h3>
                     <p class="text-2xl font-bold mb-4">$10<span class="text-sm text-gray-400">/mo</span></p>
                     <ul class="text-sm text-gray-400 space-y-2 mb-4">
-                        <li>✓ 5 sites</li>
-                        <li>✓ 5 LLM checks/month</li>
-                        <li>✓ 20 exchanges/month</li>
+                        <li>✓ 10 sites</li>
+                        <li>✓ 10 LLM checks/month</li>
+                        <li>✓ 50 exchanges/month</li>
                         <li>✓ Priority matching</li>
+                        <li>✓ Email support</li>
                     </ul>
-                    <a href="https://linkswarm.ai/upgrade/basic" class="block text-center bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg transition">Upgrade</a>
+                    <button id="btnBasic" onclick="selectPlan('basic')" class="w-full text-center bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg transition">Upgrade</button>
                 </div>
                 <!-- Pro -->
-                <div class="border border-purple-500 rounded-xl p-4 relative">
-                    <div class="absolute -top-2 right-4 bg-purple-500 text-xs px-2 py-0.5 rounded">BEST VALUE</div>
+                <div id="planCardPro" class="border border-purple-500 rounded-xl p-4 relative transition-all">
+                    <div class="absolute -top-2 right-4 bg-purple-500 text-xs px-2 py-0.5 rounded">POPULAR</div>
                     <h3 class="font-bold text-lg mb-2 text-purple-400">Pro</h3>
                     <p class="text-2xl font-bold mb-4">$29<span class="text-sm text-gray-400">/mo</span></p>
                     <ul class="text-sm text-gray-400 space-y-2 mb-4">
-                        <li>✓ 20 sites</li>
-                        <li>✓ 20 LLM checks/month</li>
-                        <li>✓ 80 exchanges/month</li>
+                        <li>✓ 25 sites</li>
+                        <li>✓ 30 LLM checks/month</li>
+                        <li>✓ 100 exchanges/month</li>
                         <li>✓ Priority matching</li>
-                        <li>✓ API access</li>
+                        <li>✓ Full API access</li>
+                        <li>✓ Priority support</li>
                     </ul>
-                    <a href="https://linkswarm.ai/upgrade/pro" class="block text-center bg-purple-500 hover:bg-purple-600 text-white py-2 rounded-lg transition">Upgrade</a>
+                    <button id="btnPro" onclick="selectPlan('pro')" class="w-full text-center bg-purple-500 hover:bg-purple-600 text-white py-2 rounded-lg transition">Upgrade</button>
                 </div>
             </div>
+            <!-- Agency tier -->
+            <div class="mt-4">
+                <div id="planCardAgency" class="border border-amber-500 rounded-xl p-4 relative transition-all">
+                    <div class="absolute -top-2 right-4 bg-amber-500 text-black text-xs px-2 py-0.5 rounded font-semibold">UNLIMITED</div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-bold text-lg text-amber-400">Agency</h3>
+                            <p class="text-2xl font-bold">$99<span class="text-sm text-gray-400">/mo</span></p>
+                        </div>
+                        <ul class="text-sm text-gray-400 space-y-1">
+                            <li>✓ Unlimited sites</li>
+                            <li>✓ Unlimited LLM checks</li>
+                            <li>✓ Unlimited exchanges</li>
+                            <li>✓ White-label reports</li>
+                            <li>✓ Dedicated support</li>
+                        </ul>
+                        <button id="btnAgency" onclick="selectPlan('agency')" class="bg-amber-500 hover:bg-amber-600 text-black font-semibold px-6 py-2 rounded-lg transition">Upgrade</button>
+                    </div>
+                </div>
+            </div>
+            <p class="text-gray-500 text-xs text-center mt-4">All plans include a 7-day free trial. Cancel anytime.</p>
         </div>
     </div>
     
@@ -775,15 +807,104 @@
         
         function showPlans() {
             document.getElementById('userMenu').classList.add('hidden');
-            const plan = document.getElementById('planBadge').textContent || 'FREE';
+            const plan = (document.getElementById('planBadge').textContent || 'FREE').toUpperCase();
             const display = document.getElementById('currentPlanDisplay');
             display.textContent = plan;
             display.className = 'ml-2 px-3 py-1 rounded-full text-sm font-semibold ' + 
                 (plan === 'AGENCY' ? 'bg-amber-500 text-black' : 
-                 plan === 'PRO' ? 'bg-purple-500 text-white' : 'bg-gray-600 text-white');
+                 plan === 'PRO' ? 'bg-purple-500 text-white' : 
+                 plan === 'BASIC' ? 'bg-blue-500 text-white' : 'bg-gray-600 text-white');
+            
+            // Update button states based on current plan
+            updatePlanButtons(plan);
+            
+            // Show manage subscription link for paid plans
+            const manageLink = document.getElementById('manageSubscriptionLink');
+            const statusText = document.getElementById('planStatusText');
+            if (['BASIC', 'PRO', 'AGENCY', 'PREMIUM'].includes(plan)) {
+                manageLink.classList.remove('hidden');
+                statusText.textContent = 'Your subscription renews monthly. You can upgrade, downgrade, or cancel anytime.';
+            } else {
+                manageLink.classList.add('hidden');
+                statusText.textContent = 'Upgrade to unlock more features and higher limits.';
+            }
+            
             document.getElementById('plansModal').classList.remove('hidden');
         }
+        
         function hidePlans() { document.getElementById('plansModal').classList.add('hidden'); }
+        
+        function updatePlanButtons(currentPlan) {
+            const plans = ['free', 'basic', 'pro', 'agency'];
+            const planOrder = { 'FREE': 0, 'BASIC': 1, 'PRO': 2, 'PREMIUM': 2, 'AGENCY': 3 };
+            const currentIndex = planOrder[currentPlan] || 0;
+            
+            plans.forEach((plan, index) => {
+                const btn = document.getElementById('btn' + plan.charAt(0).toUpperCase() + plan.slice(1));
+                const card = document.getElementById('planCard' + plan.charAt(0).toUpperCase() + plan.slice(1));
+                if (!btn) return;
+                
+                if (index === currentIndex) {
+                    btn.textContent = 'Current Plan';
+                    btn.className = 'w-full text-center border border-green-500 text-green-400 py-2 rounded-lg cursor-default';
+                    btn.disabled = true;
+                    card.classList.add('ring-2', 'ring-green-500');
+                } else if (index < currentIndex) {
+                    btn.textContent = 'Downgrade';
+                    btn.className = 'w-full text-center border border-gray-500 text-gray-400 py-2 rounded-lg transition hover:border-gray-400';
+                    btn.disabled = false;
+                    card.classList.remove('ring-2', 'ring-green-500');
+                } else {
+                    btn.textContent = 'Upgrade';
+                    const colors = { basic: 'bg-blue-500 hover:bg-blue-600', pro: 'bg-purple-500 hover:bg-purple-600', agency: 'bg-amber-500 hover:bg-amber-600 text-black' };
+                    btn.className = 'w-full text-center ' + (colors[plan] || 'bg-gray-500') + ' text-white py-2 rounded-lg transition';
+                    btn.disabled = false;
+                    card.classList.remove('ring-2', 'ring-green-500');
+                }
+            });
+        }
+        
+        async function selectPlan(plan) {
+            const currentPlan = (document.getElementById('planBadge').textContent || 'free').toLowerCase();
+            if (plan === currentPlan) return;
+            
+            const planOrder = { 'free': 0, 'basic': 1, 'pro': 2, 'premium': 2, 'agency': 3 };
+            const isDowngrade = planOrder[plan] < planOrder[currentPlan];
+            
+            if (isDowngrade) {
+                if (!confirm(`Are you sure you want to downgrade to ${plan.toUpperCase()}? Your limits will be reduced at the start of your next billing cycle.`)) {
+                    return;
+                }
+            }
+            
+            // Redirect to Stripe checkout for the selected plan
+            const email = document.getElementById('userEmail').textContent;
+            const checkoutUrl = `${API}/checkout/${plan}?email=${encodeURIComponent(email)}&success_url=${encodeURIComponent(window.location.href)}&cancel_url=${encodeURIComponent(window.location.href)}`;
+            
+            window.location.href = checkoutUrl;
+        }
+        
+        async function openCustomerPortal() {
+            const email = document.getElementById('userEmail').textContent;
+            try {
+                const res = await fetch(`${API}/v1/billing/portal`, {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': 'Bearer ' + currentApiKey,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ return_url: window.location.href })
+                });
+                const data = await res.json();
+                if (data.url) {
+                    window.location.href = data.url;
+                } else {
+                    alert('Unable to open billing portal. Please contact support.');
+                }
+            } catch (err) {
+                alert('Error opening billing portal: ' + err.message);
+            }
+        }
         
         function saveSettings() {
             // Save notification preferences via API

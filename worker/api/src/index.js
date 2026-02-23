@@ -3752,6 +3752,37 @@ app.get('/checkout/:plan', async (c) => {
   return c.redirect('https://linkswarm.ai/#pricing');
 });
 
+// Stripe Customer Portal for managing subscriptions
+app.post('/v1/billing/portal', requireAuth, async (c) => {
+  const userEmail = c.get('userEmail');
+  const { return_url } = await c.req.json();
+  
+  if (!c.env.STRIPE_SK_LIVE) {
+    return c.json({ error: 'Stripe not configured' }, 500);
+  }
+  
+  // Find customer by email
+  const customers = await stripeAPI(c.env, 'GET', `/customers?email=${encodeURIComponent(userEmail)}&limit=1`);
+  
+  if (!customers.data || customers.data.length === 0) {
+    return c.json({ error: 'No billing account found. Please subscribe to a plan first.' }, 404);
+  }
+  
+  const customerId = customers.data[0].id;
+  
+  // Create portal session
+  const session = await stripeAPI(c.env, 'POST', '/billing_portal/sessions', {
+    'customer': customerId,
+    'return_url': return_url || 'https://linkswarm.ai/dashboard'
+  });
+  
+  if (session.url) {
+    return c.json({ url: session.url });
+  }
+  
+  return c.json({ error: 'Failed to create portal session' }, 500);
+});
+
 // ============ ONE-TIME PAYMENTS (LISTING SERVICES) ============
 
 // Create one-time checkout session for listing products
