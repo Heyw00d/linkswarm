@@ -11,8 +11,9 @@
         .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
         .glow { box-shadow: 0 0 30px rgba(251,191,36,0.1); }
         .plan-free { border-color: #6b7280; }
+        .plan-basic { border-color: #3b82f6; }
         .plan-pro { border-color: #8b5cf6; }
-        .plan-agency { border-color: #f59e0b; }
+        .plan-premium { border-color: #f59e0b; }
         
         /* Credit Toast Animations */
         @keyframes slideIn {
@@ -661,26 +662,6 @@
                     <button id="btnPro" onclick="selectPlan('pro')" class="w-full text-center bg-purple-500 hover:bg-purple-600 text-white py-2 rounded-lg transition">Upgrade</button>
                 </div>
             </div>
-            <!-- Agency tier -->
-            <div class="mt-4">
-                <div id="planCardAgency" class="border border-amber-500 rounded-xl p-4 relative transition-all">
-                    <div class="absolute -top-2 right-4 bg-amber-500 text-black text-xs px-2 py-0.5 rounded font-semibold">UNLIMITED</div>
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h3 class="font-bold text-lg text-amber-400">Agency</h3>
-                            <p class="text-2xl font-bold">$99<span class="text-sm text-gray-400">/mo</span></p>
-                        </div>
-                        <ul class="text-sm text-gray-400 space-y-1">
-                            <li>✓ Unlimited sites</li>
-                            <li>✓ Unlimited LLM checks</li>
-                            <li>✓ Unlimited exchanges</li>
-                            <li>✓ White-label reports</li>
-                            <li>✓ Dedicated support</li>
-                        </ul>
-                        <button id="btnAgency" onclick="selectPlan('agency')" class="bg-amber-500 hover:bg-amber-600 text-black font-semibold px-6 py-2 rounded-lg transition">Upgrade</button>
-                    </div>
-                </div>
-            </div>
             <p class="text-gray-500 text-xs text-center mt-4">All plans include a 7-day free trial. Cancel anytime.</p>
         </div>
     </div>
@@ -835,8 +816,8 @@
         function hidePlans() { document.getElementById('plansModal').classList.add('hidden'); }
         
         function updatePlanButtons(currentPlan) {
-            const plans = ['free', 'basic', 'pro', 'agency'];
-            const planOrder = { 'FREE': 0, 'BASIC': 1, 'PRO': 2, 'PREMIUM': 2, 'AGENCY': 3 };
+            const plans = ['free', 'basic', 'pro'];
+            const planOrder = { 'FREE': 0, 'BASIC': 1, 'PRO': 2, 'PREMIUM': 2 };
             const currentIndex = planOrder[currentPlan] || 0;
             
             plans.forEach((plan, index) => {
@@ -856,7 +837,7 @@
                     card.classList.remove('ring-2', 'ring-green-500');
                 } else {
                     btn.textContent = 'Upgrade';
-                    const colors = { basic: 'bg-blue-500 hover:bg-blue-600', pro: 'bg-purple-500 hover:bg-purple-600', agency: 'bg-amber-500 hover:bg-amber-600 text-black' };
+                    const colors = { basic: 'bg-blue-500 hover:bg-blue-600', pro: 'bg-purple-500 hover:bg-purple-600' };
                     btn.className = 'w-full text-center ' + (colors[plan] || 'bg-gray-500') + ' text-white py-2 rounded-lg transition';
                     btn.disabled = false;
                     card.classList.remove('ring-2', 'ring-green-500');
@@ -868,7 +849,7 @@
             const currentPlan = (document.getElementById('planBadge').textContent || 'free').toLowerCase();
             if (plan === currentPlan) return;
             
-            const planOrder = { 'free': 0, 'basic': 1, 'pro': 2, 'premium': 2, 'agency': 3 };
+            const planOrder = { 'free': 0, 'basic': 1, 'pro': 2, 'premium': 2 };
             const isDowngrade = planOrder[plan] < planOrder[currentPlan];
             
             if (isDowngrade) {
@@ -1166,14 +1147,16 @@
                 const smallBadge = document.getElementById('planBadgeSmall');
                 smallBadge.textContent = plan.toUpperCase();
                 smallBadge.className = `px-2 py-0.5 rounded text-xs font-semibold ${
-                    plan === 'agency' ? 'bg-amber-500 text-black' :
+                    plan === 'premium' ? 'bg-amber-500 text-black' :
                     plan === 'pro' ? 'bg-purple-500 text-white' :
+                    plan === 'basic' ? 'bg-blue-500 text-white' :
                     'bg-gray-600 text-white'
                 }`;
                 
                 document.getElementById('planDesc').textContent = 
-                    plan === 'agency' ? 'Unlimited power for agencies' :
+                    plan === 'premium' ? 'Premium features unlocked' :
                     plan === 'pro' ? 'Pro features unlocked' :
+                    plan === 'basic' ? 'Basic plan active' :
                     'Free tier — upgrade for more';
                 
                 // Upgrade link
