@@ -3698,6 +3698,7 @@ app.post('/v1/checkout/create', async (c) => {
     'success_url': success_url || 'https://linkswarm.ai/dashboard?upgraded=true',
     'cancel_url': cancel_url || 'https://linkswarm.ai/pricing',
     'allow_promotion_codes': 'true',
+    'payment_intent_data[statement_descriptor]': 'LINKSWARM',
   };
   
   if (email) {
@@ -3813,6 +3814,7 @@ app.post('/v1/checkout/listing', async (c) => {
     'cancel_url': cancel_url || 'https://linkswarm.ai/#pricing',
     'allow_promotion_codes': 'true',
     'metadata[product]': product,
+    'payment_intent_data[statement_descriptor]': 'LINKSWARM',
   };
   
   if (email) {
@@ -3867,6 +3869,7 @@ app.get('/checkout/listing/:product', async (c) => {
     'cancel_url': 'https://linkswarm.ai/#pricing',
     'allow_promotion_codes': 'true',
     'metadata[product]': product,
+    'payment_intent_data[statement_descriptor]': 'LINKSWARM',
   };
   
   if (email) {
