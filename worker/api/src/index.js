@@ -1395,7 +1395,7 @@ app.post('/admin/change-plan', requireAdmin, async (c) => {
   const { email, plan, reason } = await c.req.json();
   if (!email || !plan) return c.json({ error: 'Email and plan required' }, 400);
   
-  const validPlans = ['free', 'basic', 'pro', 'premium', 'agency'];
+  const validPlans = ['free', 'basic', 'pro', 'premium'];
   if (!validPlans.includes(plan.toLowerCase())) {
     return c.json({ error: `Invalid plan. Must be one of: ${validPlans.join(', ')}` }, 400);
   }
@@ -1804,8 +1804,7 @@ app.get('/dashboard', requireAuth, async (c) => {
       requests: limits.requests
     },
     upgrade_urls: plan === 'free' ? {
-      pro: 'https://linkswarm.ai/upgrade/pro',
-      agency: 'https://linkswarm.ai/upgrade/agency'
+      pro: 'https://linkswarm.ai/upgrade/pro'
     } : null,
     stats: {
       links_placed: parseInt(linksPlaced?.count || 0),
@@ -4070,7 +4069,7 @@ app.post('/webhook/stripe', async (c) => {
           body: JSON.stringify({
             embeds: [{
               title: '💰 New ' + plan.charAt(0).toUpperCase() + plan.slice(1) + ' Subscriber!',
-              color: plan === 'agency' ? 0xF59E0B : 0x8B5CF6,
+              color: plan === 'premium' ? 0xF59E0B : 0x8B5CF6,
               fields: [
                 { name: 'Plan', value: plan.toUpperCase(), inline: true },
                 { name: 'Amount', value: '$' + amount, inline: true }

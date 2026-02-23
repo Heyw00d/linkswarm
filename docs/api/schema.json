@@ -218,8 +218,9 @@
   "rateLimit": {
     "tiers": {
       "free": { "requests_per_minute": 60, "requests_per_hour": 500 },
+      "basic": { "requests_per_minute": 120, "requests_per_hour": 2000 },
       "pro": { "requests_per_minute": 300, "requests_per_hour": 10000 },
-      "agency": { "requests_per_minute": 600, "requests_per_hour": -1 }
+      "premium": { "requests_per_minute": 600, "requests_per_hour": -1 }
     },
     "headers": {
       "X-RateLimit-Limit": "Total requests allowed in window",
