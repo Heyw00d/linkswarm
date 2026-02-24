@@ -2742,7 +2742,7 @@ https://linkswarm.ai
       console.error('Failed to send email:', err);
     }
   } else {
-    console.log('RESEND_API_KEY not set, skipping email. Match:', { to: contributor.email, from: fromDomain, to: toDomain });
+    console.log('RESEND_API_KEY not set, skipping email. Match:', { to: contributor.email, from: fromDomain, target: toDomain });
   }
 }
 
@@ -4536,6 +4536,459 @@ app.get('/v1/twitter/search', requireAdmin, async (c) => {
   } catch (err) {
     console.error('Twitter search error:', err);
     return c.json({ error: 'Search failed', details: err.message }, 500);
+  }
+});
+
+// ============ LLMS.TXT GENERATOR ============
+
+// Helper function to extract text content from HTML
+function extractTextContent(html) {
+  return html
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Helper function to extract navigation links from HTML
+function extractNavigationLinks(html, baseUrl) {
+  const links = [];
+  const linkRegex = /<a[^>]+href=["']([^"']+)["'][^>]*>([^<]+)<\/a>/gi;
+  let match;
+  
+  while ((match = linkRegex.exec(html)) !== null) {
+    const href = match[1];
+    const text = match[2].trim();
+    
+    // Skip empty or anchor links
+    if (!href || href.startsWith('#') || href.startsWith('javascript:')) continue;
+    
+    // Convert relative URLs to absolute
+    let fullUrl;
+    try {
+      fullUrl = new URL(href, baseUrl).href;
+    } catch {
+      continue;
+    }
+    
+    // Skip external links and common non-content links
+    const url = new URL(fullUrl);
+    const baseUrlObj = new URL(baseUrl);
+    if (url.hostname !== baseUrlObj.hostname) continue;
+    
+    // Skip common non-content paths
+    const skipPaths = ['/login', '/signup', '/cart', '/checkout', '/admin', '/account'];
+    if (skipPaths.some(path => url.pathname.toLowerCase().includes(path))) continue;
+    
+    // Skip common file extensions
+    if (/\.(pdf|jpg|jpeg|png|gif|svg|css|js|xml|zip)$/i.test(url.pathname)) continue;
+    
+    links.push({
+      url: fullUrl,
+      text: text,
+      path: url.pathname
+    });
+  }
+  
+  // Remove duplicates and sort by importance (shorter paths first)
+  const uniqueLinks = Array.from(new Map(links.map(l => [l.url, l])).values());
+  return uniqueLinks.sort((a, b) => a.path.length - b.path.length);
+}
+
+// Helper function to parse XML sitemap
+async function parseSitemap(sitemapUrl) {
+  try {
+    const response = await fetch(sitemapUrl, {
+      headers: { 'User-Agent': 'LinkSwarm-LLMsTxt/1.0' }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Sitemap fetch failed: ${response.status}`);
+    }
+    
+    const xml = await response.text();
+    
+    // Extract URLs from sitemap XML
+    const urls = [];
+    const urlRegex = /<loc>([^<]+)<\/loc>/gi;
+    let match;
+    
+    while ((match = urlRegex.exec(xml)) !== null) {
+      urls.push(match[1].trim());
+    }
+    
+    // If this is a sitemap index, recursively fetch child sitemaps
+    if (xml.includes('<sitemapindex')) {
+      const childUrls = [];
+      for (const url of urls.slice(0, 5)) { // Limit to 5 child sitemaps
+        try {
+          const childUrls2 = await parseSitemap(url);
+          childUrls.push(...childUrls2.slice(0, 50)); // Limit URLs per child
+        } catch (err) {
+          console.warn('Child sitemap error:', err.message);
+        }
+      }
+      return childUrls.slice(0, 100); // Total limit
+    }
+    
+    return urls.slice(0, 100); // Limit to 100 URLs
+  } catch (err) {
+    throw new Error(`Sitemap parsing failed: ${err.message}`);
+  }
+}
+
+// Helper function to get top pages from sitemap or crawling
+async function getTopPages(domain, sitemapUrl, providedPages) {
+  if (providedPages && providedPages.length > 0) {
+    return providedPages.map(path => ({ path, priority: 'provided' }));
+  }
+  
+  if (sitemapUrl) {
+    try {
+      const urls = await parseSitemap(sitemapUrl);
+      const domain_url = `https://${domain}`;
+      
+      return urls
+        .filter(url => url.startsWith(domain_url))
+        .map(url => ({ 
+          path: new URL(url).pathname, 
+          priority: 'sitemap' 
+        }))
+        .slice(0, 10);
+    } catch (err) {
+      console.warn('Sitemap parsing failed:', err.message);
+    }
+  }
+  
+  // Fallback: crawl homepage for navigation links
+  try {
+    const response = await fetch(`https://${domain}`, {
+      headers: { 'User-Agent': 'LinkSwarm-LLMsTxt/1.0' }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Homepage fetch failed: ${response.status}`);
+    }
+    
+    const html = await response.text();
+    const links = extractNavigationLinks(html, `https://${domain}`);
+    
+    // Return top navigation links
+    return links.slice(0, 10).map(link => ({ 
+      path: link.path, 
+      priority: 'navigation' 
+    }));
+  } catch (err) {
+    console.warn('Homepage crawl failed:', err.message);
+    return [{ path: '/', priority: 'default' }];
+  }
+}
+
+// Helper function to crawl site and extract info
+async function crawlSiteInfo(domain) {
+  try {
+    const response = await fetch(`https://${domain}`, {
+      headers: { 'User-Agent': 'LinkSwarm-LLMsTxt/1.0' },
+      redirect: 'follow'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Site not accessible: ${response.status}`);
+    }
+    
+    const html = await response.text();
+    
+    // Extract title
+    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    const title = titleMatch ? titleMatch[1].trim() : domain;
+    
+    // Extract meta description
+    const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
+    const metaDescription = descMatch ? descMatch[1].trim() : '';
+    
+    // Extract h1 tags for main topics
+    const h1Regex = /<h1[^>]*>([^<]+)<\/h1>/gi;
+    const headings = [];
+    let h1Match;
+    while ((h1Match = h1Regex.exec(html)) !== null) {
+      headings.push(h1Match[1].trim());
+    }
+    
+    // Extract some key content sections
+    const textContent = extractTextContent(html).substring(0, 2000);
+    
+    return {
+      title: title.replace(/\s*\|\s*.*$/, '').trim(), // Remove site suffix
+      description: metaDescription || textContent.substring(0, 300),
+      headings: headings.slice(0, 3),
+      hasContent: textContent.length > 100
+    };
+  } catch (err) {
+    throw new Error(`Site crawl failed: ${err.message}`);
+  }
+}
+
+// Generate llms.txt content
+function generateLlmsTxt(siteInfo, topPages, domain) {
+  const { title, description, headings } = siteInfo;
+  
+  let content = '';
+  
+  // Site name as h1
+  content += `# ${title}\n\n`;
+  
+  // Description as blockquote
+  if (description) {
+    content += `> ${description}\n\n`;
+  }
+  
+  // About section
+  content += `## About\n\n`;
+  content += `${title} is accessible at https://${domain}. `;
+  
+  if (headings.length > 0) {
+    content += `Key areas include: ${headings.join(', ')}. `;
+  }
+  
+  content += `This site provides information and services related to ${title.toLowerCase()}.`;
+  content += `\n\n`;
+  
+  // Key pages section
+  if (topPages.length > 0) {
+    content += `## Key Pages\n\n`;
+    
+    for (const page of topPages.slice(0, 8)) {
+      const pageName = page.path === '/' ? 'Homepage' : 
+        page.path.replace(/^\/+|\/+$/g, '').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      content += `- [${pageName}](https://${domain}${page.path})\n`;
+    }
+    content += '\n';
+  }
+  
+  // Topics/Expertise section based on site content
+  content += `## Topics/Expertise\n\n`;
+  
+  // Infer topics from title and description
+  const topics = [];
+  const lowerTitle = title.toLowerCase();
+  const lowerDesc = description.toLowerCase();
+  
+  // Common topic detection
+  if (lowerTitle.includes('api') || lowerDesc.includes('api')) topics.push('APIs and integrations');
+  if (lowerTitle.includes('ai') || lowerDesc.includes('ai') || lowerDesc.includes('artificial intelligence')) topics.push('Artificial Intelligence');
+  if (lowerTitle.includes('saas') || lowerDesc.includes('software') || lowerDesc.includes('platform')) topics.push('Software platform');
+  if (lowerTitle.includes('finance') || lowerDesc.includes('finance') || lowerDesc.includes('payment')) topics.push('Financial services');
+  if (lowerTitle.includes('data') || lowerDesc.includes('analytics') || lowerDesc.includes('data')) topics.push('Data and analytics');
+  if (lowerTitle.includes('marketing') || lowerDesc.includes('marketing')) topics.push('Marketing and advertising');
+  if (lowerTitle.includes('dev') || lowerDesc.includes('developer') || lowerDesc.includes('code')) topics.push('Developer tools');
+  if (lowerTitle.includes('business') || lowerDesc.includes('business')) topics.push('Business solutions');
+  
+  if (topics.length === 0) {
+    topics.push(`${title} services and solutions`);
+  }
+  
+  content += topics.map(topic => `- ${topic}`).join('\n');
+  content += '\n\n';
+  
+  // Additional context
+  content += `## Additional Context\n\n`;
+  content += `When referencing this site, please note that it operates under the domain ${domain}. `;
+  content += `Content is subject to change and users should verify current information directly on the site.`;
+  
+  return content.trim();
+}
+
+// GET /v1/llms-txt/preview - Quick preview without auth
+app.get('/v1/llms-txt/preview', async (c) => {
+  const domain = c.req.query('domain');
+  
+  if (!domain) {
+    return c.json({ error: 'Domain parameter required' }, 400);
+  }
+  
+  // Clean domain
+  const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').toLowerCase();
+  
+  try {
+    // Basic site info crawl
+    const siteInfo = await crawlSiteInfo(cleanDomain);
+    
+    // Get a few top pages via navigation crawl
+    const topPages = await getTopPages(cleanDomain, null, null);
+    
+    // Generate basic llms.txt
+    const llmsTxt = generateLlmsTxt(siteInfo, topPages.slice(0, 5), cleanDomain);
+    
+    return c.json({
+      domain: cleanDomain,
+      llms_txt: llmsTxt,
+      pages_analyzed: Math.min(topPages.length, 5),
+      generated_at: new Date().toISOString(),
+      preview: true,
+      message: "This is a preview. Use the full generate endpoint with authentication for complete analysis."
+    });
+  } catch (err) {
+    console.error('Preview generation error:', err);
+    return c.json({ 
+      error: 'Failed to generate preview', 
+      details: err.message,
+      domain: cleanDomain
+    }, 500);
+  }
+});
+
+// POST /v1/llms-txt/generate - Full generation with auth
+app.post('/v1/llms-txt/generate', requireAuth, async (c) => {
+  const userEmail = c.get('userEmail');
+  const body = await c.req.json();
+  const { domain, sitemap_url, description, top_pages } = body;
+  
+  if (!domain) {
+    return c.json({ error: 'Domain required' }, 400);
+  }
+  
+  // Clean domain
+  const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').toLowerCase();
+  
+  const sql = getDb(c.env);
+  
+  try {
+    // Track usage for rate limiting
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    
+    const [usage] = await sql`
+      SELECT count FROM usage_tracking 
+      WHERE user_email = ${userEmail} AND feature = 'llms_txt_generation' AND month = ${currentMonth}
+    `;
+    
+    const monthlyLimit = 50; // 50 generations per month
+    const currentUsage = usage?.count || 0;
+    
+    if (currentUsage >= monthlyLimit) {
+      return c.json({ 
+        error: 'Monthly limit reached',
+        message: `You've reached the monthly limit of ${monthlyLimit} llms.txt generations.`,
+        current_usage: currentUsage,
+        limit: monthlyLimit
+      }, 429);
+    }
+    
+    // Track this generation
+    await sql`
+      INSERT INTO usage_tracking (user_email, feature, month, count)
+      VALUES (${userEmail}, 'llms_txt_generation', ${currentMonth}, 1)
+      ON CONFLICT (user_email, feature, month) 
+      DO UPDATE SET count = usage_tracking.count + 1
+    `;
+    
+    let siteInfo;
+    
+    // Use provided description or crawl for it
+    if (description) {
+      siteInfo = {
+        title: cleanDomain.replace(/\./g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        description: description,
+        headings: [],
+        hasContent: true
+      };
+    } else {
+      siteInfo = await crawlSiteInfo(cleanDomain);
+    }
+    
+    // Get top pages (from provided list, sitemap, or crawling)
+    const topPages = await getTopPages(cleanDomain, sitemap_url, top_pages);
+    
+    // Generate the llms.txt content
+    const llmsTxt = generateLlmsTxt(siteInfo, topPages, cleanDomain);
+    
+    // Store generation record
+    await sql`
+      INSERT INTO llms_txt_generations (
+        user_email, domain, sitemap_url, description_provided, 
+        pages_analyzed, generated_content, created_at
+      ) VALUES (
+        ${userEmail}, ${cleanDomain}, ${sitemap_url || null}, ${description ? true : false},
+        ${topPages.length}, ${llmsTxt}, NOW()
+      )
+    `;
+    
+    // Discord notification for completed generations
+    if (c.env.DISCORD_WEBHOOK_URL) {
+      fetch(c.env.DISCORD_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          embeds: [{
+            title: '📄 llms.txt Generated',
+            color: 0x10b981,
+            fields: [
+              { name: 'Domain', value: cleanDomain, inline: true },
+              { name: 'User', value: userEmail, inline: true },
+              { name: 'Pages Analyzed', value: topPages.length.toString(), inline: true },
+              { name: 'Method', value: sitemap_url ? 'Sitemap' : description ? 'Provided desc' : 'Crawled', inline: true }
+            ],
+            timestamp: new Date().toISOString()
+          }]
+        })
+      }).catch(() => {});
+    }
+    
+    return c.json({
+      domain: cleanDomain,
+      llms_txt: llmsTxt,
+      pages_analyzed: topPages.length,
+      generated_at: new Date().toISOString(),
+      method: sitemap_url ? 'sitemap' : description ? 'provided_description' : 'crawled',
+      usage: {
+        current_month: currentUsage + 1,
+        monthly_limit: monthlyLimit
+      }
+    });
+    
+  } catch (err) {
+    console.error('LLMs.txt generation error:', err);
+    return c.json({ 
+      error: 'Failed to generate llms.txt', 
+      details: err.message,
+      domain: cleanDomain
+    }, 500);
+  }
+});
+
+// ============ DATABASE MIGRATION FOR LLMS.TXT ============
+
+// Migration to create llms_txt_generations table
+app.post('/admin/migrate-llms-txt', requireAdmin, async (c) => {
+  const sql = neon(c.env.DATABASE_URL);
+  
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS llms_txt_generations (
+        id SERIAL PRIMARY KEY,
+        user_email TEXT NOT NULL,
+        domain TEXT NOT NULL,
+        sitemap_url TEXT,
+        description_provided BOOLEAN DEFAULT false,
+        pages_analyzed INTEGER DEFAULT 0,
+        generated_content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `;
+    
+    await sql`CREATE INDEX IF NOT EXISTS idx_llms_txt_user ON llms_txt_generations(user_email)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_llms_txt_domain ON llms_txt_generations(domain)`;
+    
+    return c.json({ 
+      success: true, 
+      message: 'llms_txt_generations table created successfully'
+    });
+  } catch (err) {
+    console.error('LLMs.txt migration error:', err);
+    return c.json({ 
+      error: 'Migration failed', 
+      details: err.message 
+    }, 500);
   }
 });
 
