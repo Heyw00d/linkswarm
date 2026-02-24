@@ -1,612 +1,312 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-51555HKGX4"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-51555HKGX4');
+    </script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Free llms.txt Generator - LinkSwarm</title>
+    <title>Free llms.txt Generator - LinkSwarm Tools</title>
     <meta name="description" content="Help AI models discover and cite your website. Generate your llms.txt in 30 seconds with LinkSwarm's free tool.">
+    
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://linkswarm.ai/tools/llms-txt-generator/">
+    <meta property="og:title" content="Free llms.txt Generator - LinkSwarm Tools">
+    <meta property="og:description" content="Help AI models discover and cite your website. Generate your llms.txt in 30 seconds with LinkSwarm's free tool.">
+    <meta property="og:image" content="https://linkswarm.ai/banner-1500x500.png">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@Link_Swarm">
+    <meta name="twitter:title" content="Free llms.txt Generator - LinkSwarm Tools">
+    <meta name="twitter:description" content="Help AI models discover and cite your website. Generate your llms.txt in 30 seconds.">
+    <meta name="twitter:image" content="https://linkswarm.ai/banner-1500x500.png">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        honey: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            200: '#fde68a',
+                            300: '#fcd34d',
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309',
+                            800: '#92400e',
+                            900: '#78350f',
+                        },
+                        swarm: {
+                            900: '#0a0a0f',
+                            800: '#12121a',
+                            700: '#1a1a25',
+                            600: '#252533',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Animated background */
+        .swarm-bg {
+            background: radial-gradient(ellipse at 50% 0%, rgba(251, 191, 36, 0.15) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 50%, rgba(139, 92, 246, 0.1) 0%, transparent 40%),
+                        radial-gradient(ellipse at 20% 80%, rgba(251, 191, 36, 0.08) 0%, transparent 40%);
         }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #0a0a0f;
-            color: #ffffff;
-            line-height: 1.6;
+        
+        /* Hexagon pattern */
+        .hex-pattern {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='49' viewBox='0 0 28 49'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%23fbbf24' fill-opacity='0.03'%3E%3Cpath d='M13.99 9.25l13 7.5v15l-13 7.5L1 31.75v-15l12.99-7.5zM3 17.9v12.7l10.99 6.34 11-6.35V17.9l-11-6.34L3 17.9zM0 15l12.98-7.5V0h-2v6.35L0 12.69v2.3zm0 18.5L12.98 41v8h-2v-6.85L0 35.81v-2.3zM15 0v7.5L27.99 15H28v-2.31h-.01L17 6.35V0h-2zm0 49v-8l12.99-7.5H28v2.31h-.01L17 42.15V49h-2z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
         }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-
-        /* Header */
-        .header {
-            padding: 20px 0;
-            border-bottom: 1px solid #1a1a2e;
-        }
-
-        .header-content {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .logo {
-            font-size: 24px;
-            font-weight: bold;
-            color: #8b5cf6;
-            text-decoration: none;
-        }
-
-        .nav-link {
-            color: #a1a1aa;
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-
-        .nav-link:hover {
-            color: #8b5cf6;
-        }
-
-        /* Hero Section */
-        .hero {
-            padding: 80px 0;
-            text-align: center;
-            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
-        }
-
-        .hero h1 {
-            font-size: 3.5rem;
-            font-weight: 800;
-            margin-bottom: 20px;
-            background: linear-gradient(135deg, #8b5cf6 0%, #c084fc 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .hero p {
-            font-size: 1.25rem;
-            color: #a1a1aa;
-            margin-bottom: 40px;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .hero-form {
-            max-width: 500px;
-            margin: 0 auto;
-            display: flex;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .url-input {
-            flex: 1;
-            padding: 16px 20px;
-            border: 2px solid #1a1a2e;
-            border-radius: 12px;
-            background: #16213e;
-            color: #ffffff;
-            font-size: 16px;
-            transition: border-color 0.3s ease;
-        }
-
-        .url-input:focus {
-            outline: none;
-            border-color: #8b5cf6;
-        }
-
-        .url-input::placeholder {
-            color: #6b7280;
-        }
-
-        .generate-btn {
-            padding: 16px 32px;
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 16px;
-            cursor: pointer;
+        
+        /* Card hover effects */
+        .card-hover {
             transition: all 0.3s ease;
         }
-
-        .generate-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 0 30px rgba(251, 191, 36, 0.1);
         }
 
-        .generate-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        /* Loading State */
-        .loading-state {
-            display: none;
-            margin-top: 40px;
-            padding: 40px;
-            background: #16213e;
-            border-radius: 12px;
-            text-align: center;
-        }
-
+        /* Loading spinner */
         .spinner {
             width: 40px;
             height: 40px;
-            border: 3px solid #1a1a2e;
-            border-top: 3px solid #8b5cf6;
+            border: 3px solid #1a1a25;
+            border-top: 3px solid #fbbf24;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
         }
-
+        
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-
-        /* Results Section */
-        .results-section {
-            display: none;
-            margin-top: 40px;
-        }
-
-        .results-container {
-            background: #16213e;
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        .results-header {
-            background: #1a1a2e;
-            padding: 20px;
-            border-bottom: 1px solid #2a2a4e;
-            display: flex;
-            justify-content: between;
-            align-items: center;
-        }
-
-        .copy-btn {
-            background: #8b5cf6;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .copy-btn:hover {
-            background: #7c3aed;
-        }
-
-        .code-output {
-            padding: 20px;
-            font-family: 'Monaco', 'Menlo', monospace;
-            font-size: 14px;
-            line-height: 1.5;
-            color: #e5e7eb;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-
-        /* Sections */
-        .section {
-            padding: 80px 0;
-        }
-
-        .section-header {
-            text-align: center;
-            margin-bottom: 60px;
-        }
-
-        .section-title {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 20px;
-            color: #ffffff;
-        }
-
-        .section-subtitle {
-            font-size: 1.25rem;
-            color: #a1a1aa;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        /* Cards Grid */
-        .cards-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 30px;
-            margin-top: 60px;
-        }
-
-        .card {
-            background: #16213e;
-            border: 1px solid #1a1a2e;
-            border-radius: 12px;
-            padding: 30px;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-
-        .card:hover {
-            border-color: #8b5cf6;
-            transform: translateY(-4px);
-        }
-
-        .card-icon {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, #8b5cf6 0%, #c084fc 100%);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-            font-size: 24px;
-        }
-
-        .card h3 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 12px;
-            color: #ffffff;
-        }
-
-        .card p {
-            color: #a1a1aa;
-            line-height: 1.6;
-        }
-
-        /* Steps */
-        .steps {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 40px;
-            margin-top: 60px;
-        }
-
-        .step {
-            text-align: center;
-        }
-
-        .step-number {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-            font-size: 24px;
-            font-weight: bold;
-            color: white;
-        }
-
-        .step h3 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 12px;
-            color: #ffffff;
-        }
-
-        .step p {
-            color: #a1a1aa;
-            line-height: 1.6;
-        }
-
-        /* CTA Section */
-        .cta-section {
-            background: linear-gradient(135deg, #16213e 0%, #1a1a2e 100%);
-            padding: 80px 0;
-            text-align: center;
-        }
-
-        .cta-btn {
-            display: inline-block;
-            padding: 16px 32px;
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-            color: white;
-            text-decoration: none;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 18px;
-            transition: all 0.3s ease;
-            margin-top: 30px;
-        }
-
-        .cta-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
-        }
-
-        /* Modal */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
-        }
-
-        .modal-content {
-            background: #16213e;
-            margin: 10% auto;
-            padding: 40px;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 500px;
-            text-align: center;
-            position: relative;
-        }
-
-        .close {
-            position: absolute;
-            right: 20px;
-            top: 20px;
-            font-size: 24px;
-            font-weight: bold;
-            color: #a1a1aa;
-            cursor: pointer;
-        }
-
-        .close:hover {
-            color: #ffffff;
-        }
-
-        /* Deploy Section */
-        .deploy-section {
-            margin-top: 30px;
-        }
-
-        .deploy-container {
-            background: #16213e;
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        .deploy-header {
-            background: #1a1a2e;
-            padding: 20px;
-            border-bottom: 1px solid #2a2a4e;
-            text-align: center;
-        }
-
-        .deploy-header h3 {
-            color: #ffffff;
-            margin-bottom: 8px;
-            font-size: 1.4rem;
-        }
-
-        .deploy-header p {
-            color: #a1a1aa;
-            margin: 0;
-        }
-
-        .deploy-steps {
-            padding: 30px;
-            display: flex;
-            flex-direction: column;
-            gap: 30px;
-        }
-
-        .deploy-step {
-            border: 1px solid #1a1a2e;
-            border-radius: 8px;
-            padding: 20px;
-            background: #0f1525;
-        }
-
-        .step-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 12px;
-        }
-
-        .step-badge {
-            width: 28px;
-            height: 28px;
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 14px;
-        }
-
-        .step-header h4 {
-            color: #ffffff;
-            margin: 0;
-            font-size: 1.1rem;
-        }
-
-        .deploy-step p {
-            color: #a1a1aa;
-            margin-bottom: 16px;
-            line-height: 1.5;
-        }
-
-        .deploy-step code {
-            background: #1a1a2e;
-            padding: 2px 6px;
-            border-radius: 4px;
-            color: #8b5cf6;
-            font-family: monospace;
-        }
-
-        .action-btn {
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-bottom: 12px;
-        }
-
-        .action-btn:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
-        }
-
-        .action-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .status-message {
-            font-size: 14px;
-            padding: 8px 12px;
-            border-radius: 6px;
-            margin-top: 8px;
-        }
-
-        .status-message.success {
-            background: rgba(34, 197, 94, 0.1);
-            color: #22c55e;
-            border: 1px solid rgba(34, 197, 94, 0.2);
-        }
-
-        .status-message.error {
-            background: rgba(239, 68, 68, 0.1);
-            color: #ef4444;
-            border: 1px solid rgba(239, 68, 68, 0.2);
-        }
-
-        .success-message {
-            background: rgba(34, 197, 94, 0.1);
-            color: #22c55e;
-            border: 1px solid rgba(34, 197, 94, 0.2);
-            padding: 20px;
-            margin-top: 20px;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: 600;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .hero h1 {
-                font-size: 2.5rem;
-            }
-
-            .hero-form {
-                flex-direction: column;
-            }
-
-            .section-title {
-                font-size: 2rem;
-            }
-
-            .cards-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .steps {
-                grid-template-columns: 1fr;
-            }
-        }
     </style>
 </head>
-<body>
-    <!-- Header -->
-    <header class="header">
-        <div class="container">
-            <div class="header-content">
-                <a href="https://linkswarm.ai" class="logo">LinkSwarm</a>
-                <nav>
-                    <a href="https://linkswarm.ai" class="nav-link">Back to LinkSwarm</a>
-                </nav>
+<body class="bg-swarm-900 text-white antialiased">
+    
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 bg-swarm-900/80 backdrop-blur-lg border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <a href="/" class="flex items-center gap-2 text-xl font-bold">
+                    <span class="text-2xl">🐝</span>
+                    <span class="bg-gradient-to-r from-honey-400 to-honey-500 bg-clip-text text-transparent">LinkSwarm</span>
+                </a>
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="/tools/readiness/" class="text-gray-400 hover:text-honey-400 transition font-medium flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        Check Score
+                    </a>
+                    <div class="relative group">
+                        <a href="#" class="text-honey-400 font-medium flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                            Tools
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </a>
+                        <div class="absolute top-full left-0 mt-2 w-48 bg-swarm-700 border border-white/10 rounded-lg py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                            <a href="/tools/llms-txt-generator/" class="block px-4 py-2 text-honey-400 bg-honey-500/10">
+                                🤖 llms.txt Generator
+                            </a>
+                            <a href="/tools/readiness/" class="block px-4 py-2 text-gray-300 hover:bg-white/5">
+                                📊 Readiness Checker
+                            </a>
+                        </div>
+                    </div>
+                    <a href="/#how-it-works" class="text-gray-400 hover:text-honey-400 transition">How it Works</a>
+                    <a href="/skill/" class="text-gray-400 hover:text-honey-400 transition">Listing Swarm</a>
+                    <a href="/intel/" class="text-gray-400 hover:text-honey-400 transition">Intel</a>
+                    <a href="/#docs" class="text-gray-400 hover:text-honey-400 transition">Docs</a>
+                    <a href="/#pricing" class="text-gray-400 hover:text-honey-400 transition">Pricing</a>
+                    <a href="/dashboard/" id="loginBtn" class="text-gray-400 hover:text-honey-400 transition">Login</a>
+                    <a href="/#early-access" id="joinBtn" class="bg-honey-500 hover:bg-honey-400 text-swarm-900 font-semibold px-5 py-2 rounded-full transition">
+                        Join the Swarm
+                    </a>
+                </div>
+                <button id="mobileMenuBtn" class="md:hidden text-white p-2 -mr-2" aria-label="Open menu">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+            </div>
+            <!-- Mobile Menu -->
+            <div id="mobileMenu" class="hidden md:hidden mt-4 pb-4 border-t border-white/10 pt-4">
+                <div class="flex flex-col gap-4">
+                    <a href="/tools/readiness/" class="text-gray-400 font-medium flex items-center gap-2 py-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        Check Your Score
+                    </a>
+                    <a href="/tools/llms-txt-generator/" class="text-honey-400 font-medium py-2 pl-4">🤖 llms.txt Generator</a>
+                    <a href="/#how-it-works" class="text-gray-400 hover:text-honey-400 transition py-2">How it Works</a>
+                    <a href="/skill/" class="text-gray-400 hover:text-honey-400 transition py-2">Listing Swarm</a>
+                    <a href="/intel/" class="text-gray-400 hover:text-honey-400 transition py-2">Intel</a>
+                    <a href="/#docs" class="text-gray-400 hover:text-honey-400 transition py-2">Docs</a>
+                    <a href="/#pricing" class="text-gray-400 hover:text-honey-400 transition py-2">Pricing</a>
+                    <a href="/dashboard/" class="text-gray-400 hover:text-honey-400 transition py-2">Login</a>
+                    <a href="/#early-access" class="bg-honey-500 hover:bg-honey-400 text-swarm-900 font-semibold px-5 py-3 rounded-full transition text-center mt-2">
+                        Join the Swarm
+                    </a>
+                </div>
             </div>
         </div>
-    </header>
+    </nav>
+
+    <!-- Breadcrumb -->
+    <section class="pt-24 pb-8 px-6 bg-swarm-800">
+        <div class="max-w-4xl mx-auto">
+            <nav class="flex text-sm text-gray-400 mb-6">
+                <a href="/" class="hover:text-honey-400 transition">Home</a>
+                <span class="mx-2">→</span>
+                <a href="#tools" class="hover:text-honey-400 transition">Tools</a>
+                <span class="mx-2">→</span>
+                <span class="text-white">llms.txt Generator</span>
+            </nav>
+        </div>
+    </section>
 
     <!-- Hero Section -->
-    <section class="hero">
-        <div class="container">
-            <h1>Free llms.txt Generator</h1>
-            <p>Help AI models discover and cite your website. Generate your llms.txt in 30 seconds.</p>
+    <section class="py-20 px-6 bg-swarm-800 swarm-bg">
+        <div class="max-w-4xl mx-auto text-center">
+            <div class="text-6xl mb-6">🤖</div>
+            <h1 class="text-4xl md:text-6xl font-extrabold mb-6 leading-tight">
+                <span class="bg-gradient-to-r from-honey-300 via-honey-400 to-honey-500 bg-clip-text text-transparent">
+                    Free llms.txt Generator
+                </span>
+            </h1>
             
-            <div class="hero-form">
-                <input type="url" id="urlInput" class="url-input" placeholder="Enter your website URL (e.g., https://example.com)" required>
-                <button id="generateBtn" class="generate-btn">Generate</button>
+            <p class="text-xl md:text-2xl text-gray-400 mb-4 font-light">
+                Help AI models discover and cite your website correctly.
+            </p>
+            <p class="text-lg text-gray-500 mb-10 max-w-2xl mx-auto">
+                Generate your llms.txt in 30 seconds. No signup required — just paste your URL and get your file.
+            </p>
+            
+            <!-- Generator Form -->
+            <div class="max-w-lg mx-auto mb-8">
+                <div class="flex gap-3 mb-4">
+                    <input 
+                        type="url" 
+                        id="urlInput" 
+                        placeholder="Enter your website URL (e.g., https://example.com)" 
+                        class="flex-1 bg-swarm-700 border border-white/10 focus:border-honey-500 rounded-xl px-6 py-4 text-white placeholder-gray-500 outline-none transition"
+                        required
+                    >
+                    <button 
+                        id="generateBtn" 
+                        class="bg-gradient-to-r from-honey-500 to-honey-400 hover:from-honey-400 hover:to-honey-300 text-swarm-900 font-bold px-8 py-4 rounded-xl transition"
+                    >
+                        Generate
+                    </button>
+                </div>
             </div>
 
             <!-- Loading State -->
-            <div id="loadingState" class="loading-state">
-                <div class="spinner"></div>
-                <p>Analyzing your website content...</p>
-                <p style="color: #6b7280; font-size: 0.9rem; margin-top: 10px;">This may take up to 30 seconds</p>
+            <div id="loadingState" class="hidden mt-8 p-8 bg-swarm-700/50 border border-white/10 rounded-2xl text-center">
+                <div class="spinner mx-auto mb-4"></div>
+                <p class="text-gray-300 mb-2">Analyzing your website content...</p>
+                <p class="text-gray-500 text-sm">This may take up to 30 seconds</p>
             </div>
 
             <!-- Results Section -->
-            <div id="resultsSection" class="results-section">
-                <div class="results-container">
-                    <div class="results-header">
-                        <h3>Your llms.txt file is ready!</h3>
-                        <button id="copyBtn" class="copy-btn">Copy to Clipboard</button>
+            <div id="resultsSection" class="hidden mt-8">
+                <!-- Generated File -->
+                <div class="bg-swarm-700/50 border border-white/10 rounded-2xl overflow-hidden mb-6">
+                    <div class="bg-swarm-600/50 px-6 py-4 border-b border-white/10 flex items-center justify-between">
+                        <h3 class="text-lg font-bold text-white">Your llms.txt file is ready! 🎉</h3>
+                        <button 
+                            id="copyBtn" 
+                            class="bg-honey-500 hover:bg-honey-400 text-swarm-900 font-semibold px-4 py-2 rounded-lg transition text-sm"
+                        >
+                            Copy to Clipboard
+                        </button>
                     </div>
-                    <div class="code-output" id="codeOutput"></div>
+                    <div class="p-6">
+                        <pre id="codeOutput" class="text-sm text-gray-300 whitespace-pre-wrap font-mono bg-swarm-900 border border-white/5 rounded-lg p-4 overflow-x-auto"></pre>
+                    </div>
                 </div>
 
                 <!-- Deploy & Get Listed Section -->
-                <div id="deploySection" class="deploy-section">
-                    <div class="deploy-container">
-                        <div class="deploy-header">
-                            <h3>🚀 Deploy & Get Listed</h3>
-                            <p>Upload your llms.txt file to your website root, then get listed in the official directory</p>
-                        </div>
-                        
-                        <div class="deploy-steps">
-                            <!-- Step 1: Verify Deployment -->
-                            <div class="deploy-step">
-                                <div class="step-header">
-                                    <span class="step-badge">1</span>
-                                    <h4>Verify Deployment</h4>
+                <div id="deploySection" class="bg-swarm-700/30 border border-white/10 rounded-2xl overflow-hidden">
+                    <div class="bg-swarm-600/50 px-6 py-4 border-b border-white/10 text-center">
+                        <h3 class="text-xl font-bold text-white mb-2">🚀 Add your llms.txt file</h3>
+                        <p class="text-gray-400">Upload to your website, then get listed in the AI discovery directory</p>
+                    </div>
+                    
+                    <div class="p-6">
+                        <div class="grid gap-6">
+                            <!-- Step 1: Upload File -->
+                            <div class="bg-swarm-800/50 border border-white/5 rounded-xl p-6">
+                                <div class="flex items-center gap-3 mb-4">
+                                    <span class="w-8 h-8 bg-gradient-to-r from-honey-500 to-honey-400 text-swarm-900 font-bold rounded-full flex items-center justify-center text-sm">
+                                        1
+                                    </span>
+                                    <h4 class="text-lg font-bold text-white">Upload to your website</h4>
                                 </div>
-                                <p>Upload your llms.txt file to <code id="expectedUrl"></code> and verify it's accessible:</p>
-                                <button id="verifyBtn" class="action-btn">Verify llms.txt is live</button>
-                                <div id="verifyStatus" class="status-message"></div>
+                                <p class="text-gray-400 mb-4">
+                                    Upload the generated file to <code id="expectedUrl" class="bg-swarm-900 px-2 py-1 rounded text-honey-400 font-mono text-sm"></code>
+                                </p>
+                                <div class="bg-swarm-900/50 border border-white/5 rounded-lg p-4 mb-4">
+                                    <p class="text-gray-300 text-sm mb-2 font-semibold">💡 How to upload:</p>
+                                    <ul class="text-gray-400 text-sm space-y-1">
+                                        <li>• Copy the file content above</li>
+                                        <li>• Create a file named <code class="text-honey-400">llms.txt</code></li>
+                                        <li>• Upload to your website's root directory</li>
+                                        <li>• Make sure it's accessible at <code id="expectedUrl2" class="text-honey-400"></code></li>
+                                    </ul>
+                                </div>
+                                <button 
+                                    id="verifyBtn" 
+                                    class="bg-honey-500 hover:bg-honey-400 text-swarm-900 font-semibold px-6 py-3 rounded-lg transition"
+                                >
+                                    Verify llms.txt is live
+                                </button>
+                                <div id="verifyStatus" class="mt-3 text-sm"></div>
                             </div>
 
                             <!-- Step 2: Submit to Directory -->
-                            <div class="deploy-step">
-                                <div class="step-header">
-                                    <span class="step-badge">2</span>
-                                    <h4>Submit to Directory</h4>
+                            <div class="bg-swarm-800/50 border border-white/5 rounded-xl p-6">
+                                <div class="flex items-center gap-3 mb-4">
+                                    <span class="w-8 h-8 bg-gradient-to-r from-honey-500 to-honey-400 text-swarm-900 font-bold rounded-full flex items-center justify-center text-sm">
+                                        2
+                                    </span>
+                                    <h4 class="text-lg font-bold text-white">Get listed in AI directory</h4>
                                 </div>
-                                <p>Get your site listed in the official llmstxthub directory so AI models can discover it:</p>
-                                <button id="submitBtn" class="action-btn" disabled>Submit to llmstxthub.com</button>
-                                <div id="submitStatus" class="status-message"></div>
+                                <p class="text-gray-400 mb-4">
+                                    Submit to <strong class="text-white">llmstxthub.com</strong> so AI models can discover your site automatically
+                                </p>
+                                <button 
+                                    id="submitBtn" 
+                                    class="bg-purple-500 hover:bg-purple-400 text-white font-semibold px-6 py-3 rounded-lg transition" 
+                                    disabled
+                                >
+                                    Submit to llmstxthub.com
+                                </button>
+                                <div id="submitStatus" class="mt-3 text-sm"></div>
                             </div>
                         </div>
 
-                        <div id="successMessage" class="success-message" style="display: none;">
-                            🎉 Once approved, AI models will discover your site through the llmstxthub directory!
+                        <div id="successMessage" class="hidden mt-6 bg-green-500/20 border border-green-500/30 text-green-400 rounded-lg p-6 text-center">
+                            <div class="text-2xl mb-2">🎉</div>
+                            <p class="font-semibold">Congratulations!</p>
+                            <p class="text-gray-300 mt-2">Once approved, AI models will discover your site through the llmstxthub directory.</p>
                         </div>
                     </div>
                 </div>
@@ -615,131 +315,163 @@
     </section>
 
     <!-- What is llms.txt Section -->
-    <section class="section">
-        <div class="container">
-            <div class="section-header">
-                <h2 class="section-title">What is llms.txt?</h2>
-                <p class="section-subtitle">Think of llms.txt as robots.txt for AI. It helps AI models understand your website's purpose and reference it accurately.</p>
+    <section class="py-24 px-6 bg-swarm-900 hex-pattern">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold mb-6">
+                    What is <span class="text-honey-400">llms.txt</span>?
+                </h2>
+                <p class="text-xl text-gray-400 max-w-2xl mx-auto">
+                    Think of llms.txt as robots.txt for AI. It helps AI models understand your website's purpose and reference it accurately.
+                </p>
             </div>
 
-            <div class="cards-grid">
-                <div class="card">
-                    <div class="card-icon">🎯</div>
-                    <h3>Discover your site's purpose</h3>
-                    <p>Give AI models a clear summary of what you offer, in language they can parse and reference accurately.</p>
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="card-hover bg-swarm-700/50 border border-white/10 rounded-xl p-6">
+                    <div class="w-12 h-12 bg-honey-500/20 rounded-lg flex items-center justify-center mb-4">
+                        <span class="text-2xl">🎯</span>
+                    </div>
+                    <h3 class="text-lg font-bold mb-3">Discover your site's purpose</h3>
+                    <p class="text-gray-400 text-sm">Give AI models a clear summary of what you offer, in language they can parse and reference accurately.</p>
                 </div>
-                <div class="card">
-                    <div class="card-icon">🔗</div>
-                    <h3>Reference the right pages</h3>
-                    <p>Point AI to your most important content so they cite the correct URLs when answering questions about your business.</p>
+                
+                <div class="card-hover bg-swarm-700/50 border border-white/10 rounded-xl p-6">
+                    <div class="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center mb-4">
+                        <span class="text-2xl">🔗</span>
+                    </div>
+                    <h3 class="text-lg font-bold mb-3">Reference the right pages</h3>
+                    <p class="text-gray-400 text-sm">Point AI to your most important content so they cite the correct URLs when answering questions about your business.</p>
                 </div>
-                <div class="card">
-                    <div class="card-icon">💡</div>
-                    <h3>Understand your expertise</h3>
-                    <p>Provide structured information about your domain authority and specialization so AI models can trust your content.</p>
+                
+                <div class="card-hover bg-swarm-700/50 border border-white/10 rounded-xl p-6">
+                    <div class="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center mb-4">
+                        <span class="text-2xl">💡</span>
+                    </div>
+                    <h3 class="text-lg font-bold mb-3">Understand your expertise</h3>
+                    <p class="text-gray-400 text-sm">Provide structured information about your domain authority and specialization so AI models can trust your content.</p>
                 </div>
-                <div class="card">
-                    <div class="card-icon">🚀</div>
-                    <h3>Future-proof your SEO</h3>
-                    <p>AI search is growing fast. Sites with llms.txt are positioned for visibility as these platforms mature.</p>
+                
+                <div class="card-hover bg-swarm-700/50 border border-white/10 rounded-xl p-6">
+                    <div class="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center mb-4">
+                        <span class="text-2xl">🚀</span>
+                    </div>
+                    <h3 class="text-lg font-bold mb-3">Future-proof your SEO</h3>
+                    <p class="text-gray-400 text-sm">AI search is growing fast. Sites with llms.txt are positioned for visibility as these platforms mature.</p>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- How It Works Section -->
-    <section class="section" style="background: #0f0f1a;">
-        <div class="container">
-            <div class="section-header">
-                <h2 class="section-title">How It Works</h2>
-                <p class="section-subtitle">Get your llms.txt in 30 seconds</p>
+    <section class="py-24 px-6 bg-swarm-800">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold mb-6">
+                    How It <span class="text-honey-400">Works</span>
+                </h2>
+                <p class="text-xl text-gray-400 max-w-2xl mx-auto">
+                    Get your llms.txt in 30 seconds
+                </p>
             </div>
 
-            <div class="steps">
-                <div class="step">
-                    <div class="step-number">1</div>
-                    <h3>Enter your URL</h3>
-                    <p>Paste your website URL and our AI agents will crawl your pages to understand your content, products, and services.</p>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-gradient-to-r from-honey-500 to-honey-400 text-swarm-900 font-bold rounded-full flex items-center justify-center text-2xl mx-auto mb-6">
+                        1
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 text-honey-400">Enter your URL</h3>
+                    <p class="text-gray-400">
+                        Paste your website URL and our AI agents will crawl your pages to understand your content, products, and services.
+                    </p>
                 </div>
-                <div class="step">
-                    <div class="step-number">2</div>
-                    <h3>AI analyzes your content</h3>
-                    <p>We summarize your site's purpose, identify key topics, and map your most important pages into a structured format.</p>
+                
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-gradient-to-r from-honey-500 to-honey-400 text-swarm-900 font-bold rounded-full flex items-center justify-center text-2xl mx-auto mb-6">
+                        2
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 text-honey-400">AI analyzes your content</h3>
+                    <p class="text-gray-400">
+                        We summarize your site's purpose, identify key topics, and map your most important pages into a structured format.
+                    </p>
                 </div>
-                <div class="step">
-                    <div class="step-number">3</div>
-                    <h3>Copy and deploy</h3>
-                    <p>Get a properly formatted llms.txt file ready to host at your domain root. Copy it and upload to your site.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Why It Matters Section -->
-    <section class="section">
-        <div class="container">
-            <div class="section-header">
-                <h2 class="section-title">Why It Matters</h2>
-                <p class="section-subtitle">AI SEO is the future of search visibility</p>
-            </div>
-
-            <div class="cards-grid">
-                <div class="card">
-                    <div class="card-icon">📈</div>
-                    <h3>Get cited by AI search engines</h3>
-                    <p>Increase your chances of appearing in AI-generated answers when users ask questions related to your business.</p>
-                </div>
-                <div class="card">
-                    <div class="card-icon">🎮</div>
-                    <h3>Control your AI narrative</h3>
-                    <p>Instead of letting AI models guess what your site is about, tell them directly with a structured llms.txt file.</p>
-                </div>
-                <div class="card">
-                    <div class="card-icon">⚡</div>
-                    <h3>Different from robots.txt</h3>
-                    <p>robots.txt tells crawlers what to index. llms.txt provides context about your site to AI language models. You need both.</p>
-                </div>
-                <div class="card">
-                    <div class="card-icon">🆓</div>
-                    <h3>Free and instant</h3>
-                    <p>Generate your llms.txt file in seconds. No signup or credit card required.</p>
+                
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-gradient-to-r from-honey-500 to-honey-400 text-swarm-900 font-bold rounded-full flex items-center justify-center text-2xl mx-auto mb-6">
+                        3
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 text-honey-400">Copy and deploy</h3>
+                    <p class="text-gray-400">
+                        Get a properly formatted llms.txt file ready to host at your domain root. Copy it and upload to your site.
+                    </p>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- CTA Section -->
-    <section class="cta-section">
-        <div class="container">
-            <h2 class="section-title">Want automated backlinks too?</h2>
-            <p class="section-subtitle">LinkSwarm builds the backlinks that get you cited by AI search engines.</p>
-            <a href="https://linkswarm.ai/signup" class="cta-btn">Start Building Backlinks</a>
+    <section class="py-24 px-6 bg-gradient-to-b from-swarm-800 to-swarm-900 swarm-bg">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-4xl md:text-5xl font-bold mb-6">
+                Want automated <span class="text-honey-400">backlinks</span> too?
+            </h2>
+            <p class="text-xl text-gray-400 mb-10 max-w-2xl mx-auto">
+                LinkSwarm builds the authority signals that get your brand cited by AI search engines.
+            </p>
+            <a 
+                href="/#early-access" 
+                class="inline-flex items-center gap-2 bg-gradient-to-r from-honey-500 to-honey-400 hover:from-honey-400 hover:to-honey-300 text-swarm-900 font-bold px-8 py-4 rounded-full text-lg transition"
+            >
+                Join the Swarm
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                </svg>
+            </a>
         </div>
     </section>
 
-    <!-- Modal -->
-    <div id="modal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h3>Want to take it further?</h3>
-            <p style="margin: 20px 0; color: #a1a1aa;">LinkSwarm builds the backlinks that get you cited by AI.</p>
-            <a href="https://linkswarm.ai/signup" class="cta-btn" style="display: inline-block; margin-top: 0;">Get Started with LinkSwarm</a>
+    <!-- Footer -->
+    <footer class="py-12 px-6 bg-swarm-900 border-t border-white/5">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">🐝</span>
+                    <span class="font-bold text-lg bg-gradient-to-r from-honey-400 to-honey-500 bg-clip-text text-transparent">LinkSwarm</span>
+                </div>
+                
+                <div class="flex gap-8 text-gray-400">
+                    <a href="/docs/" class="hover:text-honey-400 transition">Docs</a>
+                    <a href="/api/schema.json" class="hover:text-honey-400 transition">API</a>
+                    <a href="https://discord.gg/6RzUpUbMFE" target="_blank" class="hover:text-honey-400 transition">Discord</a>
+                    <a href="https://x.com/Link_Swarm" target="_blank" class="hover:text-honey-400 transition">𝕏</a>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <a href="https://aiagentsdirectory.com/agent/linkswarm" target="_blank" class="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg hover:bg-white/10 transition text-sm text-gray-400 hover:text-white">
+                        <span>Featured on</span>
+                        <span class="font-semibold">AI Agents Directory</span>
+                    </a>
+                </div>
+
+                <div class="text-gray-500 text-sm">
+                    © 2026 LinkSwarm. All rights reserved.
+                </div>
+            </div>
         </div>
-    </div>
+    </footer>
 
     <script>
+        // JavaScript functionality
         const urlInput = document.getElementById('urlInput');
         const generateBtn = document.getElementById('generateBtn');
         const loadingState = document.getElementById('loadingState');
         const resultsSection = document.getElementById('resultsSection');
         const codeOutput = document.getElementById('codeOutput');
         const copyBtn = document.getElementById('copyBtn');
-        const modal = document.getElementById('modal');
-        const closeModal = document.getElementsByClassName('close')[0];
         
         // Deploy section elements
         const deploySection = document.getElementById('deploySection');
         const expectedUrl = document.getElementById('expectedUrl');
+        const expectedUrl2 = document.getElementById('expectedUrl2');
         const verifyBtn = document.getElementById('verifyBtn');
         const verifyStatus = document.getElementById('verifyStatus');
         const submitBtn = document.getElementById('submitBtn');
@@ -771,8 +503,8 @@
             // Show loading state
             generateBtn.disabled = true;
             generateBtn.textContent = 'Generating...';
-            loadingState.style.display = 'block';
-            resultsSection.style.display = 'none';
+            loadingState.classList.remove('hidden');
+            resultsSection.classList.add('hidden');
 
             try {
                 // Call the LinkSwarm API
@@ -785,26 +517,22 @@
                 const data = await response.text();
                 
                 // Show results
-                loadingState.style.display = 'none';
-                resultsSection.style.display = 'block';
+                loadingState.classList.add('hidden');
+                resultsSection.classList.remove('hidden');
                 codeOutput.textContent = data;
                 
                 // Populate deploy section
                 currentDomain = domain;
                 expectedUrl.textContent = `https://${domain}/llms.txt`;
+                expectedUrl2.textContent = `https://${domain}/llms.txt`;
                 verifyStatus.innerHTML = '';
                 submitStatus.innerHTML = '';
                 submitBtn.disabled = true;
-                successMessage.style.display = 'none';
-
-                // Show modal after a short delay
-                setTimeout(() => {
-                    modal.style.display = 'block';
-                }, 2000);
+                successMessage.classList.add('hidden');
 
             } catch (error) {
                 console.error('Error generating llms.txt:', error);
-                loadingState.style.display = 'none';
+                loadingState.classList.add('hidden');
                 alert('Sorry, there was an error generating your llms.txt file. Please try again.');
             } finally {
                 generateBtn.disabled = false;
@@ -817,8 +545,12 @@
             try {
                 await navigator.clipboard.writeText(codeOutput.textContent);
                 copyBtn.textContent = 'Copied!';
+                copyBtn.classList.add('bg-green-500');
+                copyBtn.classList.remove('bg-honey-500');
                 setTimeout(() => {
                     copyBtn.textContent = 'Copy to Clipboard';
+                    copyBtn.classList.remove('bg-green-500');
+                    copyBtn.classList.add('bg-honey-500');
                 }, 2000);
             } catch (err) {
                 console.error('Failed to copy:', err);
@@ -842,17 +574,6 @@
             }
         });
 
-        // Modal close handlers
-        closeModal.onclick = function() {
-            modal.style.display = 'none';
-        }
-
-        window.onclick = function(event) {
-            if (event.target === modal) {
-                modal.style.display = 'none';
-            }
-        }
-
         // Enter key handler for input
         urlInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
@@ -871,37 +592,27 @@
             verifyStatus.innerHTML = '';
 
             try {
+                // Try to fetch the file
                 const response = await fetch(llmsTxtUrl, {
-                    method: 'GET',
-                    mode: 'no-cors' // This will work even with CORS restrictions
+                    method: 'HEAD',
+                    mode: 'no-cors'
                 });
 
                 // Since we can't read the response in no-cors mode, 
                 // we'll assume it worked if no error was thrown
-                verifyStatus.innerHTML = '✅ llms.txt is accessible!';
-                verifyStatus.className = 'status-message success';
+                verifyStatus.innerHTML = '<span class="text-green-400">✅ llms.txt is accessible!</span>';
+                verifyStatus.className = 'bg-green-500/20 border border-green-500/30 text-green-400 rounded-lg p-3 mt-3';
                 submitBtn.disabled = false;
 
             } catch (error) {
-                // Try a different approach - create an image tag to test accessibility
-                const img = new Image();
-                img.onload = img.onerror = () => {
-                    // Even if it fails as an image, if it loads, the URL is accessible
-                    verifyStatus.innerHTML = '✅ llms.txt is accessible!';
-                    verifyStatus.className = 'status-message success';
-                    submitBtn.disabled = false;
-                };
-                
                 // Fallback: just enable the submit button since we can't reliably test CORS
                 setTimeout(() => {
                     if (!verifyStatus.innerHTML) {
-                        verifyStatus.innerHTML = '⚠️ Cannot verify from browser due to CORS, but you can proceed to submit';
-                        verifyStatus.className = 'status-message success';
+                        verifyStatus.innerHTML = '<span class="text-yellow-400">⚠️ Cannot verify from browser due to CORS, but you can proceed to submit</span>';
+                        verifyStatus.className = 'bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 rounded-lg p-3 mt-3';
                         submitBtn.disabled = false;
                     }
                 }, 2000);
-                
-                img.src = llmsTxtUrl;
             } finally {
                 verifyBtn.disabled = false;
                 verifyBtn.textContent = 'Verify llms.txt is live';
@@ -926,10 +637,55 @@
             window.open(githubUrl, '_blank');
 
             // Show success message
-            submitStatus.innerHTML = '✅ GitHub issue opened! Complete the submission there.';
-            submitStatus.className = 'status-message success';
-            successMessage.style.display = 'block';
+            submitStatus.innerHTML = '<span class="text-green-400">✅ GitHub issue opened! Complete the submission there.</span>';
+            submitStatus.className = 'bg-green-500/20 border border-green-500/30 text-green-400 rounded-lg p-3 mt-3';
+            successMessage.classList.remove('hidden');
         });
+
+        // Check if user is logged in
+        const apiKey = localStorage.getItem('linkswarm_api_key');
+        if (apiKey) {
+            const loginBtn = document.getElementById('loginBtn');
+            const joinBtn = document.getElementById('joinBtn');
+            if (loginBtn) {
+                loginBtn.textContent = 'Dashboard';
+                loginBtn.classList.remove('text-gray-400');
+                loginBtn.classList.add('text-honey-400');
+            }
+            if (joinBtn) {
+                joinBtn.textContent = 'Open Dashboard';
+                joinBtn.href = '/dashboard/';
+            }
+        }
+        
+        // Mobile menu toggle
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        if (mobileMenuBtn && mobileMenu) {
+            mobileMenuBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                mobileMenu.classList.toggle('hidden');
+                const isOpen = !mobileMenu.classList.contains('hidden');
+                mobileMenuBtn.setAttribute('aria-expanded', isOpen);
+            });
+            
+            // Close menu when clicking a link
+            mobileMenu.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', function() {
+                    mobileMenu.classList.add('hidden');
+                    mobileMenuBtn.setAttribute('aria-expanded', 'false');
+                });
+            });
+            
+            // Close menu when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!mobileMenuBtn.contains(e.target) && !mobileMenu.contains(e.target)) {
+                    mobileMenu.classList.add('hidden');
+                    mobileMenuBtn.setAttribute('aria-expanded', 'false');
+                }
+            });
+        }
     </script>
 </body>
 </html>
