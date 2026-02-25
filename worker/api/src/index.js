@@ -4799,7 +4799,7 @@ function generateLlmsTxt(siteInfo, topPages, domain) {
   return content.trim();
 }
 
-// GET /v1/llms-txt/preview - Quick preview without auth
+// GET /v1/llms-txt/preview - Truncated preview without auth (signup gate)
 app.get('/v1/llms-txt/preview', async (c) => {
   const domain = c.req.query('domain');
   
@@ -4810,6 +4810,35 @@ app.get('/v1/llms-txt/preview', async (c) => {
   // Clean domain
   const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').toLowerCase();
   
+  // Track usage for rate limiting (prevent abuse)
+  const sql = getDb(c.env);
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const trackingKey = c.req.header('CF-Connecting-IP') || 'anonymous';
+  
+  const [usage] = await sql`
+    SELECT count FROM usage_tracking 
+    WHERE user_email = ${trackingKey} AND feature = 'llms_txt_preview' AND month = ${currentMonth}
+  `;
+  
+  const previewLimit = 20; // 20 free previews per IP per month
+  const currentUsage = usage?.count || 0;
+  
+  if (currentUsage >= previewLimit) {
+    return c.json({ 
+      error: 'Preview limit reached',
+      message: 'Sign up for free to get full access and continue analyzing sites.',
+      signup_url: 'https://linkswarm.ai/#early-access'
+    }, 429);
+  }
+  
+  // Track preview usage
+  await sql`
+    INSERT INTO usage_tracking (user_email, feature, month, count)
+    VALUES (${trackingKey}, 'llms_txt_preview', ${currentMonth}, 1)
+    ON CONFLICT (user_email, feature, month) 
+    DO UPDATE SET count = usage_tracking.count + 1
+  `;
+  
   try {
     // Basic site info crawl
     const siteInfo = await crawlSiteInfo(cleanDomain);
@@ -4818,15 +4847,27 @@ app.get('/v1/llms-txt/preview', async (c) => {
     const topPages = await getTopPages(cleanDomain, null, null);
     
     // Generate basic llms.txt
-    const llmsTxt = generateLlmsTxt(siteInfo, topPages.slice(0, 5), cleanDomain);
+    const fullLlmsTxt = generateLlmsTxt(siteInfo, topPages.slice(0, 5), cleanDomain);
+    
+    // Truncate to first 10-15 lines for preview
+    const lines = fullLlmsTxt.split('\n');
+    const previewLines = 12; // Show first 12 lines
+    const truncatedLlmsTxt = lines.slice(0, previewLines).join('\n');
+    const isPreview = lines.length > previewLines;
     
     return c.json({
       domain: cleanDomain,
-      llms_txt: llmsTxt,
+      llms_txt: truncatedLlmsTxt,
+      is_preview: isPreview,
+      total_lines: lines.length,
+      preview_lines: Math.min(lines.length, previewLines),
       pages_analyzed: Math.min(topPages.length, 5),
       generated_at: new Date().toISOString(),
-      preview: true,
-      message: "This is a preview. Use the full generate endpoint with authentication for complete analysis."
+      message: isPreview 
+        ? `This is a ${previewLines}-line preview of your ${lines.length}-line llms.txt file. Sign up free to download the complete file.`
+        : "Complete llms.txt preview shown.",
+      signup_url: 'https://linkswarm.ai/#early-access',
+      cta: "Sign up free to download your full llms.txt"
     });
   } catch (err) {
     console.error('Preview generation error:', err);
@@ -4838,7 +4879,7 @@ app.get('/v1/llms-txt/preview', async (c) => {
   }
 });
 
-// POST /v1/llms-txt/generate - Full generation with auth
+// POST /v1/llms-txt/generate - Full generation with auth and credit cost
 app.post('/v1/llms-txt/generate', requireAuth, async (c) => {
   const userEmail = c.get('userEmail');
   const body = await c.req.json();
@@ -4854,25 +4895,49 @@ app.post('/v1/llms-txt/generate', requireAuth, async (c) => {
   const sql = getDb(c.env);
   
   try {
-    // Track usage for rate limiting
-    const currentMonth = new Date().toISOString().slice(0, 7);
+    // Get user plan and check limits
+    const [user] = await sql`SELECT plan FROM api_keys WHERE email = ${userEmail}`;
+    const userPlan = user?.plan || 'free';
     
+    // Check credit balance and plan limits
+    const [balance] = await sql`SELECT balance FROM credit_balances WHERE user_email = ${userEmail}`;
+    const userCredits = balance?.balance || 0;
+    
+    // Track monthly usage for plan-based limits
+    const currentMonth = new Date().toISOString().slice(0, 7);
     const [usage] = await sql`
       SELECT count FROM usage_tracking 
       WHERE user_email = ${userEmail} AND feature = 'llms_txt_generation' AND month = ${currentMonth}
     `;
-    
-    const monthlyLimit = 50; // 50 generations per month
     const currentUsage = usage?.count || 0;
     
+    // Plan limits:
+    // Free: 1 generation/month
+    // Basic ($10/mo): 3 generations/month
+    // Premium ($29/mo): 10 generations/month
+    let monthlyLimit = 1; // Default for free plan
+    
+    if (userPlan === 'premium' || userPlan === 'pro') {
+      monthlyLimit = 10;
+    } else if (userPlan === 'basic') {
+      monthlyLimit = 3;
+    } else {
+      monthlyLimit = 1; // Free plan
+    }
+    
+    // Check monthly limit for all plans now
     if (currentUsage >= monthlyLimit) {
       return c.json({ 
         error: 'Monthly limit reached',
-        message: `You've reached the monthly limit of ${monthlyLimit} llms.txt generations.`,
+        message: `Your ${userPlan || 'free'} plan includes ${monthlyLimit} llms.txt generation${monthlyLimit > 1 ? 's' : ''} per month. ${userPlan === 'free' ? 'Upgrade to get more generations.' : 'Your limit resets next month.'}`,
         current_usage: currentUsage,
-        limit: monthlyLimit
-      }, 429);
+        monthly_limit: monthlyLimit,
+        user_credits: userCredits,
+        upgrade_url: userPlan === 'free' ? 'https://linkswarm.ai/#pricing' : null
+      }, 402);
     }
+    
+    // No credit cost - all plans use monthly limits now
     
     // Track this generation
     await sql`
@@ -4934,16 +4999,28 @@ app.post('/v1/llms-txt/generate', requireAuth, async (c) => {
       }).catch(() => {});
     }
     
+    // Get updated credit balance
+    const [updatedBalance] = await sql`SELECT balance FROM credit_balances WHERE user_email = ${userEmail}`;
+    const remainingCredits = updatedBalance?.balance || 0;
+    
     return c.json({
       domain: cleanDomain,
       llms_txt: llmsTxt,
       pages_analyzed: topPages.length,
       generated_at: new Date().toISOString(),
       method: sitemap_url ? 'sitemap' : description ? 'provided_description' : 'crawled',
+      credit_cost: 0,
+      user_plan: userPlan,
+      remaining_credits: userCredits,
       usage: {
         current_month: currentUsage + 1,
         monthly_limit: monthlyLimit
-      }
+      },
+      plan_benefits: userPlan === 'premium' || userPlan === 'pro'
+        ? 'Premium plan: 10 llms.txt generations per month'
+        : userPlan === 'basic'
+        ? 'Basic plan: 3 llms.txt generations per month'
+        : 'Free plan: 1 llms.txt generation per month'
     });
     
   } catch (err) {
@@ -4958,7 +5035,7 @@ app.post('/v1/llms-txt/generate', requireAuth, async (c) => {
 
 // ============ DATABASE MIGRATION FOR LLMS.TXT ============
 
-// Migration to create llms_txt_generations table
+// Migration to create llms_txt_generations table and usage tracking
 app.post('/admin/migrate-llms-txt', requireAdmin, async (c) => {
   const sql = neon(c.env.DATABASE_URL);
   
@@ -4979,9 +5056,24 @@ app.post('/admin/migrate-llms-txt', requireAdmin, async (c) => {
     await sql`CREATE INDEX IF NOT EXISTS idx_llms_txt_user ON llms_txt_generations(user_email)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_llms_txt_domain ON llms_txt_generations(domain)`;
     
+    // Create usage tracking table for rate limiting
+    await sql`
+      CREATE TABLE IF NOT EXISTS usage_tracking (
+        id SERIAL PRIMARY KEY,
+        user_email TEXT NOT NULL,
+        feature TEXT NOT NULL,
+        month TEXT NOT NULL, -- YYYY-MM format
+        count INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(user_email, feature, month)
+      )
+    `;
+    
+    await sql`CREATE INDEX IF NOT EXISTS idx_usage_tracking_user_feature ON usage_tracking(user_email, feature, month)`;
+    
     return c.json({ 
       success: true, 
-      message: 'llms_txt_generations table created successfully'
+      message: 'llms_txt_generations and usage_tracking tables created successfully'
     });
   } catch (err) {
     console.error('LLMs.txt migration error:', err);
