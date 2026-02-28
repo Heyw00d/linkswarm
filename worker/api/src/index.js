@@ -6,6 +6,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { neon } from '@neondatabase/serverless';
 import bcrypt from 'bcryptjs';
+import { parseHTML } from 'linkedom';
 
 const app = new Hono();
 
@@ -4541,7 +4542,104 @@ app.get('/v1/twitter/search', requireAdmin, async (c) => {
 
 // ============ LLMS.TXT GENERATOR ============
 
-// Helper function to extract text content from HTML
+/**
+ * Enhanced HTML to Markdown extraction using linkedom
+ * Preserves structure: headings, lists, tables, links
+ */
+function extractStructuredContent(html) {
+  try {
+    const { document } = parseHTML(html);
+    
+    // Remove unwanted elements
+    const removeSelectors = ['script', 'style', 'nav', 'header', 'footer', 'aside', 'iframe', 'noscript', '.cookie-banner', '.popup', '.modal', '.ad', '.advertisement'];
+    removeSelectors.forEach(sel => {
+      document.querySelectorAll(sel).forEach(el => el.remove());
+    });
+    
+    // Extract structured content
+    const sections = [];
+    
+    // Get main content area if exists
+    const main = document.querySelector('main, article, .content, .main, #content, #main') || document.body;
+    
+    // Process headings and their content
+    const headings = main.querySelectorAll('h1, h2, h3');
+    headings.forEach(h => {
+      const level = parseInt(h.tagName[1]);
+      const prefix = '#'.repeat(level);
+      const text = h.textContent.trim();
+      if (text && text.length > 2) {
+        sections.push(`${prefix} ${text}`);
+      }
+    });
+    
+    // Extract lists
+    const lists = main.querySelectorAll('ul, ol');
+    lists.forEach(list => {
+      const items = list.querySelectorAll('li');
+      items.forEach(li => {
+        const text = li.textContent.trim();
+        if (text && text.length > 5 && text.length < 200) {
+          sections.push(`- ${text}`);
+        }
+      });
+    });
+    
+    // Extract tables as markdown
+    const tables = main.querySelectorAll('table');
+    tables.forEach(table => {
+      const rows = table.querySelectorAll('tr');
+      if (rows.length > 0) {
+        const tableContent = [];
+        rows.forEach((row, idx) => {
+          const cells = row.querySelectorAll('th, td');
+          const rowText = Array.from(cells).map(c => c.textContent.trim()).join(' | ');
+          if (rowText) {
+            tableContent.push(`| ${rowText} |`);
+            if (idx === 0) {
+              tableContent.push('|' + Array.from(cells).map(() => '---').join('|') + '|');
+            }
+          }
+        });
+        if (tableContent.length > 1) {
+          sections.push(tableContent.join('\n'));
+        }
+      }
+    });
+    
+    // Extract key paragraphs
+    const paragraphs = main.querySelectorAll('p');
+    paragraphs.forEach(p => {
+      const text = p.textContent.trim();
+      if (text && text.length > 50 && text.length < 500) {
+        sections.push(text);
+      }
+    });
+    
+    // Extract important links
+    const links = main.querySelectorAll('a[href]');
+    const importantLinks = [];
+    links.forEach(a => {
+      const href = a.getAttribute('href');
+      const text = a.textContent.trim();
+      if (href && text && !href.startsWith('#') && !href.startsWith('javascript:') && text.length > 3) {
+        importantLinks.push(`[${text}](${href})`);
+      }
+    });
+    
+    if (importantLinks.length > 0) {
+      sections.push('\n**Key Links:**');
+      sections.push(...importantLinks.slice(0, 10));
+    }
+    
+    return sections.join('\n\n').substring(0, 5000);
+  } catch (err) {
+    // Fallback to basic extraction
+    return extractTextContent(html);
+  }
+}
+
+// Basic fallback extraction
 function extractTextContent(html) {
   return html
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
@@ -4715,14 +4813,16 @@ async function crawlSiteInfo(domain) {
       headings.push(h1Match[1].trim());
     }
     
-    // Extract some key content sections
+    // Extract structured content using linkedom (better quality)
+    const structuredContent = extractStructuredContent(html);
     const textContent = extractTextContent(html).substring(0, 2000);
     
     return {
       title: title.replace(/\s*\|\s*.*$/, '').trim(), // Remove site suffix
       description: metaDescription || textContent.substring(0, 300),
       headings: headings.slice(0, 3),
-      hasContent: textContent.length > 100
+      hasContent: textContent.length > 100,
+      structuredContent: structuredContent // Better markdown extraction
     };
   } catch (err) {
     throw new Error(`Site crawl failed: ${err.message}`);
@@ -4731,7 +4831,7 @@ async function crawlSiteInfo(domain) {
 
 // Generate llms.txt content
 function generateLlmsTxt(siteInfo, topPages, domain) {
-  const { title, description, headings } = siteInfo;
+  const { title, description, headings, structuredContent } = siteInfo;
   
   let content = '';
   
@@ -4753,6 +4853,12 @@ function generateLlmsTxt(siteInfo, topPages, domain) {
   
   content += `This site provides information and services related to ${title.toLowerCase()}.`;
   content += `\n\n`;
+  
+  // Include structured content if available (from linkedom extraction)
+  if (structuredContent && structuredContent.length > 100) {
+    content += `## Content Overview\n\n`;
+    content += structuredContent.substring(0, 2000) + '\n\n';
+  }
   
   // Key pages section
   if (topPages.length > 0) {
